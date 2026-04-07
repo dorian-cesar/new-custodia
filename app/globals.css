@@ -123,3 +123,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    margin: 0;
+    size: 58mm auto;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    margin: 0;
+  }
+  
+  /* Esconde por defecto todo lo que no esté preparado para imprimir */
+  body > *:not(.print-ticket) {
+    display: none !important;
+  }
+
+  .print-ticket {
+    display: block !important;
+  }
+}

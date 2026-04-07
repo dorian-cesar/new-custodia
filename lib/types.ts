@@ -15,9 +15,9 @@ export const LOCKER_SIZES: LockerSizeOption[] = [
 ]
 
 export interface CustodyRecord {
-  id: string
+  id: number
   code: string
-  lockerId: string
+  lockerId: number
   clientDocument: string
   entryTime: string
   exitTime: string | null
@@ -27,15 +27,15 @@ export interface CustodyRecord {
 }
 
 export interface Locker {
-  id: string
+  id: number
   row: number
   col: string
   isOccupied: boolean
-  currentRecordId: string | null
+  currentRecordId: number | null
 }
 
 export interface CashRegister {
-  id: string
+  id: number
   openedAt: string
   closedAt: string | null
   openingAmount: number
@@ -47,24 +47,23 @@ export interface CashRegister {
 }
 
 export interface CashTransaction {
-  id: string
-  registerId: string
+  id: number
+  registerId: number
   type: 'income' | 'expense'
   amount: number
   description: string
   timestamp: string
-  recordId?: string
+  recordId?: number
 }
 
 export const LOCKER_COLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 export const LOCKER_ROWS = [0, 1, 2, 3, 4, 5]
 
-export function generateLockers(): Locker[] {
-  const lockers: Locker[] = []
+export function generateLockers(): Omit<Locker, 'id'>[] {
+  const lockers: Omit<Locker, 'id'>[] = []
   for (const row of LOCKER_ROWS) {
     for (const col of LOCKER_COLS) {
       lockers.push({
-        id: `${row},${col}`,
         row,
         col,
         isOccupied: false,

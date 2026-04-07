@@ -13,13 +13,12 @@ export default function CustodyPage() {
     lockers,
     records,
     currentCashRegister,
-    initLockers,
     createRecord,
     deliverRecord,
     getCurrentRegisterStats,
   } = useCustodyStore()
 
-  const [selectedLockerId, setSelectedLockerId] = useState<string | null>(null)
+  const [selectedLockerId, setSelectedLockerId] = useState<number | null>(null)
   const [selectedSize, setSelectedSize] = useState<LockerSize | null>(null)
   const [clientDocument, setClientDocument] = useState('')
   const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(null)
@@ -27,18 +26,17 @@ export default function CustodyPage() {
 
   useEffect(() => {
     setMounted(true)
-    initLockers()
-  }, [initLockers])
+  }, [])
 
   const isCashOpen = currentCashRegister?.status === 'open'
   const stats = getCurrentRegisterStats()
 
-  const handleGenerateBarcode = (): CustodyRecord | null => {
+  const handleGenerateBarcode = async (): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
       return null
     }
 
-    const record = createRecord(selectedLockerId, clientDocument.trim(), selectedSize)
+    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize)
     if (record) {
       setCurrentRecord(record)
       setSelectedLockerId(null)
@@ -48,10 +46,10 @@ export default function CustodyPage() {
     return record
   }
 
-  const handleDeliver = (code: string): boolean => {
+  const handleDeliver = async (code: string, extraCharge?: number): Promise<boolean> => {
     const record = records.find((r) => r.code === code && r.status === 'Activo')
     if (!record) return false
-    return deliverRecord(record.id)
+    return await deliverRecord(record.id, extraCharge)
   }
 
   if (!mounted) {

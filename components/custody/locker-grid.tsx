@@ -6,8 +6,8 @@ import { type Locker, LOCKER_COLS, LOCKER_ROWS } from '@/lib/types'
 
 interface LockerGridProps {
   lockers: Locker[]
-  selectedLockerId: string | null
-  onSelectLocker: (lockerId: string) => void
+  selectedLockerId: number | null
+  onSelectLocker: (lockerId: number) => void
 }
 
 export function LockerGrid({ lockers, selectedLockerId, onSelectLocker }: LockerGridProps) {

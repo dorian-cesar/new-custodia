@@ -15,8 +15,8 @@ import { type Locker, type LockerSize, LOCKER_SIZES } from '@/lib/types'
 
 interface LockerSelectionProps {
   lockers: Locker[]
-  selectedLockerId: string | null
-  onSelectLocker: (lockerId: string) => void
+  selectedLockerId: number | null
+  onSelectLocker: (lockerId: number) => void
   selectedSize: LockerSize | null
   onSelectSize: (size: LockerSize) => void
   clientDocument: string
