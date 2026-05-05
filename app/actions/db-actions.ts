@@ -5,6 +5,7 @@ import {
   CustodyRecordModel, 
   CashRegisterModel, 
   CashTransactionModel,
+  UserModel,
   syncDatabase
 } from '@/lib/db/models';
 import { generateLockers } from '@/lib/types';
@@ -92,4 +93,28 @@ export async function dbCloseCashRegister(registerId: number, data: Partial<Cash
 export async function dbAddTransaction(transactionData: Omit<CashTransaction, 'id'>) {
   const result = await CashTransactionModel.create(transactionData as any);
   return result.get({ plain: true }) as CashTransaction;
+}
+
+export async function loginCajero(username: string, passwordHash: string) {
+  await syncDatabase();
+  const user = await UserModel.findOne({ where: { username, passwordHash } });
+  if (!user) {
+    return { success: false, error: 'Credenciales inválidas' };
+  }
+  if (user.role !== 'cajero') {
+    return { success: false, error: 'Solo los cajeros pueden iniciar sesión' };
+  }
+  return { success: true, user: user.get({ plain: true }) };
+}
+
+export async function verifySupervisor(username: string, passwordHash: string) {
+  await syncDatabase();
+  const user = await UserModel.findOne({ where: { username, passwordHash } });
+  if (!user) {
+    return { success: false, error: 'Credenciales de supervisor inválidas' };
+  }
+  if (user.role !== 'supervisor') {
+    return { success: false, error: 'El usuario no tiene rol de supervisor' };
+  }
+  return { success: true };
 }

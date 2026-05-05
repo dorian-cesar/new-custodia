@@ -2,6 +2,7 @@
 
 import React, { forwardRef, useEffect, useRef } from 'react'
 import { type CustodyRecord, formatDateTime, LOCKER_SIZES } from '@/lib/types'
+import { useCustodyStore } from '@/lib/custody-store'
 import JsBarcode from 'jsbarcode'
 
 interface TicketProps {
@@ -10,6 +11,7 @@ interface TicketProps {
 
 export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) => {
   const barcodeRef = useRef<SVGSVGElement>(null)
+  const lockers = useCustodyStore((state) => state.lockers)
 
   useEffect(() => {
     if (barcodeRef.current && record?.code) {
@@ -33,6 +35,8 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
   if (!record) return null
 
   const sizeLabel = LOCKER_SIZES.find((s) => s.value === record.size)?.label || record.size
+  const locker = lockers.find((l) => l.id === record.lockerId)
+  const lockerDisplay = locker ? `${locker.row},${locker.col}` : record.lockerId
 
   return (
     <div style={{ display: 'none' }}>
@@ -60,7 +64,7 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
           <p style={{ margin: '3px 0' }}><strong>Entrada:</strong> {formatDateTime(record.entryTime)}</p>
           <p style={{ margin: '3px 0' }}><strong>Cliente:</strong> {record.clientDocument}</p>
           <p style={{ margin: '3px 0' }}><strong>Tipo:</strong> {sizeLabel}</p>
-          <p style={{ margin: '3px 0' }}><strong>Casillero:</strong> Caja {record.lockerId}</p>
+          <p style={{ margin: '3px 0' }}><strong>Casillero:</strong> {lockerDisplay}</p>
         </div>
 
         <div style={{ borderBottom: '1px dashed black', margin: '10px 0' }}></div>

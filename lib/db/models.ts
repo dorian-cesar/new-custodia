@@ -97,6 +97,32 @@ CashTransactionModel.init(
   { sequelize, modelName: 'CashTransaction', tableName: 'cash_transactions', timestamps: false }
 );
 
+export class UserModel extends Model {
+  declare id: number;
+  declare username: string;
+  declare passwordHash: string;
+  declare role: 'cajero' | 'supervisor';
+}
+
+UserModel.init(
+  {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    username: { type: DataTypes.STRING, allowNull: false, unique: true },
+    passwordHash: { type: DataTypes.STRING, allowNull: false },
+    role: { type: DataTypes.STRING, allowNull: false },
+  },
+  { sequelize, modelName: 'User', tableName: 'users', timestamps: false }
+);
+
 export const syncDatabase = async () => {
   await sequelize.sync();
+  
+  // Seed default users if none exist
+  const userCount = await UserModel.count();
+  if (userCount === 0) {
+    await UserModel.bulkCreate([
+      { username: 'cajero', passwordHash: '1234', role: 'cajero' },
+      { username: 'admin', passwordHash: 'admin123', role: 'supervisor' }
+    ] as any[]);
+  }
 };

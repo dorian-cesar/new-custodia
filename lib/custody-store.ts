@@ -22,15 +22,28 @@ import {
   dbAddTransaction,
 } from '@/app/actions/db-actions'
 
+export interface User {
+  id: number;
+  username: string;
+  role: 'cajero' | 'supervisor';
+}
+
+
 interface CustodyState {
   lockers: Locker[]
   records: CustodyRecord[]
   cashRegisters: CashRegister[]
   cashTransactions: CashTransaction[]
+  cashTransactions: CashTransaction[]
   currentCashRegister: CashRegister | null
+  currentUser: User | null
 
   // Hydration
   hydrateState: (state: { lockers: Locker[], records: CustodyRecord[], cashRegisters: CashRegister[], cashTransactions: CashTransaction[] }) => void
+  
+  // Auth actions
+  login: (user: User) => void
+  logout: () => void
 
   // Locker actions
   occupyLocker: (lockerId: number, recordId: number) => Promise<void>
@@ -53,8 +66,13 @@ export const useCustodyStore = create<CustodyState>()(
     lockers: [],
     records: [],
     cashRegisters: [],
+    cashRegisters: [],
     cashTransactions: [],
     currentCashRegister: null,
+    currentUser: null,
+
+    login: (user) => set({ currentUser: user }),
+    logout: () => set({ currentUser: null }),
 
     hydrateState: (dbState) => {
       set({

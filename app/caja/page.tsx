@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/table'
 import { useCustodyStore } from '@/lib/custody-store'
 import { formatDateTime } from '@/lib/types'
+import { verifySupervisor } from '@/app/actions/db-actions'
 
 export default function CajaPage() {
   const {
@@ -44,6 +45,7 @@ export default function CajaPage() {
     openCashRegister,
     closeCashRegister,
     getCurrentRegisterStats,
+    logout,
   } = useCustodyStore()
 
   const [mounted, setMounted] = useState(false)
@@ -53,6 +55,9 @@ export default function CajaPage() {
   const [showOpenDialog, setShowOpenDialog] = useState(false)
   const [showCloseDialog, setShowCloseDialog] = useState(false)
   const [error, setError] = useState('')
+  const [supervisorUsername, setSupervisorUsername] = useState('')
+  const [supervisorPassword, setSupervisorPassword] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -78,17 +83,42 @@ export default function CajaPage() {
     setShowOpenDialog(false)
   }
 
-  const handleCloseCash = () => {
+  const handleCloseCash = async () => {
     setError('')
     const amount = parseFloat(closingAmount)
     if (isNaN(amount) || amount < 0) {
-      setError('Ingrese un monto valido')
+      setError('Ingrese un monto válido')
       return
     }
-    closeCashRegister(amount, notes)
-    setClosingAmount('')
-    setNotes('')
-    setShowCloseDialog(false)
+    
+    if (!supervisorUsername.trim() || !supervisorPassword.trim()) {
+      setError('Debe ingresar las credenciales de un supervisor')
+      return
+    }
+
+    setIsVerifying(true)
+    try {
+      const authResult = await verifySupervisor(supervisorUsername, supervisorPassword)
+      if (!authResult.success) {
+        setError(authResult.error || 'Credenciales de supervisor incorrectas')
+        setIsVerifying(false)
+        return
+      }
+
+      await closeCashRegister(amount, notes)
+      setClosingAmount('')
+      setNotes('')
+      setSupervisorUsername('')
+      setSupervisorPassword('')
+      setShowCloseDialog(false)
+      
+      // Auto logout according to requirements
+      logout()
+    } catch (err) {
+      setError('Error al verificar credenciales')
+    } finally {
+      setIsVerifying(false)
+    }
   }
 
   if (!mounted) {
@@ -398,14 +428,41 @@ export default function CajaPage() {
                 className="bg-input"
               />
             </div>
+            <div className="space-y-4 border-t border-border pt-4 mt-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Lock className="h-4 w-4 text-destructive" />
+                <h4 className="font-medium text-destructive">Autorización de Supervisor Requerida</h4>
+              </div>
+              <div className="space-y-2">
+                <Label>Usuario Supervisor</Label>
+                <Input
+                  type="text"
+                  value={supervisorUsername}
+                  onChange={(e) => setSupervisorUsername(e.target.value)}
+                  placeholder="ej. admin"
+                  className="bg-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Contraseña Supervisor</Label>
+                <Input
+                  type="password"
+                  value={supervisorPassword}
+                  onChange={(e) => setSupervisorPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-input"
+                />
+              </div>
+            </div>
+
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowCloseDialog(false)}>
+            <Button variant="secondary" onClick={() => setShowCloseDialog(false)} disabled={isVerifying}>
               Cancelar
             </Button>
-            <Button onClick={handleCloseCash} variant="destructive">
-              Cerrar Caja
+            <Button onClick={handleCloseCash} variant="destructive" disabled={isVerifying}>
+              {isVerifying ? 'Verificando...' : 'Cerrar Caja'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,7 +1,8 @@
 'use client'
 
-import { Box, History, ArrowLeft, DollarSign } from 'lucide-react'
+import { Box, History, ArrowLeft, DollarSign, User as UserIcon, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useCustodyStore } from '@/lib/custody-store'
 import Link from 'next/link'
 
 interface HeaderProps {
@@ -11,6 +12,8 @@ interface HeaderProps {
 }
 
 export function Header({ showHistory = false, showBack = false, showCash = false }: HeaderProps) {
+  const { currentUser, logout } = useCustodyStore()
+
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-border">
       <div className="flex items-center gap-3">
@@ -47,6 +50,28 @@ export function Header({ showHistory = false, showBack = false, showCash = false
               Volver
             </Link>
           </Button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-4 ml-4 pl-4 border-l border-border">
+        {currentUser && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full">
+              <UserIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground capitalize">
+                {currentUser.username}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/20"
+              title="Cerrar sesión"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
     </header>

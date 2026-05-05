@@ -25,7 +25,7 @@ import { useCustodyStore } from '@/lib/custody-store'
 import { LOCKER_SIZES, formatDateTime, type LockerSize } from '@/lib/types'
 
 export default function HistorialPage() {
-  const { records } = useCustodyStore()
+  const { records, lockers } = useCustodyStore()
   const [mounted, setMounted] = useState(false)
   const [searchDocument, setSearchDocument] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -49,6 +49,11 @@ export default function HistorialPage() {
 
   const getSizeLabel = (size: LockerSize) => {
     return LOCKER_SIZES.find((s) => s.value === size)?.label || size
+  }
+
+  const getLockerDisplay = (lockerId: number) => {
+    const locker = lockers.find(l => l.id === lockerId)
+    return locker ? `${locker.row},${locker.col}` : lockerId
   }
 
   const handleSearch = () => {
@@ -163,7 +168,7 @@ export default function HistorialPage() {
                       <TableCell className="font-mono text-sm text-foreground">
                         {record.code}
                       </TableCell>
-                      <TableCell className="text-foreground">{record.lockerId}</TableCell>
+                      <TableCell className="text-foreground">{getLockerDisplay(record.lockerId)}</TableCell>
                       <TableCell className="text-foreground">{record.clientDocument}</TableCell>
                       <TableCell className="text-foreground">
                         {formatDateTime(record.entryTime)}

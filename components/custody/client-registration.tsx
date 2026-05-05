@@ -63,6 +63,9 @@ export function ClientRegistration({
   }, [currentRecord, lastPrintedId, handlePrint])
   
   const getRecordByCode = useCustodyStore((state) => state.getRecordByCode)
+  const lockers = useCustodyStore((state) => state.lockers)
+  const selectedLocker = lockers.find(l => l.id === selectedLockerId)
+  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
 
   const handleGenerateBarcode = () => {
     if (!isCashOpen) {
@@ -131,7 +134,7 @@ export function ClientRegistration({
             Casillero Seleccionado
           </Label>
           <Input
-            value={selectedLockerId?.toString() || ''}
+            value={displayLockerName}
             readOnly
             placeholder="Seleccione un casillero en la matriz"
             className="bg-input"
