@@ -282,9 +282,11 @@ export default function CajaPage() {
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground">APERTURA</TableHead>
                   <TableHead className="text-muted-foreground">CIERRE</TableHead>
-                  <TableHead className="text-muted-foreground text-right">MONTO INICIAL</TableHead>
+                  <TableHead className="text-muted-foreground text-right">INICIAL</TableHead>
                   <TableHead className="text-muted-foreground text-right">VENTAS</TableHead>
-                  <TableHead className="text-muted-foreground text-right">MONTO FINAL</TableHead>
+                  <TableHead className="text-muted-foreground text-right">ESPERADO</TableHead>
+                  <TableHead className="text-muted-foreground text-right">RETIRADO</TableHead>
+                  <TableHead className="text-muted-foreground text-right">DIFERENCIA</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                 </TableRow>
               </TableHeader>
@@ -310,9 +312,28 @@ export default function CajaPage() {
                       <TableCell className="text-primary text-right font-medium">
                         ${register.totalSales.toLocaleString()}
                       </TableCell>
+                      <TableCell className="text-accent text-right font-medium">
+                        ${(register.openingAmount + register.totalSales).toLocaleString()}
+                      </TableCell>
                       <TableCell className="text-foreground text-right">
                         {register.closingAmount !== null
                           ? `$${register.closingAmount.toLocaleString()}`
+                          : '-'}
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${
+                        register.closingAmount !== null
+                          ? register.closingAmount - (register.openingAmount + register.totalSales) < 0
+                            ? 'text-destructive'
+                            : register.closingAmount - (register.openingAmount + register.totalSales) > 0
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                          : ''
+                      }`}>
+                        {register.closingAmount !== null
+                          ? (() => {
+                              const diff = register.closingAmount - (register.openingAmount + register.totalSales)
+                              return `${diff > 0 ? '+' : ''}$${diff.toLocaleString()}`
+                            })()
                           : '-'}
                       </TableCell>
                       <TableCell>
