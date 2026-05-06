@@ -116,6 +116,9 @@
 }
 
 @layer base {
+  html {
+    font-size: 16px; /* Restaurado a 16px para no romper la altura en 768px */
+  }
   * {
     @apply border-border outline-ring/50;
   }

@@ -48,7 +48,7 @@ export function LockerGrid({ lockers, selectedLockerId, onSelectLocker }: Locker
                   onClick={() => !isOccupied && locker && onSelectLocker(locker.id)}
                   disabled={isOccupied}
                   className={cn(
-                    'py-2 px-3 rounded text-xs font-medium transition-all',
+                    'py-2 px-2 rounded text-sm font-medium transition-all min-h-[2.5rem]',
                     'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
                     isOccupied
                       ? 'bg-muted text-muted-foreground cursor-not-allowed'
