@@ -6,7 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ['sequelize'],
+  serverExternalPackages: ['sequelize', 'mysql2'],
 }
 
 export default nextConfig
