@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { DbInitProvider } from '@/components/DbInitProvider'
 import { AuthWrapper } from '@/components/auth-wrapper'
 import './globals.css'
@@ -44,7 +43,6 @@ export default function RootLayout({
             {children}
           </AuthWrapper>
         </DbInitProvider>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
