@@ -7,6 +7,11 @@ const nextConfig = {
     unoptimized: true,
   },
   serverExternalPackages: ['sequelize', 'mysql2'],
+  experimental: {
+    outputFileTracingIncludes: {
+      '/**/*': ['./node_modules/mysql2/**/*'],
+    },
+  },
 }
 
 export default nextConfig

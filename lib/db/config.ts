@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize';
+import 'mysql2';
 
 const globalForSequelize = global as unknown as { sequelize: Sequelize };
 
