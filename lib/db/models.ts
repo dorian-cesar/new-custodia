@@ -73,6 +73,7 @@ export class CashRegisterModel extends Model {
   declare totalTransactions: number;
   declare status: 'open' | 'closed';
   declare notes: string;
+  declare openedBy: string | null;
 }
 
 CashRegisterModel.init(
@@ -86,6 +87,7 @@ CashRegisterModel.init(
     totalTransactions: { type: DataTypes.INTEGER, defaultValue: 0 },
     status: { type: DataTypes.STRING, allowNull: false },
     notes: { type: DataTypes.TEXT, allowNull: true },
+    openedBy: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, modelName: 'CashRegister', tableName: 'cash_registers', timestamps: false }
 );

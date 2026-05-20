@@ -44,6 +44,7 @@ export interface CashRegister {
   totalTransactions: number
   status: 'open' | 'closed'
   notes: string
+  openedBy?: string
 }
 
 export interface CashTransaction {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Users, Plus, Pencil, Trash2, Shield,
   User as UserIcon, LogOut, ArrowLeft,
+  History, Clock, BookOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui/table'
 import { useCustodyStore } from '@/lib/custody-store'
 import { getUsers, createUser, updateUser, deleteUser, updatePrice, getInitialState } from '@/app/actions/db-actions'
+import { formatDateTime } from '@/lib/types'
 
 interface UserRow {
   id: number
@@ -65,7 +67,7 @@ export default function AdminPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Price edit dialog state
-  const { lockerSizes, hydrateState } = useCustodyStore()
+  const { lockerSizes, hydrateState, cashRegisters } = useCustodyStore()
   const [showEditPriceDialog, setShowEditPriceDialog] = useState(false)
   const [editingSize, setEditingSize] = useState<{size: string, label: string} | null>(null)
   const [editPrice, setEditPrice] = useState<string>('')
@@ -375,6 +377,69 @@ export default function AdminPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* ── Cash Register Supervision / Session History Section ── */}
+        <div className="bg-card rounded-xl p-6 border border-border mt-8">
+          <div className="flex items-center gap-2 mb-6">
+            <History className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-card-foreground">Historial de Turnos y Cajas</h2>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">CAJERO</TableHead>
+                  <TableHead className="text-muted-foreground">APERTURA</TableHead>
+                  <TableHead className="text-muted-foreground">CIERRE</TableHead>
+                  <TableHead className="text-muted-foreground">MONTO INICIAL</TableHead>
+                  <TableHead className="text-muted-foreground">MONTO FINAL</TableHead>
+                  <TableHead className="text-muted-foreground">VENTAS TOTALES</TableHead>
+                  <TableHead className="text-muted-foreground">ESTADO</TableHead>
+                  <TableHead className="text-muted-foreground">NOTAS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cashRegisters.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No hay turnos registrados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  [...cashRegisters]
+                    .sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())
+                    .map((register) => (
+                      <TableRow key={register.id} className="border-border">
+                        <TableCell className="text-foreground font-medium">{register.openedBy || 'desconocido'}</TableCell>
+                        <TableCell className="text-foreground text-sm">{formatDateTime(register.openedAt)}</TableCell>
+                        <TableCell className="text-foreground text-sm">
+                          {register.closedAt ? formatDateTime(register.closedAt) : <span className="text-emerald-500 font-medium">Activo ahora</span>}
+                        </TableCell>
+                        <TableCell className="text-foreground">${register.openingAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-foreground">
+                          {register.closingAmount !== null ? `$${register.closingAmount.toLocaleString()}` : '-'}
+                        </TableCell>
+                        <TableCell className="text-foreground">${register.totalSales.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            register.status === 'open' 
+                              ? 'bg-emerald-500/20 text-emerald-500' 
+                              : 'bg-zinc-500/20 text-zinc-400'
+                          }`}>
+                            {register.status === 'open' ? 'Abierta' : 'Cerrada'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate" title={register.notes}>
+                          {register.notes || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
               </TableBody>
             </Table>
           </div>

@@ -216,6 +216,7 @@ export const useCustodyStore = create<CustodyState>()(
         totalTransactions: 0,
         status: 'open',
         notes,
+        openedBy: get().currentUser?.username || 'desconocido',
       }
 
       // Sync to DB
