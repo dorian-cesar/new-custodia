@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Ticket } from './ticket'
+import { DeliveryTicket } from './delivery-ticket'
 import { Barcode as BarcodeIcon, Hash, Key, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,11 +49,17 @@ export function ClientRegistration({
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false)
 
   const ticketRef = useRef<HTMLDivElement>(null)
+  const deliveryTicketRef = useRef<HTMLDivElement>(null)
   const [lastPrintedId, setLastPrintedId] = useState<number | null>(null)
 
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: 'Ticket_Custodia',
+  })
+
+  const handlePrintDelivery = useReactToPrint({
+    contentRef: deliveryTicketRef,
+    documentTitle: 'Ticket_Retiro',
   })
 
   useEffect(() => {
@@ -122,6 +129,11 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number) => {
+    // Print the delivery ticket first while the state is still present
+    if (pendingRecord) {
+      handlePrintDelivery()
+    }
+
     const success = await onDeliver(code, extraCharge)
     if (success) {
       setDeliveryCode('')
@@ -135,6 +147,7 @@ export function ClientRegistration({
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
       <Ticket ref={ticketRef} record={currentRecord} />
+      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} />
       
       <div className="flex items-center gap-2 mb-6">
         <BarcodeIcon className="h-5 w-5 text-muted-foreground" />
