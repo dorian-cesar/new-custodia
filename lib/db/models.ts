@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from './config';
+import bcrypt from 'bcryptjs';
 
 export class LockerModel extends Model {
   declare id: number;
@@ -121,8 +122,18 @@ export const syncDatabase = async () => {
   const userCount = await UserModel.count();
   if (userCount === 0) {
     await UserModel.bulkCreate([
-      { username: 'cajero', passwordHash: '1234', role: 'cajero' },
-      { username: 'admin', passwordHash: 'admin123', role: 'supervisor' }
+      { username: 'cajero', passwordHash: '$2b$10$Dcf44J8hRETqHoVVt9SjSOIhgpTKfSrIgmslX66/D2VLvBCrjWjIa', role: 'cajero' },
+      { username: 'admin', passwordHash: '$2b$10$nX6EO8cjj6IgIo08gpSPH.ver2Abxigm8qBuxFYv2WzxxwrphcOze', role: 'supervisor' }
     ] as any[]);
+  } else {
+    // Migration: Hash any existing plaintext passwords
+    const users = await UserModel.findAll();
+    for (const user of users) {
+      const u = user as any;
+      if (u.passwordHash && !u.passwordHash.startsWith('$2')) {
+        const hashed = await bcrypt.hash(u.passwordHash, 10);
+        await UserModel.update({ passwordHash: hashed }, { where: { id: u.id } });
+      }
+    }
   }
 };

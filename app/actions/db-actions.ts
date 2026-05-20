@@ -15,6 +15,7 @@ import type {
   CashRegister, 
   CashTransaction 
 } from '@/lib/types';
+import bcrypt from 'bcryptjs';
 
 // Ensure DB is synced before any operations
 const initDbAndFetch = async () => {
@@ -97,8 +98,8 @@ export async function dbAddTransaction(transactionData: Omit<CashTransaction, 'i
 
 export async function loginCajero(username: string, passwordHash: string) {
   await syncDatabase();
-  const user = await UserModel.findOne({ where: { username, passwordHash } });
-  if (!user) {
+  const user = await UserModel.findOne({ where: { username } });
+  if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
     return { success: false, error: 'Credenciales inválidas' };
   }
   if (user.role !== 'cajero') {
@@ -109,8 +110,8 @@ export async function loginCajero(username: string, passwordHash: string) {
 
 export async function verifySupervisor(username: string, passwordHash: string) {
   await syncDatabase();
-  const user = await UserModel.findOne({ where: { username, passwordHash } });
-  if (!user) {
+  const user = await UserModel.findOne({ where: { username } });
+  if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
     return { success: false, error: 'Credenciales de supervisor inválidas' };
   }
   if (user.role !== 'supervisor') {
@@ -122,8 +123,8 @@ export async function verifySupervisor(username: string, passwordHash: string) {
 // ── Admin: login universal (cajero + supervisor) ──
 export async function loginUser(username: string, passwordHash: string) {
   await syncDatabase();
-  const user = await UserModel.findOne({ where: { username, passwordHash } });
-  if (!user) {
+  const user = await UserModel.findOne({ where: { username } });
+  if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
     return { success: false, error: 'Credenciales inválidas' };
   }
   return { success: true, user: user.get({ plain: true }) };
@@ -144,7 +145,8 @@ export async function createUser(username: string, passwordHash: string, role: '
   try {
     const existing = await UserModel.findOne({ where: { username } });
     if (existing) return { success: false, error: 'El nombre de usuario ya existe' };
-    const user = await UserModel.create({ username, passwordHash, role } as any);
+    const hashed = await bcrypt.hash(passwordHash, 10);
+    const user = await UserModel.create({ username, passwordHash: hashed, role } as any);
     const plain = user.get({ plain: true }) as any;
     return { success: true, user: { id: plain.id, username: plain.username, role: plain.role } };
   } catch (error: any) {
@@ -161,7 +163,13 @@ export async function updateUser(id: number, data: { username?: string; password
       const dup = await UserModel.findOne({ where: { username: data.username } });
       if (dup) return { success: false, error: 'El nombre de usuario ya existe' };
     }
-    await UserModel.update(data as any, { where: { id } });
+    
+    const updateData: any = { ...data };
+    if (updateData.passwordHash) {
+      updateData.passwordHash = await bcrypt.hash(updateData.passwordHash, 10);
+    }
+    
+    await UserModel.update(updateData, { where: { id } });
     const updated = await UserModel.findByPk(id);
     const plain = updated!.get({ plain: true }) as any;
     return { success: true, user: { id: plain.id, username: plain.username, role: plain.role } };
