@@ -133,7 +133,7 @@ UserModel.init(
 );
 
 export const syncDatabase = async () => {
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
   
   // Seed default users if none exist
   const userCount = await UserModel.count();
