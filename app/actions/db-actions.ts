@@ -118,3 +118,66 @@ export async function verifySupervisor(username: string, passwordHash: string) {
   }
   return { success: true };
 }
+
+// ── Admin: login universal (cajero + supervisor) ──
+export async function loginUser(username: string, passwordHash: string) {
+  await syncDatabase();
+  const user = await UserModel.findOne({ where: { username, passwordHash } });
+  if (!user) {
+    return { success: false, error: 'Credenciales inválidas' };
+  }
+  return { success: true, user: user.get({ plain: true }) };
+}
+
+// ── Admin: CRUD de usuarios ──
+export async function getUsers() {
+  await syncDatabase();
+  const users = await UserModel.findAll({ order: [['id', 'ASC']] });
+  return users.map(u => {
+    const plain = u.get({ plain: true }) as any;
+    return { id: plain.id as number, username: plain.username as string, role: plain.role as string };
+  });
+}
+
+export async function createUser(username: string, passwordHash: string, role: 'cajero' | 'supervisor') {
+  await syncDatabase();
+  try {
+    const existing = await UserModel.findOne({ where: { username } });
+    if (existing) return { success: false, error: 'El nombre de usuario ya existe' };
+    const user = await UserModel.create({ username, passwordHash, role } as any);
+    const plain = user.get({ plain: true }) as any;
+    return { success: true, user: { id: plain.id, username: plain.username, role: plain.role } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateUser(id: number, data: { username?: string; passwordHash?: string; role?: string }) {
+  await syncDatabase();
+  try {
+    const existing = await UserModel.findByPk(id);
+    if (!existing) return { success: false, error: 'Usuario no encontrado' };
+    if (data.username && data.username !== existing.username) {
+      const dup = await UserModel.findOne({ where: { username: data.username } });
+      if (dup) return { success: false, error: 'El nombre de usuario ya existe' };
+    }
+    await UserModel.update(data as any, { where: { id } });
+    const updated = await UserModel.findByPk(id);
+    const plain = updated!.get({ plain: true }) as any;
+    return { success: true, user: { id: plain.id, username: plain.username, role: plain.role } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUser(id: number) {
+  await syncDatabase();
+  try {
+    const user = await UserModel.findByPk(id);
+    if (!user) return { success: false, error: 'Usuario no encontrado' };
+    await UserModel.destroy({ where: { id } });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

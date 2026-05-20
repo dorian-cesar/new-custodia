@@ -145,7 +145,7 @@ export default function HistorialPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">CODIGO</TableHead>
+                  <TableHead className="text-muted-foreground">CÓDIGO / RUT</TableHead>
                   <TableHead className="text-muted-foreground"># CASILLERO</TableHead>
                   <TableHead className="text-muted-foreground">RUT/DNI</TableHead>
                   <TableHead className="text-muted-foreground">ENTRADA</TableHead>

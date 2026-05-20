@@ -1,0 +1,419 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  Users, Plus, Pencil, Trash2, Shield,
+  User as UserIcon, LogOut, ArrowLeft,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import { useCustodyStore } from '@/lib/custody-store'
+import { getUsers, createUser, updateUser, deleteUser } from '@/app/actions/db-actions'
+
+interface UserRow {
+  id: number
+  username: string
+  role: string
+}
+
+export default function AdminPage() {
+  const router = useRouter()
+  const { currentUser, logout } = useCustodyStore()
+
+  const [users, setUsers] = useState<UserRow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  // Create dialog state
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [newUsername, setNewUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newRole, setNewRole] = useState<string>('cajero')
+  const [createError, setCreateError] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+
+  // Edit dialog state
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null)
+  const [editUsername, setEditUsername] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+  const [editRole, setEditRole] = useState<string>('cajero')
+  const [editError, setEditError] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+
+  // Delete dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (mounted && currentUser?.role === 'supervisor') loadUsers()
+  }, [mounted, currentUser])
+
+  const loadUsers = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getUsers()
+      setUsers(data)
+    } catch (err) {
+      console.error('Error loading users:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // ── Guards ──
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Cargando...</div>
+      </div>
+    )
+  }
+
+  if (!currentUser || currentUser.role !== 'supervisor') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card w-full max-w-md rounded-xl border border-border p-8 shadow-lg text-center">
+          <Shield className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-foreground mb-2">Acceso Restringido</h2>
+          <p className="text-muted-foreground mb-6">
+            Solo los supervisores pueden acceder al panel de administración.
+          </p>
+          <Button onClick={() => router.push('/')} className="bg-primary hover:bg-primary/90">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver al Inicio
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Handlers ──
+  const handleCreate = async () => {
+    setCreateError('')
+    if (!newUsername.trim()) { setCreateError('Ingrese un nombre de usuario'); return }
+    if (!newPassword.trim()) { setCreateError('Ingrese una contraseña'); return }
+
+    setIsCreating(true)
+    try {
+      const result = await createUser(newUsername.trim(), newPassword, newRole as 'cajero' | 'supervisor')
+      if (result.success) {
+        setShowCreateDialog(false)
+        setNewUsername(''); setNewPassword(''); setNewRole('cajero')
+        await loadUsers()
+      } else {
+        setCreateError(result.error || 'Error al crear usuario')
+      }
+    } catch { setCreateError('Error inesperado') }
+    finally { setIsCreating(false) }
+  }
+
+  const openEditDialog = (user: UserRow) => {
+    setEditingUser(user)
+    setEditUsername(user.username)
+    setEditPassword('')
+    setEditRole(user.role)
+    setEditError('')
+    setShowEditDialog(true)
+  }
+
+  const handleEdit = async () => {
+    if (!editingUser) return
+    setEditError('')
+    if (!editUsername.trim()) { setEditError('El nombre no puede estar vacío'); return }
+
+    setIsEditing(true)
+    try {
+      const updateData: any = { username: editUsername.trim(), role: editRole }
+      if (editPassword.trim()) updateData.passwordHash = editPassword
+
+      const result = await updateUser(editingUser.id, updateData)
+      if (result.success) {
+        setShowEditDialog(false)
+        setEditingUser(null)
+        await loadUsers()
+      } else {
+        setEditError(result.error || 'Error al actualizar')
+      }
+    } catch { setEditError('Error inesperado') }
+    finally { setIsEditing(false) }
+  }
+
+  const openDeleteDialog = (user: UserRow) => {
+    setDeletingUser(user)
+    setShowDeleteDialog(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deletingUser) return
+    setIsDeleting(true)
+    try {
+      const result = await deleteUser(deletingUser.id)
+      if (result.success) {
+        setShowDeleteDialog(false)
+        setDeletingUser(null)
+        await loadUsers()
+      }
+    } catch (err) { console.error('Error deleting user:', err) }
+    finally { setIsDeleting(false) }
+  }
+
+  const handleLogout = () => { logout(); router.push('/') }
+
+  // ── Render ──
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/20 rounded-lg">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Panel de Administración</h1>
+            <p className="text-sm text-muted-foreground">Gestión de Usuarios del Sistema</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground capitalize">
+              {currentUser.username}
+            </span>
+          </div>
+          <Button
+            variant="outline" size="sm"
+            onClick={handleLogout}
+            className="text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/20"
+            title="Cerrar sesión"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-6 py-8">
+        <div className="bg-card rounded-xl p-6 border border-border">
+          {/* Title + Create button */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-card-foreground">Usuarios del Sistema</h2>
+              <span className="text-sm text-muted-foreground ml-2">({users.length})</span>
+            </div>
+            <Button
+              onClick={() => { setCreateError(''); setShowCreateDialog(true) }}
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo Usuario
+            </Button>
+          </div>
+
+          {/* Users Table */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+                <p className="text-muted-foreground">Cargando usuarios...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">ID</TableHead>
+                    <TableHead className="text-muted-foreground">USUARIO</TableHead>
+                    <TableHead className="text-muted-foreground">ROL</TableHead>
+                    <TableHead className="text-muted-foreground text-right">ACCIONES</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No hay usuarios registrados
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user) => (
+                      <TableRow key={user.id} className="border-border">
+                        <TableCell className="text-foreground font-mono">{user.id}</TableCell>
+                        <TableCell className="text-foreground font-medium">{user.username}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'supervisor'
+                              ? 'bg-primary/20 text-primary'
+                              : 'bg-accent/20 text-accent'
+                          }`}>
+                            {user.role === 'supervisor'
+                              ? <Shield className="h-3 w-3" />
+                              : <UserIcon className="h-3 w-3" />
+                            }
+                            {user.role === 'supervisor' ? 'Supervisor' : 'Cajero'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openEditDialog(user)} className="gap-1">
+                              <Pencil className="h-3.5 w-3.5" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline" size="sm"
+                              onClick={() => openDeleteDialog(user)}
+                              className="gap-1 text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/20"
+                              disabled={user.id === currentUser.id}
+                              title={user.id === currentUser.id ? 'No puedes eliminar tu propia cuenta' : ''}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Eliminar
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* ── Create User Dialog ── */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Crear Nuevo Usuario
+            </DialogTitle>
+            <DialogDescription>Ingrese los datos del nuevo usuario del sistema</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nombre de Usuario</Label>
+              <Input type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="ej. cajero2" className="bg-input" />
+            </div>
+            <div className="space-y-2">
+              <Label>Contraseña</Label>
+              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••" className="bg-input" />
+            </div>
+            <div className="space-y-2">
+              <Label>Rol</Label>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger className="bg-input"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cajero">Cajero</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {createError && <p className="text-sm text-destructive">{createError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowCreateDialog(false)} disabled={isCreating}>Cancelar</Button>
+            <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90" disabled={isCreating}>
+              {isCreating ? 'Creando...' : 'Crear Usuario'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit User Dialog ── */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Editar Usuario
+            </DialogTitle>
+            <DialogDescription>
+              Modifique los datos. Deje la contraseña vacía para mantener la actual.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nombre de Usuario</Label>
+              <Input type="text" value={editUsername} onChange={(e) => setEditUsername(e.target.value)} className="bg-input" />
+            </div>
+            <div className="space-y-2">
+              <Label>Nueva Contraseña (opcional)</Label>
+              <Input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)}
+                placeholder="Dejar vacío para no cambiar" className="bg-input" />
+            </div>
+            <div className="space-y-2">
+              <Label>Rol</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger className="bg-input"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cajero">Cajero</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowEditDialog(false)} disabled={isEditing}>Cancelar</Button>
+            <Button onClick={handleEdit} className="bg-primary hover:bg-primary/90" disabled={isEditing}>
+              {isEditing ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation ── */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Eliminar Usuario
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro que desea eliminar al usuario{' '}
+              <strong className="text-foreground">{deletingUser?.username}</strong>?
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}

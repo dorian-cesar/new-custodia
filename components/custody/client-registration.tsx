@@ -41,6 +41,7 @@ export function ClientRegistration({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [extraAmount, setExtraAmount] = useState(0)
   const [extraHours, setExtraHours] = useState(0)
+  const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(null)
 
   const ticketRef = useRef<HTMLDivElement>(null)
   const [lastPrintedId, setLastPrintedId] = useState<number | null>(null)
@@ -77,15 +78,15 @@ export function ClientRegistration({
   const handleDeliverClick = () => {
     setDeliveryError('')
     if (!deliveryCode.trim()) {
-      setDeliveryError('Ingrese el codigo de custodia')
+      setDeliveryError('Ingrese el código de custodia o RUT del cliente')
       return
     }
 
-    const code = deliveryCode.trim()
-    const record = getRecordByCode(code)
+    const input = deliveryCode.trim()
+    const record = getRecordByCode(input)
 
     if (!record) {
-      setDeliveryError('Codigo no encontrado o ya entregado')
+      setDeliveryError('Código o RUT no encontrado, o custodia ya entregada')
       return
     }
 
@@ -99,19 +100,21 @@ export function ClientRegistration({
       if (amount > 0) {
         setExtraHours(extraH)
         setExtraAmount(amount)
+        setPendingRecord(record)
         setIsModalOpen(true)
         return
       }
     }
 
-    // Default processing if <= 24h
-    confirmDelivery(code, 0)
+    // Entrega directa si <= 24h — usa record.code (no el input del usuario)
+    confirmDelivery(record.code, 0)
   }
 
   const confirmDelivery = async (code: string, extraCharge: number) => {
     const success = await onDeliver(code, extraCharge)
     if (success) {
       setDeliveryCode('')
+      setPendingRecord(null)
       setIsModalOpen(false)
     } else {
       setDeliveryError('Error procesando la entrega')
@@ -163,12 +166,12 @@ export function ClientRegistration({
         <div className="border-t border-border pt-4 space-y-3">
           <Label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Key className="h-4 w-4" />
-            Entregar Custodia
+            Entregar Custodia (Código o RUT)
           </Label>
           <Input
             value={deliveryCode}
             onChange={(e) => setDeliveryCode(e.target.value)}
-            placeholder="Ingrese codigo de custodia"
+            placeholder="Código de barras o RUT / DNI"
             className="bg-input"
           />
           {deliveryError && (
@@ -220,7 +223,7 @@ export function ClientRegistration({
             <Button
               type="button"
               className="bg-primary hover:bg-primary/90"
-              onClick={() => confirmDelivery(deliveryCode.trim(), extraAmount)}
+              onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount)}
             >
               Confirmar Pago y Entregar
             </Button>

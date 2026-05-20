@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCustodyStore } from '@/lib/custody-store'
-import { loginCajero } from '@/app/actions/db-actions'
+import { loginUser } from '@/app/actions/db-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +11,7 @@ import { Lock, User as UserIcon } from 'lucide-react'
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { currentUser, login } = useCustodyStore()
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
   
   const [username, setUsername] = useState('')
@@ -36,9 +38,12 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
 
       try {
-        const result = await loginCajero(username, password)
+        const result = await loginUser(username, password)
         if (result.success && result.user) {
           login(result.user)
+          if (result.user.role === 'supervisor') {
+            router.push('/admin')
+          }
         } else {
           setError(result.error || 'Error al iniciar sesión')
         }
@@ -57,7 +62,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
               <Lock className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Sistema de Custodia</h1>
-            <p className="text-muted-foreground mt-2">Ingrese sus credenciales de Cajero</p>
+            <p className="text-muted-foreground mt-2">Ingrese sus credenciales para acceder</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">

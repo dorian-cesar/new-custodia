@@ -149,7 +149,12 @@ export const useCustodyStore = create<CustodyState>()(
 
     getRecordByCode: (code) => {
       const { records } = get()
-      return records.find((r) => r.code === code && r.status === 'Activo') || null
+      // 1. Buscar por código exacto de barras
+      const byCode = records.find((r) => r.code === code && r.status === 'Activo')
+      if (byCode) return byCode
+      // 2. Buscar por documento del cliente (RUT/DNI/Pasaporte) — FIFO: el más antiguo primero
+      const byDocument = records.filter((r) => r.clientDocument === code && r.status === 'Activo')
+      return byDocument.length > 0 ? byDocument[byDocument.length - 1] : null
     },
 
     deliverRecord: async (recordId, extraCharge = 0) => {
