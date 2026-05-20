@@ -1,7 +1,7 @@
 'use client'
 
 import React, { forwardRef, useEffect, useRef } from 'react'
-import { type CustodyRecord, formatDateTime, LOCKER_SIZES } from '@/lib/types'
+import { type CustodyRecord, formatDateTime } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
 import JsBarcode from 'jsbarcode'
 
@@ -12,6 +12,7 @@ interface TicketProps {
 export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) => {
   const barcodeRef = useRef<SVGSVGElement>(null)
   const lockers = useCustodyStore((state) => state.lockers)
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
   useEffect(() => {
     if (barcodeRef.current && record?.code) {
@@ -34,7 +35,7 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
 
   if (!record) return null
 
-  const sizeLabel = LOCKER_SIZES.find((s) => s.value === record.size)?.label || record.size
+  const sizeLabel = lockerSizes.find((s) => s.value === record.size)?.label || record.size
   const locker = lockers.find((l) => l.id === record.lockerId)
   const lockerDisplay = locker ? `${locker.row},${locker.col}` : record.lockerId
 

@@ -22,10 +22,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useCustodyStore } from '@/lib/custody-store'
-import { LOCKER_SIZES, formatDateTime, type LockerSize } from '@/lib/types'
+import { formatDateTime, type LockerSize } from '@/lib/types'
 
 export default function HistorialPage() {
-  const { records, lockers } = useCustodyStore()
+  const { records, lockers, lockerSizes } = useCustodyStore()
   const [mounted, setMounted] = useState(false)
   const [searchDocument, setSearchDocument] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -48,7 +48,7 @@ export default function HistorialPage() {
   }, [records, searchDocument, filterStatus, filterSize])
 
   const getSizeLabel = (size: LockerSize) => {
-    return LOCKER_SIZES.find((s) => s.value === size)?.label || size
+    return lockerSizes.find((s) => s.value === size)?.label || size
   }
 
   const getLockerDisplay = (lockerId: number) => {
@@ -122,7 +122,7 @@ export default function HistorialPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas las tallas</SelectItem>
-                  {LOCKER_SIZES.map((size) => (
+                  {lockerSizes.map((size) => (
                     <SelectItem key={size.value} value={size.value}>
                       {size.label}
                     </SelectItem>

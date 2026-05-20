@@ -43,6 +43,10 @@ export function ClientRegistration({
   const [extraHours, setExtraHours] = useState(0)
   const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(null)
 
+  // State for Multiple Records Selection Modal
+  const [multiRecords, setMultiRecords] = useState<CustodyRecord[]>([])
+  const [isMultiModalOpen, setIsMultiModalOpen] = useState(false)
+
   const ticketRef = useRef<HTMLDivElement>(null)
   const [lastPrintedId, setLastPrintedId] = useState<number | null>(null)
 
@@ -63,7 +67,7 @@ export function ClientRegistration({
     }
   }, [currentRecord, lastPrintedId, handlePrint])
   
-  const getRecordByCode = useCustodyStore((state) => state.getRecordByCode)
+  const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
   const lockers = useCustodyStore((state) => state.lockers)
   const selectedLocker = lockers.find(l => l.id === selectedLockerId)
   const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
@@ -75,21 +79,8 @@ export function ClientRegistration({
     onGenerateBarcode()
   }
 
-  const handleDeliverClick = () => {
-    setDeliveryError('')
-    if (!deliveryCode.trim()) {
-      setDeliveryError('Ingrese el código de custodia o RUT del cliente')
-      return
-    }
-
-    const input = deliveryCode.trim()
-    const record = getRecordByCode(input)
-
-    if (!record) {
-      setDeliveryError('Código o RUT no encontrado, o custodia ya entregada')
-      return
-    }
-
+  const processDelivery = (record: CustodyRecord) => {
+    setIsMultiModalOpen(false)
     const diffMs = Date.now() - new Date(record.entryTime).getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
 
@@ -106,8 +97,31 @@ export function ClientRegistration({
       }
     }
 
-    // Entrega directa si <= 24h — usa record.code (no el input del usuario)
+    // Entrega directa si <= 24h
     confirmDelivery(record.code, 0)
+  }
+
+  const handleDeliverClick = () => {
+    setDeliveryError('')
+    if (!deliveryCode.trim()) {
+      setDeliveryError('Ingrese el código de custodia o RUT del cliente')
+      return
+    }
+
+    const input = deliveryCode.trim()
+    const records = getActiveRecordsByInput(input)
+
+    if (records.length === 0) {
+      setDeliveryError('Código o RUT no encontrado, o custodia ya entregada')
+      return
+    }
+
+    if (records.length === 1) {
+      processDelivery(records[0])
+    } else {
+      setMultiRecords(records)
+      setIsMultiModalOpen(true)
+    }
   }
 
   const confirmDelivery = async (code: string, extraCharge: number) => {
@@ -226,6 +240,63 @@ export function ClientRegistration({
               onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount)}
             >
               Confirmar Pago y Entregar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MULTIPLE RECORDS MODAL */}
+      <Dialog open={isMultiModalOpen} onOpenChange={setIsMultiModalOpen}>
+        <DialogContent className="bg-card border-border max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Hash className="h-5 w-5" />
+              Múltiples Casilleros Encontrados
+            </DialogTitle>
+            <DialogDescription>
+              El RUT ingresado tiene varios casilleros activos. Seleccione cuál desea entregar:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-secondary/20">
+                <tr>
+                  <th className="px-4 py-2">Código</th>
+                  <th className="px-4 py-2">Casillero</th>
+                  <th className="px-4 py-2">Tamaño</th>
+                  <th className="px-4 py-2">Entrada</th>
+                  <th className="px-4 py-2 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {multiRecords.map((r) => {
+                  const locker = lockers.find(l => l.id === r.lockerId)
+                  return (
+                    <tr key={r.id} className="border-b border-border/50">
+                      <td className="px-4 py-3 font-mono">{r.code}</td>
+                      <td className="px-4 py-3">{locker ? `${locker.row},${locker.col}` : r.lockerId}</td>
+                      <td className="px-4 py-3">{r.size}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                        {new Date(r.entryTime).toLocaleString('es-CL')}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button 
+                          size="sm" 
+                          onClick={() => processDelivery(r)}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          Seleccionar
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setIsMultiModalOpen(false)}>
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -10,6 +10,7 @@ import {
   generateLockers,
   generateCode,
   LOCKER_SIZES,
+  type LockerSizeOption,
 } from './types'
 
 import {
@@ -34,12 +35,13 @@ interface CustodyState {
   records: CustodyRecord[]
   cashRegisters: CashRegister[]
   cashTransactions: CashTransaction[]
-  cashTransactions: CashTransaction[]
   currentCashRegister: CashRegister | null
   currentUser: User | null
+  lockerSizes: LockerSizeOption[]
 
   // Hydration
-  hydrateState: (state: { lockers: Locker[], records: CustodyRecord[], cashRegisters: CashRegister[], cashTransactions: CashTransaction[] }) => void
+  hydrateState: (state: { lockers: Locker[], records: CustodyRecord[], cashRegisters: CashRegister[], cashTransactions: CashTransaction[], lockerSizes?: LockerSizeOption[] }) => void
+  setLockerSizes: (sizes: LockerSizeOption[]) => void
   
   // Auth actions
   login: (user: User) => void
@@ -51,6 +53,7 @@ interface CustodyState {
 
   // Record actions
   getRecordByCode: (code: string) => CustodyRecord | null
+  getActiveRecordsByInput: (input: string) => CustodyRecord[]
   createRecord: (lockerId: number, clientDocument: string, size: LockerSize) => Promise<CustodyRecord | null>
   deliverRecord: (recordId: number, extraCharge?: number) => Promise<boolean>
 
@@ -66,10 +69,10 @@ export const useCustodyStore = create<CustodyState>()(
     lockers: [],
     records: [],
     cashRegisters: [],
-    cashRegisters: [],
     cashTransactions: [],
     currentCashRegister: null,
     currentUser: null,
+    lockerSizes: LOCKER_SIZES,
 
     login: (user) => set({ currentUser: user }),
     logout: () => set({ currentUser: null }),
@@ -80,9 +83,12 @@ export const useCustodyStore = create<CustodyState>()(
         records: dbState.records,
         cashRegisters: dbState.cashRegisters,
         cashTransactions: dbState.cashTransactions,
+        lockerSizes: dbState.lockerSizes || get().lockerSizes,
         currentCashRegister: dbState.cashRegisters.find(r => r.status === 'open') || null
       })
     },
+
+    setLockerSizes: (sizes) => set({ lockerSizes: sizes }),
 
     occupyLocker: async (lockerId, recordId) => {
       // Sync to DB
@@ -118,7 +124,7 @@ export const useCustodyStore = create<CustodyState>()(
         return null
       }
 
-      const sizeOption = LOCKER_SIZES.find((s) => s.value === size)
+      const sizeOption = get().lockerSizes.find((s) => s.value === size)
       if (!sizeOption) return null
 
       const code = generateCode(clientDocument)
@@ -155,6 +161,17 @@ export const useCustodyStore = create<CustodyState>()(
       // 2. Buscar por documento del cliente (RUT/DNI/Pasaporte) — FIFO: el más antiguo primero
       const byDocument = records.filter((r) => r.clientDocument === code && r.status === 'Activo')
       return byDocument.length > 0 ? byDocument[byDocument.length - 1] : null
+    },
+
+    getActiveRecordsByInput: (input) => {
+      const { records } = get()
+      // Si es un código exacto de barras (suele ser único)
+      const byCode = records.filter((r) => r.code === input && r.status === 'Activo')
+      if (byCode.length > 0) return byCode
+
+      // Si es por RUT, devolver todos los activos, ordenados por antigüedad
+      const byDocument = records.filter((r) => r.clientDocument === input && r.status === 'Activo')
+      return byDocument.sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime())
     },
 
     deliverRecord: async (recordId, extraCharge = 0) => {

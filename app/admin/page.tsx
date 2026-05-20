@@ -26,7 +26,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { useCustodyStore } from '@/lib/custody-store'
-import { getUsers, createUser, updateUser, deleteUser } from '@/app/actions/db-actions'
+import { getUsers, createUser, updateUser, deleteUser, updatePrice, getInitialState } from '@/app/actions/db-actions'
 
 interface UserRow {
   id: number
@@ -63,6 +63,14 @@ export default function AdminPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Price edit dialog state
+  const { lockerSizes, hydrateState } = useCustodyStore()
+  const [showEditPriceDialog, setShowEditPriceDialog] = useState(false)
+  const [editingSize, setEditingSize] = useState<{size: string, label: string} | null>(null)
+  const [editPrice, setEditPrice] = useState<string>('')
+  const [priceError, setPriceError] = useState('')
+  const [isSavingPrice, setIsSavingPrice] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -180,6 +188,42 @@ export default function AdminPage() {
   }
 
   const handleLogout = () => { logout(); router.push('/') }
+
+  // ── Price Handlers ──
+  const openEditPriceDialog = (sizeObj: { value: string, label: string, price: number }) => {
+    setEditingSize({ size: sizeObj.value, label: sizeObj.label })
+    setEditPrice(sizeObj.price.toString())
+    setPriceError('')
+    setShowEditPriceDialog(true)
+  }
+
+  const handleEditPrice = async () => {
+    if (!editingSize) return
+    const newPrice = parseInt(editPrice, 10)
+    if (isNaN(newPrice) || newPrice <= 0) {
+      setPriceError('Ingrese un precio válido')
+      return
+    }
+
+    setIsSavingPrice(true)
+    try {
+      const result = await updatePrice(editingSize.size, newPrice)
+      if (result.success) {
+        setShowEditPriceDialog(false)
+        setEditingSize(null)
+        // Refresh full DB state to update store
+        const res = await getInitialState()
+        if (res.success && res.data) hydrateState(res.data)
+      } else {
+        setPriceError(result.error || 'Error al actualizar precio')
+      }
+    } catch (err) {
+      console.error(err)
+      setPriceError('Error inesperado')
+    } finally {
+      setIsSavingPrice(false)
+    }
+  }
 
   // ── Render ──
   return (
@@ -301,6 +345,40 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* ── Prices Section ── */}
+        <div className="bg-card rounded-xl p-6 border border-border mt-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Shield className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-card-foreground">Precios de Casilleros</h2>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">TAMAÑO</TableHead>
+                  <TableHead className="text-muted-foreground">PRECIO ACTUAL</TableHead>
+                  <TableHead className="text-muted-foreground text-right">ACCIONES</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lockerSizes.map((sizeObj) => (
+                  <TableRow key={sizeObj.value} className="border-border">
+                    <TableCell className="text-foreground font-medium">{sizeObj.label}</TableCell>
+                    <TableCell className="text-foreground">${sizeObj.price.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => openEditPriceDialog(sizeObj)} className="gap-1">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Modificar Precio
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </main>
 
       {/* ── Create User Dialog ── */}
@@ -414,6 +492,41 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Edit Price Dialog ── */}
+      <Dialog open={showEditPriceDialog} onOpenChange={setShowEditPriceDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Modificar Precio
+            </DialogTitle>
+            <DialogDescription>
+              Establezca el nuevo precio para el tamaño <strong className="text-foreground">{editingSize?.label}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Precio ($)</Label>
+              <Input 
+                type="number" 
+                value={editPrice} 
+                onChange={(e) => setEditPrice(e.target.value)} 
+                className="bg-input" 
+                min="0"
+                step="100"
+              />
+            </div>
+            {priceError && <p className="text-sm text-destructive">{priceError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowEditPriceDialog(false)} disabled={isSavingPrice}>Cancelar</Button>
+            <Button onClick={handleEditPrice} className="bg-primary hover:bg-primary/90" disabled={isSavingPrice}>
+              {isSavingPrice ? 'Guardando...' : 'Guardar Precio'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

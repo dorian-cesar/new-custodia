@@ -6,6 +6,7 @@ import {
   CashRegisterModel, 
   CashTransactionModel,
   UserModel,
+  PriceModel,
   syncDatabase
 } from '@/lib/db/models';
 import { generateLockers } from '@/lib/types';
@@ -31,6 +32,7 @@ const initDbAndFetch = async () => {
   const rawRecords = await CustodyRecordModel.findAll();
   const rawRegisters = await CashRegisterModel.findAll();
   const rawTransactions = await CashTransactionModel.findAll();
+  const rawPrices = await PriceModel.findAll({ order: [['price', 'ASC']] });
 
   // Convert from Sequelize instances to plain JS objects with correct typings
   return {
@@ -44,6 +46,10 @@ const initDbAndFetch = async () => {
       ...t.get({ plain: true }),
       type: t.type as 'income' | 'expense'
     })) as CashTransaction[],
+    lockerSizes: rawPrices.map(p => {
+      const pData = p.get({ plain: true });
+      return { value: pData.size, label: pData.label, price: pData.price };
+    }) as any[],
   };
 };
 
@@ -184,6 +190,25 @@ export async function deleteUser(id: number) {
     const user = await UserModel.findByPk(id);
     if (!user) return { success: false, error: 'Usuario no encontrado' };
     await UserModel.destroy({ where: { id } });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// ── Prices: get and update ──
+export async function getPrices() {
+  await syncDatabase();
+  const prices = await PriceModel.findAll({ order: [['price', 'ASC']] });
+  return prices.map(p => p.get({ plain: true })) as { size: string, label: string, price: number }[];
+}
+
+export async function updatePrice(size: string, newPrice: number) {
+  await syncDatabase();
+  try {
+    const priceRecord = await PriceModel.findOne({ where: { size } });
+    if (!priceRecord) return { success: false, error: 'Tamaño no encontrado' };
+    await PriceModel.update({ price: newPrice }, { where: { size } });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

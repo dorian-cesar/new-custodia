@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { LockerGrid } from './locker-grid'
-import { type Locker, type LockerSize, LOCKER_SIZES } from '@/lib/types'
+import { type Locker, type LockerSize } from '@/lib/types'
+import { useCustodyStore } from '@/lib/custody-store'
 
 interface LockerSelectionProps {
   lockers: Locker[]
@@ -32,6 +33,8 @@ export function LockerSelection({
   clientDocument,
   onChangeDocument,
 }: LockerSelectionProps) {
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
+
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
       <div className="flex items-center gap-2 mb-6">
@@ -50,7 +53,7 @@ export function LockerSelection({
               <SelectValue placeholder="Seleccione un tamano..." />
             </SelectTrigger>
             <SelectContent>
-              {LOCKER_SIZES.map((size) => (
+              {lockerSizes.map((size) => (
                 <SelectItem key={size.value} value={size.value}>
                   {size.label} - ${size.price.toLocaleString()}
                 </SelectItem>

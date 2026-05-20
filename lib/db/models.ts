@@ -21,6 +21,21 @@ LockerModel.init(
   { sequelize, modelName: 'Locker', tableName: 'lockers', timestamps: false }
 );
 
+export class PriceModel extends Model {
+  declare size: string;
+  declare label: string;
+  declare price: number;
+}
+
+PriceModel.init(
+  {
+    size: { type: DataTypes.STRING, primaryKey: true },
+    label: { type: DataTypes.STRING, allowNull: false },
+    price: { type: DataTypes.INTEGER, allowNull: false },
+  },
+  { sequelize, modelName: 'Price', tableName: 'prices', timestamps: false }
+);
+
 export class CustodyRecordModel extends Model {
   declare id: number;
   declare code: string;
@@ -135,5 +150,14 @@ export const syncDatabase = async () => {
         await UserModel.update({ passwordHash: hashed }, { where: { id: u.id } });
       }
     }
+  }
+
+  // Seed default prices if none exist
+  const priceCount = await PriceModel.count();
+  if (priceCount === 0) {
+    const { LOCKER_SIZES } = await import('../types');
+    await PriceModel.bulkCreate(
+      LOCKER_SIZES.map(s => ({ size: s.value, label: s.label, price: s.price }))
+    );
   }
 };
