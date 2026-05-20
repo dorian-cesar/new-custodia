@@ -111,6 +111,15 @@ export async function loginCajero(username: string, passwordHash: string) {
   if (user.role !== 'cajero') {
     return { success: false, error: 'Solo los cajeros pueden iniciar sesión' };
   }
+
+  const openRegister = await CashRegisterModel.findOne({ where: { status: 'open' } });
+  if (openRegister) {
+    const plainRegister = openRegister.get({ plain: true }) as any;
+    if (plainRegister.openedBy && plainRegister.openedBy !== user.username) {
+      return { success: false, error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.` };
+    }
+  }
+
   return { success: true, user: user.get({ plain: true }) };
 }
 
@@ -133,6 +142,15 @@ export async function loginUser(username: string, passwordHash: string) {
   if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
     return { success: false, error: 'Credenciales inválidas' };
   }
+
+  const openRegister = await CashRegisterModel.findOne({ where: { status: 'open' } });
+  if (openRegister) {
+    const plainRegister = openRegister.get({ plain: true }) as any;
+    if (plainRegister.openedBy && plainRegister.openedBy !== user.username && user.role !== 'supervisor') {
+      return { success: false, error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.` };
+    }
+  }
+
   return { success: true, user: user.get({ plain: true }) };
 }
 
