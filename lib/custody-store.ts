@@ -165,8 +165,8 @@ export const useCustodyStore = create<CustodyState>()(
 
     getActiveRecordsByInput: (input) => {
       const { records } = get()
-      // Si es un código exacto de barras (suele ser único)
-      const byCode = records.filter((r) => r.code === input && r.status === 'Activo')
+      // Si es un código exacto de barras o la primera parte del código (ej: 225386)
+      const byCode = records.filter((r) => (r.code === input || r.code.startsWith(`${input}/`)) && r.status === 'Activo')
       if (byCode.length > 0) return byCode
 
       // Si es por RUT, devolver todos los activos, ordenados por antigüedad
