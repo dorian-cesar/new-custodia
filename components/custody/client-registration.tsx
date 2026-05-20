@@ -84,21 +84,18 @@ export function ClientRegistration({
     const diffMs = Date.now() - new Date(record.entryTime).getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
 
+    let extraH = 0
+    let amount = 0
+    
     if (diffHours > 24) {
-      const extraH = diffHours - 24
-      const amount = Math.round((record.price / 24) * extraH)
-      
-      if (amount > 0) {
-        setExtraHours(extraH)
-        setExtraAmount(amount)
-        setPendingRecord(record)
-        setIsModalOpen(true)
-        return
-      }
+      extraH = diffHours - 24
+      amount = Math.round((record.price / 24) * extraH)
     }
 
-    // Entrega directa si <= 24h
-    confirmDelivery(record.code, 0)
+    setExtraHours(extraH > 0 ? extraH : 0)
+    setExtraAmount(amount > 0 ? amount : 0)
+    setPendingRecord(record)
+    setIsModalOpen(true)
   }
 
   const handleDeliverClick = () => {
@@ -202,28 +199,67 @@ export function ClientRegistration({
         </div>
       </div>
 
-      {/* Exceeding Time Modal */}
+      {/* Delivery Confirmation Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Recargo por Exceso de Tiempo
+              {extraAmount > 0 ? (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Recargo por Exceso de Tiempo
+                </>
+              ) : (
+                <>
+                  <Key className="h-5 w-5 text-primary" />
+                  Confirmar Entrega
+                </>
+              )}
             </DialogTitle>
             <DialogDescription>
-              Este equipaje superó el límite de 24 horas y tiene un cargo extra proporcional.
+              {extraAmount > 0 
+                ? 'Este equipaje superó el límite de 24 horas y tiene un cargo extra proporcional.'
+                : 'Revise los detalles antes de entregar la maleta al cliente.'}
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col gap-4 py-4">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Horas adicionales:</span>
-              <span className="font-medium">{extraHours.toFixed(2)} hrs</span>
-            </div>
-            <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
-              <span className="font-semibold text-lg">Total extra a cobrar:</span>
-              <span className="font-bold text-2xl text-destructive">${extraAmount.toLocaleString()}</span>
-            </div>
+            {pendingRecord && (() => {
+              const pLocker = lockers.find(l => l.id === pendingRecord.lockerId)
+              return (
+                <div className="bg-secondary/20 p-4 rounded-lg space-y-2 text-sm mb-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Código:</span>
+                    <span className="font-mono">{pendingRecord.code}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Casillero:</span>
+                    <span>{pLocker ? `${pLocker.row},${pLocker.col}` : pendingRecord.lockerId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tamaño:</span>
+                    <span>{pendingRecord.size}</span>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {extraAmount > 0 ? (
+              <>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Horas adicionales:</span>
+                  <span className="font-medium">{extraHours.toFixed(2)} hrs</span>
+                </div>
+                <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
+                  <span className="font-semibold text-lg">Total extra a cobrar:</span>
+                  <span className="font-bold text-2xl text-destructive">${extraAmount.toLocaleString()}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-center items-center p-4">
+                <span className="text-primary font-medium text-lg">Sin recargos adicionales</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="sm:justify-end">
@@ -236,10 +272,10 @@ export function ClientRegistration({
             </Button>
             <Button
               type="button"
-              className="bg-primary hover:bg-primary/90"
+              className={extraAmount > 0 ? "bg-primary hover:bg-primary/90" : "bg-primary hover:bg-primary/90"}
               onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount)}
             >
-              Confirmar Pago y Entregar
+              {extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta'}
             </Button>
           </DialogFooter>
         </DialogContent>
