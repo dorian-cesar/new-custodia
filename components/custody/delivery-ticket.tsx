@@ -8,10 +8,12 @@ interface DeliveryTicketProps {
   record: CustodyRecord | null
   extraHours: number
   extraAmount: number
+  paymentMethod: string
+  extraFolio?: number | null
 }
 
 export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
-  ({ record, extraHours, extraAmount }, ref) => {
+  ({ record, extraHours, extraAmount, paymentMethod, extraFolio }, ref) => {
     const lockers = useCustodyStore((state) => state.lockers)
     const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
@@ -40,6 +42,17 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
           <div style={{ textAlign: 'center', marginBottom: '10px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 5px 0' }}>RETIRO DE EQUIPAJE</h2>
             <div style={{ borderBottom: '1px dashed black', margin: '5px 0' }}></div>
+            {extraFolio && (
+              <div style={{ margin: '5px 0' }}>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold' }}>
+                  BOLETA ELECTRÓNICA
+                </p>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold' }}>
+                  FOLIO RECARGO N° {extraFolio}
+                </p>
+                <div style={{ borderBottom: '1px dashed black', margin: '5px 0' }}></div>
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '10px' }}>
@@ -49,6 +62,7 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
             <p style={{ margin: '3px 0' }}><strong>Código:</strong> {record.code}</p>
             <p style={{ margin: '3px 0' }}><strong>Tipo:</strong> {sizeLabel}</p>
             <p style={{ margin: '3px 0' }}><strong>Casillero:</strong> {lockerDisplay}</p>
+            <p style={{ margin: '3px 0' }}><strong>Medio de Pago:</strong> {paymentMethod}</p>
           </div>
 
           <div style={{ borderBottom: '1px dashed black', margin: '10px 0' }}></div>

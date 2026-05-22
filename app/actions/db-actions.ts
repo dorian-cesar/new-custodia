@@ -77,9 +77,9 @@ export async function dbCreateRecord(recordData: Omit<CustodyRecord, 'id'>) {
   return newRecord;
 }
 
-export async function dbDeliverRecord(recordId: number, lockerId: number) {
+export async function dbDeliverRecord(recordId: number, lockerId: number, extraFolio: number | null = null) {
   await CustodyRecordModel.update(
-    { status: 'Entregado', exitTime: new Date().toISOString() },
+    { status: 'Entregado', exitTime: new Date().toISOString(), extraFolio },
     { where: { id: recordId } }
   );
   await dbReleaseLocker(lockerId);
@@ -104,10 +104,12 @@ export async function dbAddTransaction(transactionData: Omit<CashTransaction, 'i
 
 export async function loginCajero(username: string, passwordHash: string) {
   await syncDatabase();
+
   const user = await UserModel.findOne({ where: { username } });
   if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
-    return { success: false, error: 'Credenciales inválidas' };
+    return { success: false, error: 'Usuario o contraseña incorrectos' };
   }
+
   if (user.role !== 'cajero') {
     return { success: false, error: 'Solo los cajeros pueden iniciar sesión' };
   }
@@ -120,27 +122,57 @@ export async function loginCajero(username: string, passwordHash: string) {
     }
   }
 
-  return { success: true, user: user.get({ plain: true }) };
+  // Fetch API token behind the scenes using fixed credentials
+  let apiToken = '';
+  try {
+    const response = await fetch("https://backend-banios.dev-wit.com/api/auth/loginUser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
+    });
+    const data = await response.json();
+    if (response.ok && data.token) {
+      apiToken = data.token;
+    }
+  } catch (error) {
+    console.error("Failed to fetch API token behind the scenes:", error);
+  }
+
+  return { 
+    success: true, 
+    user: {
+      id: user.id,
+      username: user.username,
+      role: 'cajero',
+      token: apiToken
+    }
+  };
 }
 
 export async function verifySupervisor(username: string, passwordHash: string) {
   await syncDatabase();
+
   const user = await UserModel.findOne({ where: { username } });
   if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
-    return { success: false, error: 'Credenciales de supervisor inválidas' };
+    return { success: false, error: 'Credenciales de supervisor incorrectas' };
   }
+
   if (user.role !== 'supervisor') {
     return { success: false, error: 'El usuario no tiene rol de supervisor' };
   }
+
   return { success: true };
 }
 
 // ── Admin: login universal (cajero + supervisor) ──
 export async function loginUser(username: string, passwordHash: string) {
   await syncDatabase();
+
   const user = await UserModel.findOne({ where: { username } });
   if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
-    return { success: false, error: 'Credenciales inválidas' };
+    return { success: false, error: 'Usuario o contraseña incorrectos' };
   }
 
   const openRegister = await CashRegisterModel.findOne({ where: { status: 'open' } });
@@ -151,7 +183,33 @@ export async function loginUser(username: string, passwordHash: string) {
     }
   }
 
-  return { success: true, user: user.get({ plain: true }) };
+  // Fetch API token behind the scenes using fixed credentials
+  let apiToken = '';
+  try {
+    const response = await fetch("https://backend-banios.dev-wit.com/api/auth/loginUser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
+    });
+    const data = await response.json();
+    if (response.ok && data.token) {
+      apiToken = data.token;
+    }
+  } catch (error) {
+    console.error("Failed to fetch API token behind the scenes:", error);
+  }
+
+  return { 
+    success: true, 
+    user: {
+      id: user.id,
+      username: user.username,
+      role: user.role === 'supervisor' ? 'supervisor' : 'cajero',
+      token: apiToken
+    }
+  };
 }
 
 // ── Admin: CRUD de usuarios ──
@@ -230,5 +288,27 @@ export async function updatePrice(size: string, newPrice: number) {
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+}
+
+export async function sendBoleta(nombre: string, precio: number, token: string) {
+  try {
+    const response = await fetch("https://backend-banios.dev-wit.com/api/boletas/enviar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ nombre, precio })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || data.message || 'Error al emitir la boleta' };
+    }
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Error emitting boleta:", error);
+    return { success: false, error: "Error de conexión con el servidor de facturación" };
   }
 }

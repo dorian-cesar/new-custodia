@@ -76,7 +76,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 bg-input"
-                  placeholder="ej. cajero"
+                  placeholder="Ingrese su usuario"
                   required
                 />
               </div>

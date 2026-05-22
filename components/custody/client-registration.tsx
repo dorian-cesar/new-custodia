@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Ticket } from './ticket'
 import { DeliveryTicket } from './delivery-ticket'
-import { Barcode as BarcodeIcon, Hash, Key, AlertTriangle } from 'lucide-react'
+import { Barcode as BarcodeIcon, Hash, Key, AlertTriangle, Coins, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,11 +19,12 @@ import {
 } from '@/components/ui/dialog'
 import { type CustodyRecord } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
+import { sendBoleta } from '@/app/actions/db-actions'
 
 interface ClientRegistrationProps {
   selectedLockerId: number | null
   onGenerateBarcode: () => Promise<CustodyRecord | null>
-  onDeliver: (code: string, extraCharge?: number) => Promise<boolean>
+  onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
 }
@@ -43,6 +44,9 @@ export function ClientRegistration({
   const [extraAmount, setExtraAmount] = useState(0)
   const [extraHours, setExtraHours] = useState(0)
   const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Débito'>('Efectivo')
+  const [extraFolioState, setExtraFolioState] = useState<number | null>(null)
+  const [cashReceived, setCashReceived] = useState<number>(0)
 
   // State for Multiple Records Selection Modal
   const [multiRecords, setMultiRecords] = useState<CustodyRecord[]>([])
@@ -61,6 +65,11 @@ export function ClientRegistration({
     contentRef: deliveryTicketRef,
     documentTitle: 'Ticket_Retiro',
   })
+
+  // Reset cashReceived when modal or pendingRecord changes
+  useEffect(() => {
+    setCashReceived(0)
+  }, [pendingRecord, isModalOpen])
 
   useEffect(() => {
     // Automatically print when a *new* record is generated and received
@@ -101,6 +110,7 @@ export function ClientRegistration({
 
     setExtraHours(extraH > 0 ? extraH : 0)
     setExtraAmount(amount > 0 ? amount : 0)
+    setPaymentMethod('Efectivo')
     setPendingRecord(record)
     setIsModalOpen(true)
   }
@@ -128,26 +138,45 @@ export function ClientRegistration({
     }
   }
 
-  const confirmDelivery = async (code: string, extraCharge: number) => {
-    // Print the delivery ticket first while the state is still present
-    if (pendingRecord) {
-      handlePrintDelivery()
+  const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Débito') => {
+    const token = useCustodyStore.getState().currentUser?.token || ''
+    let extraFolio: number | null = null
+
+    if (extraCharge > 0 && token) {
+      try {
+        const boletaRes = await sendBoleta("Recargo Custodia", extraCharge, token)
+        if (boletaRes.success && boletaRes.data) {
+          extraFolio = boletaRes.data.folio
+        }
+      } catch (err) {
+        console.error("Error al emitir boleta de recargo:", err)
+      }
     }
 
-    const success = await onDeliver(code, extraCharge)
-    if (success) {
-      setDeliveryCode('')
-      setPendingRecord(null)
-      setIsModalOpen(false)
-    } else {
-      setDeliveryError('Error procesando la entrega')
-    }
+    setExtraFolioState(extraFolio)
+
+    // Breve retraso para permitir actualización del estado antes de imprimir y entregar
+    setTimeout(async () => {
+      if (pendingRecord) {
+        handlePrintDelivery()
+      }
+
+      const success = await onDeliver(code, extraCharge, method, extraFolio)
+      if (success) {
+        setDeliveryCode('')
+        setPendingRecord(null)
+        setIsModalOpen(false)
+        setExtraFolioState(null)
+      } else {
+        setDeliveryError('Error procesando la entrega')
+      }
+    }, 150)
   }
 
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
       <Ticket ref={ticketRef} record={currentRecord} />
-      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} />
+      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} extraFolio={extraFolioState} />
       
       <div className="flex items-center gap-2 mb-6">
         <BarcodeIcon className="h-5 w-5 text-muted-foreground" />
@@ -269,10 +298,85 @@ export function ClientRegistration({
                 </div>
               </>
             ) : (
-              <div className="flex justify-center items-center p-4">
-                <span className="text-primary font-medium text-lg">Sin recargos adicionales</span>
+              <div className="flex flex-col justify-center items-center p-4 border border-dashed border-border rounded-lg bg-secondary/10">
+                <span className="text-muted-foreground font-medium text-sm">Sin recargos adicionales</span>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 text-xs bg-card hover:bg-secondary/20"
+                  onClick={() => {
+                    setExtraAmount(5000);
+                    setExtraHours(2);
+                  }}
+                >
+                  🔧 Simular Recargo ($5.000) para Demo
+                </Button>
               </div>
             )}
+
+            <div className="space-y-2 border-t border-border pt-4">
+              <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant={paymentMethod === 'Efectivo' ? 'default' : 'outline'}
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                    paymentMethod === 'Efectivo' 
+                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={() => setPaymentMethod('Efectivo')}
+                >
+                  <Coins className="h-5 w-5" />
+                  Efectivo
+                </Button>
+                <Button
+                  type="button"
+                  variant={paymentMethod === 'Débito' ? 'default' : 'outline'}
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                    paymentMethod === 'Débito' 
+                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={() => setPaymentMethod('Débito')}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  Débito
+                </Button>
+              </div>
+
+              {paymentMethod === 'Efectivo' && extraAmount > 0 && (
+                <div className="space-y-2 mt-3 p-3 bg-secondary/10 border border-border rounded-lg animate-in fade-in slide-in-from-top-1">
+                  <Label htmlFor="cashReceived" className="text-xs font-semibold text-muted-foreground">Efectivo Recibido</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
+                    <Input
+                      id="cashReceived"
+                      type="number"
+                      value={cashReceived === 0 ? '' : cashReceived}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setCashReceived(val);
+                      }}
+                      placeholder="Monto entregado por el cliente"
+                      className="pl-7 bg-card h-9 text-sm"
+                    />
+                  </div>
+                  {cashReceived > 0 && (
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-border text-xs">
+                      <span className="font-medium text-muted-foreground">Vuelto a entregar:</span>
+                      <span className={`font-bold text-sm ${cashReceived - extraAmount >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {cashReceived - extraAmount >= 0
+                          ? `$${(cashReceived - extraAmount).toLocaleString('es-CL')}`
+                          : 'Monto insuficiente'
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter className="sm:justify-end">
@@ -285,8 +389,9 @@ export function ClientRegistration({
             </Button>
             <Button
               type="button"
-              className={extraAmount > 0 ? "bg-primary hover:bg-primary/90" : "bg-primary hover:bg-primary/90"}
-              onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount)}
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount, paymentMethod)}
+              disabled={paymentMethod === 'Efectivo' && cashReceived > 0 && cashReceived < extraAmount}
             >
               {extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta'}
             </Button>

@@ -46,10 +46,10 @@ export default function CustodyPage() {
     return record
   }
 
-  const handleDeliver = async (code: string, extraCharge?: number): Promise<boolean> => {
+  const handleDeliver = async (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null): Promise<boolean> => {
     const record = records.find((r) => r.code === code && r.status === 'Activo')
     if (!record) return false
-    return await deliverRecord(record.id, extraCharge)
+    return await deliverRecord(record.id, extraCharge, paymentMethod, extraFolio)
   }
 
   if (!mounted) {

@@ -46,6 +46,8 @@ export class CustodyRecordModel extends Model {
   declare size: string;
   declare status: 'Activo' | 'Entregado';
   declare price: number;
+  declare folio: number | null;
+  declare extraFolio: number | null;
 }
 
 CustodyRecordModel.init(
@@ -59,6 +61,8 @@ CustodyRecordModel.init(
     size: { type: DataTypes.STRING, allowNull: false },
     status: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.INTEGER, allowNull: false },
+    folio: { type: DataTypes.INTEGER, allowNull: true },
+    extraFolio: { type: DataTypes.INTEGER, allowNull: true },
   },
   { sequelize, modelName: 'CustodyRecord', tableName: 'custody_records', timestamps: false }
 );
@@ -135,23 +139,29 @@ UserModel.init(
 export const syncDatabase = async () => {
   await sequelize.sync({ alter: true });
   
-  // Seed default users if none exist
-  const userCount = await UserModel.count();
-  if (userCount === 0) {
-    await UserModel.bulkCreate([
-      { username: 'cajero', passwordHash: '$2b$10$Dcf44J8hRETqHoVVt9SjSOIhgpTKfSrIgmslX66/D2VLvBCrjWjIa', role: 'cajero' },
-      { username: 'admin', passwordHash: '$2b$10$nX6EO8cjj6IgIo08gpSPH.ver2Abxigm8qBuxFYv2WzxxwrphcOze', role: 'supervisor' }
-    ] as any[]);
+  // Upsert or reset the default test accounts so they are always guaranteed to work locally
+  const cajeroHashed = await bcrypt.hash('1234', 10);
+  const adminHashed = await bcrypt.hash('admin123', 10);
+
+  const cajero = await UserModel.findOne({ where: { username: 'cajero' } });
+  if (cajero) {
+    await UserModel.update({ passwordHash: cajeroHashed, role: 'cajero' }, { where: { username: 'cajero' } });
   } else {
-    // Migration: Hash any existing plaintext passwords
-    const users = await UserModel.findAll();
-    for (const user of users) {
-      const u = user as any;
-      if (u.passwordHash && !u.passwordHash.startsWith('$2')) {
-        const hashed = await bcrypt.hash(u.passwordHash, 10);
-        await UserModel.update({ passwordHash: hashed }, { where: { id: u.id } });
-      }
-    }
+    await UserModel.create({ username: 'cajero', passwordHash: cajeroHashed, role: 'cajero' } as any);
+  }
+
+  const cajero2 = await UserModel.findOne({ where: { username: 'cajero2' } });
+  if (cajero2) {
+    await UserModel.update({ passwordHash: cajeroHashed, role: 'cajero' }, { where: { username: 'cajero2' } });
+  } else {
+    await UserModel.create({ username: 'cajero2', passwordHash: cajeroHashed, role: 'cajero' } as any);
+  }
+
+  const admin = await UserModel.findOne({ where: { username: 'admin' } });
+  if (admin) {
+    await UserModel.update({ passwordHash: adminHashed, role: 'supervisor' }, { where: { username: 'admin' } });
+  } else {
+    await UserModel.create({ username: 'admin', passwordHash: adminHashed, role: 'supervisor' } as any);
   }
 
   // Seed default prices if none exist

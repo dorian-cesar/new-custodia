@@ -24,6 +24,8 @@ export interface CustodyRecord {
   size: LockerSize
   status: 'Activo' | 'Entregado'
   price: number
+  folio?: number
+  extraFolio?: number
 }
 
 export interface Locker {

@@ -21,12 +21,15 @@ import {
   dbOpenCashRegister,
   dbCloseCashRegister,
   dbAddTransaction,
+  sendBoleta,
 } from '@/app/actions/db-actions'
 
 export interface User {
   id: number;
   username: string;
+  email?: string;
   role: 'cajero' | 'supervisor';
+  token?: string;
 }
 
 
@@ -55,7 +58,8 @@ interface CustodyState {
   getRecordByCode: (code: string) => CustodyRecord | null
   getActiveRecordsByInput: (input: string) => CustodyRecord[]
   createRecord: (lockerId: number, clientDocument: string, size: LockerSize) => Promise<CustodyRecord | null>
-  deliverRecord: (recordId: number, extraCharge?: number) => Promise<boolean>
+  deliverRecord: (recordId: number, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
+
 
   // Cash register actions
   openCashRegister: (openingAmount: number, notes?: string) => Promise<CashRegister>
@@ -113,7 +117,7 @@ export const useCustodyStore = create<CustodyState>()(
     },
 
     createRecord: async (lockerId, clientDocument, size) => {
-      const { currentCashRegister, lockers } = get()
+      const { currentCashRegister, lockers, currentUser } = get()
       
       if (!currentCashRegister || currentCashRegister.status !== 'open') {
         return null
@@ -127,6 +131,21 @@ export const useCustodyStore = create<CustodyState>()(
       const sizeOption = get().lockerSizes.find((s) => s.value === size)
       if (!sizeOption) return null
 
+      // Intentar emitir boleta electrónica si tenemos token del usuario
+      const token = currentUser?.token || ''
+      let folio: number | null = null
+
+      if (token) {
+        try {
+          const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price, token)
+          if (boletaRes.success && boletaRes.data) {
+            folio = boletaRes.data.folio
+          }
+        } catch (err) {
+          console.error('Error al emitir boleta en la entrada:', err)
+        }
+      }
+
       const code = generateCode(clientDocument)
       
       const recordData: Omit<CustodyRecord, 'id'> = {
@@ -138,6 +157,7 @@ export const useCustodyStore = create<CustodyState>()(
         size,
         status: 'Activo',
         price: sizeOption.price,
+        folio: folio || undefined,
       }
 
       // Sync record creation to DB to get ID
@@ -148,7 +168,7 @@ export const useCustodyStore = create<CustodyState>()(
       }))
 
       await get().occupyLocker(lockerId, newRecord.id)
-      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label}`, newRecord.id)
+      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label}${folio ? ` - Folio: ${folio}` : ''}`, newRecord.id)
 
       return newRecord
     },
@@ -174,7 +194,7 @@ export const useCustodyStore = create<CustodyState>()(
       return byDocument.sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime())
     },
 
-    deliverRecord: async (recordId, extraCharge = 0) => {
+    deliverRecord: async (recordId, extraCharge = 0, paymentMethod = 'Efectivo', extraFolio = null) => {
       const { records, currentCashRegister } = get()
       const record = records.find((r) => r.id === recordId)
       
@@ -187,17 +207,22 @@ export const useCustodyStore = create<CustodyState>()(
       }
 
       // Sync delivery to DB
-      await dbDeliverRecord(recordId, record.lockerId)
+      await dbDeliverRecord(recordId, record.lockerId, extraFolio)
 
       // Apply extra charge transaction if any
       if (extraCharge > 0) {
-        await get().addTransaction('income', extraCharge, `Recargo extra Custodia ${record.code}`, record.id)
+        await get().addTransaction('income', extraCharge, `Recargo extra Custodia ${record.code} - ${paymentMethod}${extraFolio ? ` - Folio: ${extraFolio}` : ''}`, record.id)
       }
 
       set((state) => ({
         records: state.records.map((r) =>
           r.id === recordId
-            ? { ...r, status: 'Entregado', exitTime: new Date().toISOString() }
+            ? { 
+                ...r, 
+                status: 'Entregado', 
+                exitTime: new Date().toISOString(),
+                extraFolio: extraFolio || undefined 
+              }
             : r
         ),
       }))

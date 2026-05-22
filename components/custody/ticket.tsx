@@ -59,6 +59,17 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
         <div style={{ textAlign: 'center', marginBottom: '10px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 5px 0' }}>CUSTODIA DE EQUIPAJE</h2>
           <div style={{ borderBottom: '1px dashed black', margin: '5px 0' }}></div>
+          {record.folio && (
+            <div style={{ margin: '5px 0' }}>
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold' }}>
+                BOLETA ELECTRÓNICA
+              </p>
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold' }}>
+                FOLIO N° {record.folio}
+              </p>
+              <div style={{ borderBottom: '1px dashed black', margin: '5px 0' }}></div>
+            </div>
+          )}
         </div>
 
         <div style={{ marginBottom: '10px' }}>
