@@ -17,13 +17,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { type CustodyRecord } from '@/lib/types'
+import { type CustodyRecord, type LockerSize } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
 import { sendBoleta } from '@/app/actions/db-actions'
 
 interface ClientRegistrationProps {
   selectedLockerId: number | null
-  onGenerateBarcode: () => Promise<CustodyRecord | null>
+  selectedSize?: LockerSize | null
+  clientDocument?: string
+  onGenerateBarcode: (paymentMethod: string) => Promise<CustodyRecord | null>
   onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
@@ -31,6 +33,8 @@ interface ClientRegistrationProps {
 
 export function ClientRegistration({
   selectedLockerId,
+  selectedSize,
+  clientDocument,
   onGenerateBarcode,
   onDeliver,
   currentRecord,
@@ -39,8 +43,14 @@ export function ClientRegistration({
   const [deliveryCode, setDeliveryCode] = useState('')
   const [deliveryError, setDeliveryError] = useState('')
 
+  // State for Entry Payment Modal
+  const [isEntryModalOpen, setIsEntryModalOpen] = useState(false)
+  const [entryPaymentMethod, setEntryPaymentMethod] = useState<'Efectivo' | 'Débito'>('Efectivo')
+  const [entryCashReceived, setEntryCashReceived] = useState<number>(0)
+
   // State for Extracharge Modal
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isProcessingCard, setIsProcessingCard] = useState(false)
   const [extraAmount, setExtraAmount] = useState(0)
   const [extraHours, setExtraHours] = useState(0)
   const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(null)
@@ -85,14 +95,51 @@ export function ClientRegistration({
   
   const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
   const lockers = useCustodyStore((state) => state.lockers)
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
   const selectedLocker = lockers.find(l => l.id === selectedLockerId)
   const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
+  const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
+  const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
 
   const handleGenerateBarcode = () => {
     if (!isCashOpen) {
+      alert("Debes abrir la caja antes de poder realizar cobros.");
       return
     }
-    onGenerateBarcode()
+    if (!selectedLockerId || !selectedSize || !clientDocument?.trim()) {
+      alert("Por favor, selecciona un casillero, el tamaño del equipaje y escribe el RUT del cliente antes de cobrar.");
+      return
+    }
+    setEntryPaymentMethod('Efectivo')
+    setEntryCashReceived(0)
+    setIsEntryModalOpen(true)
+  }
+
+  const confirmEntryPayment = async () => {
+    if (entryPaymentMethod === 'Débito') {
+      setIsProcessingCard(true)
+      try {
+        const ticketId = Math.floor(Math.random() * 90000) + 10000;
+        const res = await fetch('http://localhost:3001/api/pos/payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: entryPrice, ticket: ticketId })
+        });
+        const data = await res.json();
+        setIsProcessingCard(false)
+        if (!data.success || (data.response && data.response.responseCode !== 0)) {
+          alert('Pago rechazado por el POS. (Código: ' + (data.response?.responseCode || data.error || 'Error Desconocido') + ')');
+          return;
+        }
+      } catch (err) {
+        setIsProcessingCard(false)
+        alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
+        return;
+      }
+    }
+
+    setIsEntryModalOpen(false)
+    await onGenerateBarcode(entryPaymentMethod)
   }
 
   const processDelivery = (record: CustodyRecord) => {
@@ -139,6 +186,28 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Débito') => {
+    if (method === 'Débito' && extraCharge > 0) {
+      setIsProcessingCard(true)
+      try {
+        const ticketId = Math.floor(Math.random() * 90000) + 10000;
+        const res = await fetch('http://localhost:3001/api/pos/payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: extraCharge, ticket: ticketId })
+        });
+        const data = await res.json();
+        setIsProcessingCard(false)
+        if (!data.success || (data.response && data.response.responseCode !== 0)) {
+          alert('Pago rechazado por el POS. (Código: ' + (data.response?.responseCode || data.error || 'Error Desconocido') + ')');
+          return;
+        }
+      } catch (err) {
+        setIsProcessingCard(false)
+        alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
+        return;
+      }
+    }
+
     const token = useCustodyStore.getState().currentUser?.token || ''
     let extraFolio: number | null = null
 
@@ -199,11 +268,11 @@ export function ClientRegistration({
 
         <Button
           onClick={handleGenerateBarcode}
-          disabled={!selectedLockerId || !isCashOpen}
+          disabled={!isCashOpen}
           className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
         >
           <BarcodeIcon className="h-4 w-4 mr-2" />
-          Generar Codigo de Barras
+          Cobrar y Generar Custodia
         </Button>
 
         {!isCashOpen && (
@@ -240,6 +309,124 @@ export function ClientRegistration({
           </Button>
         </div>
       </div>
+
+      {/* Entry Payment Confirmation Modal */}
+      <Dialog open={isEntryModalOpen} onOpenChange={setIsEntryModalOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-primary" />
+              Pago de Custodia
+            </DialogTitle>
+            <DialogDescription>
+              Confirme el cobro antes de generar el ticket y abrir el casillero.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-4 py-4">
+            <div className="bg-secondary/20 p-4 rounded-lg space-y-2 text-sm mb-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cliente:</span>
+                <span className="font-mono">{clientDocument}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Casillero:</span>
+                <span>{displayLockerName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tamaño:</span>
+                <span>{selectedSizeInfo?.label}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
+              <span className="font-semibold text-lg">Total a cobrar:</span>
+              <span className="font-bold text-2xl text-primary">${entryPrice.toLocaleString()}</span>
+            </div>
+
+            <div className="space-y-2 border-t border-border pt-4">
+              <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant={entryPaymentMethod === 'Efectivo' ? 'default' : 'outline'}
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                    entryPaymentMethod === 'Efectivo' 
+                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={() => setEntryPaymentMethod('Efectivo')}
+                >
+                  <Coins className="h-5 w-5" />
+                  Efectivo
+                </Button>
+                <Button
+                  type="button"
+                  variant={entryPaymentMethod === 'Débito' ? 'default' : 'outline'}
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                    entryPaymentMethod === 'Débito' 
+                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                  }`}
+                  onClick={() => setEntryPaymentMethod('Débito')}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  Débito
+                </Button>
+              </div>
+
+              {entryPaymentMethod === 'Efectivo' && entryPrice > 0 && (
+                <div className="space-y-2 mt-3 p-3 bg-secondary/10 border border-border rounded-lg animate-in fade-in slide-in-from-top-1">
+                  <Label htmlFor="entryCashReceived" className="text-xs font-semibold text-muted-foreground">Efectivo Recibido</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
+                    <Input
+                      id="entryCashReceived"
+                      type="number"
+                      value={entryCashReceived === 0 ? '' : entryCashReceived}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setEntryCashReceived(val);
+                      }}
+                      placeholder="Monto entregado por el cliente"
+                      className="pl-7 bg-card h-9 text-sm"
+                    />
+                  </div>
+                  {entryCashReceived > 0 && (
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-border text-xs">
+                      <span className="font-medium text-muted-foreground">Vuelto a entregar:</span>
+                      <span className={`font-bold text-sm ${entryCashReceived - entryPrice >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {entryCashReceived - entryPrice >= 0
+                          ? `$${(entryCashReceived - entryPrice).toLocaleString('es-CL')}`
+                          : 'Monto insuficiente'
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsEntryModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="bg-primary hover:bg-primary/90"
+              onClick={confirmEntryPayment}
+              disabled={(entryPaymentMethod === 'Efectivo' && entryCashReceived > 0 && entryCashReceived < entryPrice) || isProcessingCard}
+            >
+              {isProcessingCard ? 'Esperando POS...' : 'Confirmar Pago y Generar Ticket'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delivery Confirmation Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -391,9 +578,9 @@ export function ClientRegistration({
               type="button"
               className="bg-primary hover:bg-primary/90"
               onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount, paymentMethod)}
-              disabled={paymentMethod === 'Efectivo' && cashReceived > 0 && cashReceived < extraAmount}
+              disabled={(paymentMethod === 'Efectivo' && cashReceived > 0 && cashReceived < extraAmount) || isProcessingCard}
             >
-              {extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta'}
+              {isProcessingCard ? 'Esperando POS...' : (extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta')}
             </Button>
           </DialogFooter>
         </DialogContent>

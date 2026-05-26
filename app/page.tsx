@@ -31,12 +31,12 @@ export default function CustodyPage() {
   const isCashOpen = currentCashRegister?.status === 'open'
   const stats = getCurrentRegisterStats()
 
-  const handleGenerateBarcode = async (): Promise<CustodyRecord | null> => {
+  const handleGenerateBarcode = async (paymentMethod: string): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
       return null
     }
 
-    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize)
+    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize, paymentMethod)
     if (record) {
       setCurrentRecord(record)
       setSelectedLockerId(null)
@@ -87,6 +87,8 @@ export default function CustodyPage() {
           <div>
             <ClientRegistration
               selectedLockerId={selectedLockerId}
+              selectedSize={selectedSize}
+              clientDocument={clientDocument}
               onGenerateBarcode={handleGenerateBarcode}
               onDeliver={handleDeliver}
               currentRecord={currentRecord}

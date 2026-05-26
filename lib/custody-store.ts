@@ -57,7 +57,7 @@ interface CustodyState {
   // Record actions
   getRecordByCode: (code: string) => CustodyRecord | null
   getActiveRecordsByInput: (input: string) => CustodyRecord[]
-  createRecord: (lockerId: number, clientDocument: string, size: LockerSize) => Promise<CustodyRecord | null>
+  createRecord: (lockerId: number, clientDocument: string, size: LockerSize, paymentMethod?: string) => Promise<CustodyRecord | null>
   deliverRecord: (recordId: number, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
 
 
@@ -116,7 +116,7 @@ export const useCustodyStore = create<CustodyState>()(
       }))
     },
 
-    createRecord: async (lockerId, clientDocument, size) => {
+    createRecord: async (lockerId, clientDocument, size, paymentMethod = 'Efectivo') => {
       const { currentCashRegister, lockers, currentUser } = get()
       
       if (!currentCashRegister || currentCashRegister.status !== 'open') {
@@ -168,7 +168,7 @@ export const useCustodyStore = create<CustodyState>()(
       }))
 
       await get().occupyLocker(lockerId, newRecord.id)
-      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label}${folio ? ` - Folio: ${folio}` : ''}`, newRecord.id)
+      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}${folio ? ` - Folio: ${folio}` : ''}`, newRecord.id)
 
       return newRecord
     },
