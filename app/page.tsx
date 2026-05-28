@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/custody/header'
 import { LockerSelection } from '@/components/custody/locker-selection'
 import { ClientRegistration } from '@/components/custody/client-registration'
@@ -9,10 +10,12 @@ import { useCustodyStore } from '@/lib/custody-store'
 import { type LockerSize, type CustodyRecord } from '@/lib/types'
 
 export default function CustodyPage() {
+  const router = useRouter()
   const {
     lockers,
     records,
     currentCashRegister,
+    currentUser,
     createRecord,
     deliverRecord,
     getCurrentRegisterStats,
@@ -28,15 +31,22 @@ export default function CustodyPage() {
     setMounted(true)
   }, [])
 
+  // Redirect supervisors to admin panel
+  useEffect(() => {
+    if (mounted && currentUser?.role === 'supervisor') {
+      router.replace('/admin')
+    }
+  }, [mounted, currentUser, router])
+
   const isCashOpen = currentCashRegister?.status === 'open'
   const stats = getCurrentRegisterStats()
 
-  const handleGenerateBarcode = async (paymentMethod: string): Promise<CustodyRecord | null> => {
+  const handleGenerateBarcode = async (paymentMethod: string, authCode?: string | null, opNumber?: string | null): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
       return null
     }
 
-    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize, paymentMethod)
+    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize, paymentMethod, authCode, opNumber)
     if (record) {
       setCurrentRecord(record)
       setSelectedLockerId(null)
@@ -46,10 +56,10 @@ export default function CustodyPage() {
     return record
   }
 
-  const handleDeliver = async (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null): Promise<boolean> => {
+  const handleDeliver = async (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null, authCode?: string | null, opNumber?: string | null): Promise<boolean> => {
     const record = records.find((r) => r.code === code && r.status === 'Activo')
     if (!record) return false
-    return await deliverRecord(record.id, extraCharge, paymentMethod, extraFolio)
+    return await deliverRecord(record.id, extraCharge, paymentMethod, extraFolio, authCode, opNumber)
   }
 
   if (!mounted) {

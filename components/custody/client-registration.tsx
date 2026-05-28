@@ -25,8 +25,8 @@ interface ClientRegistrationProps {
   selectedLockerId: number | null
   selectedSize?: LockerSize | null
   clientDocument?: string
-  onGenerateBarcode: (paymentMethod: string) => Promise<CustodyRecord | null>
-  onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
+  onGenerateBarcode: (paymentMethod: string, authCode?: string | null, opNumber?: string | null) => Promise<CustodyRecord | null>
+  onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null, authCode?: string | null, opNumber?: string | null) => Promise<boolean>
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
 }
@@ -57,6 +57,8 @@ export function ClientRegistration({
   const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Débito'>('Efectivo')
   const [extraFolioState, setExtraFolioState] = useState<number | null>(null)
   const [cashReceived, setCashReceived] = useState<number>(0)
+  const [exitAuthCode, setExitAuthCode] = useState<string | null>(null)
+  const [exitOpNumber, setExitOpNumber] = useState<string | null>(null)
 
   // State for Multiple Records Selection Modal
   const [multiRecords, setMultiRecords] = useState<CustodyRecord[]>([])
@@ -116,30 +118,54 @@ export function ClientRegistration({
   }
 
   const confirmEntryPayment = async () => {
+    let authCode: string | null = null;
+    let opNumber: string | null = null;
+
     if (entryPaymentMethod === 'Débito') {
       setIsProcessingCard(true)
       try {
         const ticketId = Math.floor(Math.random() * 90000) + 10000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds timeout
         const res = await fetch('http://localhost:3001/api/pos/payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: entryPrice, ticket: ticketId })
+          body: JSON.stringify({ amount: entryPrice, ticket: ticketId }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const data = await res.json();
         setIsProcessingCard(false)
         if (!data.success || (data.response && data.response.responseCode !== 0)) {
-          alert('Pago rechazado por el POS. (Código: ' + (data.response?.responseCode || data.error || 'Error Desconocido') + ')');
+          let errorMsg = data.response?.responseCode || data.error || 'Error Desconocido';
+          if (typeof data.error === 'string') {
+            if (data.error.includes('Another message was already sent')) {
+              errorMsg = 'El POS está ocupado procesando un pago anterior. Cancele la transacción en la máquina (botón rojo X) antes de intentar de nuevo.';
+            } else if (data.error.includes('You have to connect to a POS')) {
+              errorMsg = 'El POS físico no está vinculado. Asegúrese de hacer clic en "Conectar" desde el panel de control del servidor IM30 (puerto 3001) antes de cobrar.';
+            }
+          }
+          alert('Pago rechazado por el POS. (Detalle: ' + errorMsg + ')');
           return;
         }
-      } catch (err) {
+        
+        if (data.response) {
+          authCode = data.response.authorizationCode?.toString() || null;
+          opNumber = data.response.operationNumber?.toString() || null;
+        }
+      } catch (err: any) {
         setIsProcessingCard(false)
-        alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
+        if (err.name === 'AbortError') {
+          alert('Tiempo de espera agotado. El POS IM30 no respondió en 90 segundos. Asegúrese de que el equipo esté conectado y reinicie la transacción.');
+        } else {
+          alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
+        }
         return;
       }
     }
 
     setIsEntryModalOpen(false)
-    await onGenerateBarcode(entryPaymentMethod)
+    await onGenerateBarcode(entryPaymentMethod, authCode, opNumber)
   }
 
   const processDelivery = (record: CustodyRecord) => {
@@ -159,6 +185,8 @@ export function ClientRegistration({
     setExtraAmount(amount > 0 ? amount : 0)
     setPaymentMethod('Efectivo')
     setPendingRecord(record)
+    setExitAuthCode(null)
+    setExitOpNumber(null)
     setIsModalOpen(true)
   }
 
@@ -186,24 +214,48 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Débito') => {
+    let authCode: string | null = null;
+    let opNumber: string | null = null;
+
     if (method === 'Débito' && extraCharge > 0) {
       setIsProcessingCard(true)
       try {
         const ticketId = Math.floor(Math.random() * 90000) + 10000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds timeout
         const res = await fetch('http://localhost:3001/api/pos/payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: extraCharge, ticket: ticketId })
+          body: JSON.stringify({ amount: extraCharge, ticket: ticketId }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const data = await res.json();
         setIsProcessingCard(false)
         if (!data.success || (data.response && data.response.responseCode !== 0)) {
-          alert('Pago rechazado por el POS. (Código: ' + (data.response?.responseCode || data.error || 'Error Desconocido') + ')');
+          let errorMsg = data.response?.responseCode || data.error || 'Error Desconocido';
+          if (typeof data.error === 'string') {
+            if (data.error.includes('Another message was already sent')) {
+              errorMsg = 'El POS está ocupado procesando un pago anterior. Cancele la transacción en la máquina (botón rojo X) antes de intentar de nuevo.';
+            } else if (data.error.includes('You have to connect to a POS')) {
+              errorMsg = 'El POS físico no está vinculado. Asegúrese de hacer clic en "Conectar" desde el panel de control del servidor IM30 (puerto 3001) antes de cobrar.';
+            }
+          }
+          alert('Pago rechazado por el POS. (Detalle: ' + errorMsg + ')');
           return;
         }
-      } catch (err) {
+
+        if (data.response) {
+          authCode = data.response.authorizationCode?.toString() || null;
+          opNumber = data.response.operationNumber?.toString() || null;
+        }
+      } catch (err: any) {
         setIsProcessingCard(false)
-        alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
+        if (err.name === 'AbortError') {
+          alert('Tiempo de espera agotado. El POS IM30 no respondió en 90 segundos. Asegúrese de que el equipo esté conectado y reinicie la transacción.');
+        } else {
+          alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
+        }
         return;
       }
     }
@@ -223,6 +275,8 @@ export function ClientRegistration({
     }
 
     setExtraFolioState(extraFolio)
+    setExitAuthCode(authCode)
+    setExitOpNumber(opNumber)
 
     // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
@@ -230,7 +284,7 @@ export function ClientRegistration({
         handlePrintDelivery()
       }
 
-      const success = await onDeliver(code, extraCharge, method, extraFolio)
+      const success = await onDeliver(code, extraCharge, method, extraFolio, authCode, opNumber)
       if (success) {
         setDeliveryCode('')
         setPendingRecord(null)
@@ -245,7 +299,7 @@ export function ClientRegistration({
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
       <Ticket ref={ticketRef} record={currentRecord} />
-      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} extraFolio={extraFolioState} />
+      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} extraFolio={extraFolioState} authCode={exitAuthCode} opNumber={exitOpNumber} />
       
       <div className="flex items-center gap-2 mb-6">
         <BarcodeIcon className="h-5 w-5 text-muted-foreground" />

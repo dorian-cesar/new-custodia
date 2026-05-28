@@ -26,6 +26,10 @@ export interface CustodyRecord {
   price: number
   folio?: number
   extraFolio?: number
+  entryAuthCode?: string | null
+  entryOpNumber?: string | null
+  exitAuthCode?: string | null
+  exitOpNumber?: string | null
 }
 
 export interface Locker {

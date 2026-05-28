@@ -57,8 +57,8 @@ interface CustodyState {
   // Record actions
   getRecordByCode: (code: string) => CustodyRecord | null
   getActiveRecordsByInput: (input: string) => CustodyRecord[]
-  createRecord: (lockerId: number, clientDocument: string, size: LockerSize, paymentMethod?: string) => Promise<CustodyRecord | null>
-  deliverRecord: (recordId: number, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
+  createRecord: (lockerId: number, clientDocument: string, size: LockerSize, paymentMethod?: string, authCode?: string | null, opNumber?: string | null) => Promise<CustodyRecord | null>
+  deliverRecord: (recordId: number, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null, authCode?: string | null, opNumber?: string | null) => Promise<boolean>
 
 
   // Cash register actions
@@ -116,7 +116,7 @@ export const useCustodyStore = create<CustodyState>()(
       }))
     },
 
-    createRecord: async (lockerId, clientDocument, size, paymentMethod = 'Efectivo') => {
+    createRecord: async (lockerId, clientDocument, size, paymentMethod = 'Efectivo', authCode = null, opNumber = null) => {
       const { currentCashRegister, lockers, currentUser } = get()
       
       if (!currentCashRegister || currentCashRegister.status !== 'open') {
@@ -158,6 +158,8 @@ export const useCustodyStore = create<CustodyState>()(
         status: 'Activo',
         price: sizeOption.price,
         folio: folio || undefined,
+        entryAuthCode: authCode,
+        entryOpNumber: opNumber
       }
 
       // Sync record creation to DB to get ID
@@ -194,7 +196,7 @@ export const useCustodyStore = create<CustodyState>()(
       return byDocument.sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime())
     },
 
-    deliverRecord: async (recordId, extraCharge = 0, paymentMethod = 'Efectivo', extraFolio = null) => {
+    deliverRecord: async (recordId, extraCharge = 0, paymentMethod = 'Efectivo', extraFolio = null, authCode = null, opNumber = null) => {
       const { records, currentCashRegister } = get()
       const record = records.find((r) => r.id === recordId)
       
@@ -207,7 +209,7 @@ export const useCustodyStore = create<CustodyState>()(
       }
 
       // Sync delivery to DB
-      await dbDeliverRecord(recordId, record.lockerId, extraFolio)
+      await dbDeliverRecord(recordId, record.lockerId, extraFolio, authCode, opNumber)
 
       // Apply extra charge transaction if any
       if (extraCharge > 0) {
@@ -221,7 +223,9 @@ export const useCustodyStore = create<CustodyState>()(
                 ...r, 
                 status: 'Entregado', 
                 exitTime: new Date().toISOString(),
-                extraFolio: extraFolio || undefined 
+                extraFolio: extraFolio || undefined,
+                exitAuthCode: authCode,
+                exitOpNumber: opNumber
               }
             : r
         ),
