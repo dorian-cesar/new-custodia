@@ -492,7 +492,7 @@ export default function AdminPage() {
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => openEditPriceDialog(sizeObj)} className="gap-1">
                         <Pencil className="h-3.5 w-3.5" />
-                        Modificar Precio
+                        Modifica precio y talla
                       </Button>
                     </TableCell>
                   </TableRow>
