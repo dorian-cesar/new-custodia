@@ -77,9 +77,9 @@ export async function dbCreateRecord(recordData: Omit<CustodyRecord, 'id'>) {
   return newRecord;
 }
 
-export async function dbDeliverRecord(recordId: number, lockerId: number, extraFolio: number | null = null, exitAuthCode: string | null = null, exitOpNumber: string | null = null) {
+export async function dbDeliverRecord(recordId: number, lockerId: number, extraFolio: number | null = null) {
   await CustodyRecordModel.update(
-    { status: 'Entregado', exitTime: new Date().toISOString(), extraFolio, exitAuthCode, exitOpNumber },
+    { status: 'Entregado', exitTime: new Date().toISOString(), extraFolio },
     { where: { id: recordId } }
   );
   await dbReleaseLocker(lockerId);

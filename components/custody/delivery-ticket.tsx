@@ -10,12 +10,10 @@ interface DeliveryTicketProps {
   extraAmount: number
   paymentMethod: string
   extraFolio?: number | null
-  authCode?: string | null
-  opNumber?: string | null
 }
 
 export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
-  ({ record, extraHours, extraAmount, paymentMethod, extraFolio, authCode, opNumber }, ref) => {
+  ({ record, extraHours, extraAmount, paymentMethod, extraFolio }, ref) => {
     const lockers = useCustodyStore((state) => state.lockers)
     const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
@@ -81,11 +79,6 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
                 <p style={{ margin: '3px 0', fontSize: '14px', fontWeight: 'bold' }}>
                   Recargo: ${extraAmount.toLocaleString('es-CL')}
                 </p>
-                {authCode && (
-                  <p style={{ margin: '3px 0', fontSize: '10px' }}>
-                    Aut: {authCode} {opNumber ? `| Op: ${opNumber}` : ''}
-                  </p>
-                )}
               </>
             )}
           </div>

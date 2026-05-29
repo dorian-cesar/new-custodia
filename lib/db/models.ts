@@ -48,10 +48,6 @@ export class CustodyRecordModel extends Model {
   declare price: number;
   declare folio: number | null;
   declare extraFolio: number | null;
-  declare entryAuthCode: string | null;
-  declare entryOpNumber: string | null;
-  declare exitAuthCode: string | null;
-  declare exitOpNumber: string | null;
 }
 
 CustodyRecordModel.init(
@@ -67,10 +63,6 @@ CustodyRecordModel.init(
     price: { type: DataTypes.INTEGER, allowNull: false },
     folio: { type: DataTypes.INTEGER, allowNull: true },
     extraFolio: { type: DataTypes.INTEGER, allowNull: true },
-    entryAuthCode: { type: DataTypes.STRING, allowNull: true },
-    entryOpNumber: { type: DataTypes.STRING, allowNull: true },
-    exitAuthCode: { type: DataTypes.STRING, allowNull: true },
-    exitOpNumber: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, modelName: 'CustodyRecord', tableName: 'custody_records', timestamps: false }
 );

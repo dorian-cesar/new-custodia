@@ -25,8 +25,8 @@ interface ClientRegistrationProps {
   selectedLockerId: number | null
   selectedSize?: LockerSize | null
   clientDocument?: string
-  onGenerateBarcode: (paymentMethod: string, authCode?: string | null, opNumber?: string | null) => Promise<CustodyRecord | null>
-  onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null, authCode?: string | null, opNumber?: string | null) => Promise<boolean>
+  onGenerateBarcode: (paymentMethod: string) => Promise<CustodyRecord | null>
+  onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
 }
@@ -118,54 +118,8 @@ export function ClientRegistration({
   }
 
   const confirmEntryPayment = async () => {
-    let authCode: string | null = null;
-    let opNumber: string | null = null;
-
-    if (entryPaymentMethod === 'Tarjeta') {
-      setIsProcessingCard(true)
-      try {
-        const ticketId = Math.floor(Math.random() * 90000) + 10000;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds timeout
-        const res = await fetch('http://localhost:3001/api/pos/payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: entryPrice, ticket: ticketId }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        const data = await res.json();
-        setIsProcessingCard(false)
-        if (!data.success || (data.response && data.response.responseCode !== 0)) {
-          let errorMsg = data.response?.responseCode || data.error || 'Error Desconocido';
-          if (typeof data.error === 'string') {
-            if (data.error.includes('Another message was already sent')) {
-              errorMsg = 'El POS está ocupado procesando un pago anterior. Cancele la transacción en la máquina (botón rojo X) antes de intentar de nuevo.';
-            } else if (data.error.includes('You have to connect to a POS')) {
-              errorMsg = 'El POS físico no está vinculado. Asegúrese de hacer clic en "Conectar" desde el panel de control del servidor IM30 (puerto 3001) antes de cobrar.';
-            }
-          }
-          alert('Pago rechazado por el POS. (Detalle: ' + errorMsg + ')');
-          return;
-        }
-        
-        if (data.response) {
-          authCode = data.response.authorizationCode?.toString() || null;
-          opNumber = data.response.operationNumber?.toString() || null;
-        }
-      } catch (err: any) {
-        setIsProcessingCard(false)
-        if (err.name === 'AbortError') {
-          alert('Tiempo de espera agotado. El POS IM30 no respondió en 90 segundos. Asegúrese de que el equipo esté conectado y reinicie la transacción.');
-        } else {
-          alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
-        }
-        return;
-      }
-    }
-
     setIsEntryModalOpen(false)
-    await onGenerateBarcode(entryPaymentMethod, authCode, opNumber)
+    await onGenerateBarcode(entryPaymentMethod)
   }
 
   const processDelivery = (record: CustodyRecord) => {
@@ -185,10 +139,9 @@ export function ClientRegistration({
 
     setExtraHours(extraH > 0 ? extraH : 0)
     setExtraAmount(amount > 0 ? amount : 0)
+    setExtraAmount(amount > 0 ? amount : 0)
     setPaymentMethod('Efectivo')
     setPendingRecord(record)
-    setExitAuthCode(null)
-    setExitOpNumber(null)
     setIsModalOpen(true)
   }
 
@@ -216,51 +169,6 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
-    let authCode: string | null = null;
-    let opNumber: string | null = null;
-
-    if (method === 'Tarjeta' && extraCharge > 0) {
-      setIsProcessingCard(true)
-      try {
-        const ticketId = Math.floor(Math.random() * 90000) + 10000;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds timeout
-        const res = await fetch('http://localhost:3001/api/pos/payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: extraCharge, ticket: ticketId }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        const data = await res.json();
-        setIsProcessingCard(false)
-        if (!data.success || (data.response && data.response.responseCode !== 0)) {
-          let errorMsg = data.response?.responseCode || data.error || 'Error Desconocido';
-          if (typeof data.error === 'string') {
-            if (data.error.includes('Another message was already sent')) {
-              errorMsg = 'El POS está ocupado procesando un pago anterior. Cancele la transacción en la máquina (botón rojo X) antes de intentar de nuevo.';
-            } else if (data.error.includes('You have to connect to a POS')) {
-              errorMsg = 'El POS físico no está vinculado. Asegúrese de hacer clic en "Conectar" desde el panel de control del servidor IM30 (puerto 3001) antes de cobrar.';
-            }
-          }
-          alert('Pago rechazado por el POS. (Detalle: ' + errorMsg + ')');
-          return;
-        }
-
-        if (data.response) {
-          authCode = data.response.authorizationCode?.toString() || null;
-          opNumber = data.response.operationNumber?.toString() || null;
-        }
-      } catch (err: any) {
-        setIsProcessingCard(false)
-        if (err.name === 'AbortError') {
-          alert('Tiempo de espera agotado. El POS IM30 no respondió en 90 segundos. Asegúrese de que el equipo esté conectado y reinicie la transacción.');
-        } else {
-          alert('No se pudo comunicar con el POS IM30 (Asegúrese de que el backend POS esté corriendo en el puerto 3001)');
-        }
-        return;
-      }
-    }
 
     const token = useCustodyStore.getState().currentUser?.token || ''
     let extraFolio: number | null = null
@@ -277,16 +185,13 @@ export function ClientRegistration({
     }
 
     setExtraFolioState(extraFolio)
-    setExitAuthCode(authCode)
-    setExitOpNumber(opNumber)
-
     // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
       if (pendingRecord) {
         handlePrintDelivery()
       }
 
-      const success = await onDeliver(code, extraCharge, method, extraFolio, authCode, opNumber)
+      const success = await onDeliver(code, extraCharge, method, extraFolio)
       if (success) {
         setDeliveryCode('')
         setPendingRecord(null)

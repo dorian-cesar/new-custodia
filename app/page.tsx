@@ -42,12 +42,12 @@ export default function CustodyPage() {
   const isCashOpen = currentCashRegister?.status === 'open'
   const stats = getCurrentRegisterStats()
 
-  const handleGenerateBarcode = async (paymentMethod: string, authCode?: string | null, opNumber?: string | null): Promise<CustodyRecord | null> => {
+  const handleGenerateBarcode = async (paymentMethod: string): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
       return null
     }
 
-    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize, paymentMethod, authCode, opNumber)
+    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize, paymentMethod)
     if (record) {
       setCurrentRecord(record)
       setSelectedLockerId(null)
@@ -57,10 +57,10 @@ export default function CustodyPage() {
     return record
   }
 
-  const handleDeliver = async (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null, authCode?: string | null, opNumber?: string | null): Promise<boolean> => {
+  const handleDeliver = async (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null): Promise<boolean> => {
     const record = records.find((r) => r.code === code && r.status === 'Activo')
     if (!record) return false
-    return await deliverRecord(record.id, extraCharge, paymentMethod, extraFolio, authCode, opNumber)
+    return await deliverRecord(record.id, extraCharge, paymentMethod, extraFolio)
   }
 
   if (!mounted) {

@@ -158,8 +158,6 @@ export const useCustodyStore = create<CustodyState>()(
         status: 'Activo',
         price: sizeOption.price,
         folio: folio || undefined,
-        entryAuthCode: authCode,
-        entryOpNumber: opNumber
       }
 
       // Sync record creation to DB to get ID
@@ -196,7 +194,7 @@ export const useCustodyStore = create<CustodyState>()(
       return byDocument.sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime())
     },
 
-    deliverRecord: async (recordId, extraCharge = 0, paymentMethod = 'Efectivo', extraFolio = null, authCode = null, opNumber = null) => {
+    deliverRecord: async (recordId, extraCharge = 0, paymentMethod = 'Efectivo', extraFolio = null) => {
       const { records, currentCashRegister } = get()
       const record = records.find((r) => r.id === recordId)
       
@@ -209,7 +207,7 @@ export const useCustodyStore = create<CustodyState>()(
       }
 
       // Sync delivery to DB
-      await dbDeliverRecord(recordId, record.lockerId, extraFolio, authCode, opNumber)
+      await dbDeliverRecord(recordId, record.lockerId, extraFolio)
 
       // Apply extra charge transaction if any
       if (extraCharge > 0) {
@@ -224,8 +222,6 @@ export const useCustodyStore = create<CustodyState>()(
                 status: 'Entregado', 
                 exitTime: new Date().toISOString(),
                 extraFolio: extraFolio || undefined,
-                exitAuthCode: authCode,
-                exitOpNumber: opNumber
               }
             : r
         ),

@@ -85,11 +85,6 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
           <p style={{ margin: '3px 0', fontSize: '14px' }}>
             <strong>Pagado: ${record.price.toLocaleString('es-CL')}</strong>
           </p>
-          {record.entryAuthCode && (
-            <p style={{ margin: '3px 0', fontSize: '10px' }}>
-              Aut: {record.entryAuthCode} {record.entryOpNumber ? `| Op: ${record.entryOpNumber}` : ''}
-            </p>
-          )}
         </div>
 
         <div style={{ textAlign: 'center' }}>
