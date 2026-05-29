@@ -352,7 +352,7 @@ export default function AdminPage() {
             <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-emerald-500" /> Ingresos Hoy
             </h3>
-            <p className="text-3xl font-bold text-foreground relative z-10">${ingresosHoy.toLocaleString('es-CL')}</p>
+            <p className="text-3xl font-bold text-foreground relative z-10">Gs. {ingresosHoy.toLocaleString('es-PY')}</p>
           </div>
           <div className="bg-card rounded-xl p-5 border border-border flex flex-col justify-center relative overflow-hidden group">
             <div className="absolute -right-6 -top-6 text-primary/10 group-hover:scale-110 transition-transform duration-300">
@@ -361,7 +361,7 @@ export default function AdminPage() {
             <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" /> Ingresos Últimos 7 Días
             </h3>
-            <p className="text-3xl font-bold text-foreground relative z-10">${ingresosSemana.toLocaleString('es-CL')}</p>
+            <p className="text-3xl font-bold text-foreground relative z-10">Gs. {ingresosSemana.toLocaleString('es-PY')}</p>
           </div>
           <div className="bg-card rounded-xl p-5 border border-border flex flex-col justify-center relative overflow-hidden group">
             <div className="absolute -right-6 -top-6 text-indigo-500/10 group-hover:scale-110 transition-transform duration-300">
@@ -370,7 +370,7 @@ export default function AdminPage() {
             <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-indigo-500" /> Ingresos Últimos 30 Días
             </h3>
-            <p className="text-3xl font-bold text-foreground relative z-10">${ingresosMes.toLocaleString('es-CL')}</p>
+            <p className="text-3xl font-bold text-foreground relative z-10">Gs. {ingresosMes.toLocaleString('es-PY')}</p>
           </div>
         </div>
 
@@ -482,7 +482,7 @@ export default function AdminPage() {
                 {lockerSizes.map((sizeObj) => (
                   <TableRow key={sizeObj.value} className="border-border">
                     <TableCell className="text-foreground font-medium">{sizeObj.label}</TableCell>
-                    <TableCell className="text-foreground">${sizeObj.price.toLocaleString()}</TableCell>
+                    <TableCell className="text-foreground">Gs. {sizeObj.price.toLocaleString('es-PY')}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => openEditPriceDialog(sizeObj)} className="gap-1">
                         <Pencil className="h-3.5 w-3.5" />
@@ -534,11 +534,11 @@ export default function AdminPage() {
                         <TableCell className="text-foreground text-sm">
                           {register.closedAt ? formatDateTime(register.closedAt) : <span className="text-emerald-500 font-medium">Activo ahora</span>}
                         </TableCell>
-                        <TableCell className="text-foreground">${register.openingAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-foreground">Gs. {register.openingAmount.toLocaleString('es-PY')}</TableCell>
                         <TableCell className="text-foreground">
-                          {register.closingAmount !== null ? `$${register.closingAmount.toLocaleString()}` : '-'}
+                          {register.closingAmount !== null ? `Gs. ${register.closingAmount.toLocaleString('es-PY')}` : '-'}
                         </TableCell>
-                        <TableCell className="text-foreground">${register.totalSales.toLocaleString()}</TableCell>
+                        <TableCell className="text-foreground">Gs. {register.totalSales.toLocaleString('es-PY')}</TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             register.status === 'open' 

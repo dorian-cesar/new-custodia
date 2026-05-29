@@ -109,7 +109,7 @@ export function ClientRegistration({
       return
     }
     if (!selectedLockerId || !selectedSize || !clientDocument?.trim()) {
-      alert("Por favor, selecciona un casillero, el tamaño del equipaje y escribe el RUT del cliente antes de cobrar.");
+      alert("Por favor, selecciona un casillero, el tamaño del equipaje y escribe la Cédula / RUC del cliente antes de cobrar.");
       return
     }
     setEntryPaymentMethod('Efectivo')
@@ -133,8 +133,8 @@ export function ClientRegistration({
     if (diffHours > 24) {
       extraH = diffHours - 24
       const rawAmount = (record.price / 24) * extraH
-      // Ley de redondeo en Chile (redondeo a la decena más cercana)
-      amount = Math.round(rawAmount / 10) * 10
+      // Sin ley de redondeo especial en Paraguay
+      amount = Math.round(rawAmount)
     }
 
     setExtraHours(extraH > 0 ? extraH : 0)
@@ -148,7 +148,7 @@ export function ClientRegistration({
   const handleDeliverClick = () => {
     setDeliveryError('')
     if (!deliveryCode.trim()) {
-      setDeliveryError('Ingrese el código de custodia o RUT del cliente')
+      setDeliveryError('Ingrese el código de custodia o Cédula / RUC del cliente')
       return
     }
 
@@ -156,7 +156,7 @@ export function ClientRegistration({
     const records = getActiveRecordsByInput(input)
 
     if (records.length === 0) {
-      setDeliveryError('Código o RUT no encontrado, o custodia ya entregada')
+      setDeliveryError('Código o Cédula / RUC no encontrado, o custodia ya entregada')
       return
     }
 
@@ -249,12 +249,12 @@ export function ClientRegistration({
         <div className="border-t border-border pt-4 space-y-3">
           <Label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Key className="h-4 w-4" />
-            Entregar Custodia (Código o RUT)
+            Entregar Custodia (Código o Cédula / RUC)
           </Label>
           <Input
             value={deliveryCode}
             onChange={(e) => setDeliveryCode(e.target.value)}
-            placeholder="Código de barras o RUT / DNI"
+            placeholder="Código de barras o Cédula / RUC"
             className="bg-input"
           />
           {deliveryError && (
@@ -302,7 +302,7 @@ export function ClientRegistration({
 
             <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
               <span className="font-semibold text-lg">Total a cobrar:</span>
-              <span className="font-bold text-2xl text-primary">${entryPrice.toLocaleString()}</span>
+              <span className="font-bold text-2xl text-primary">Gs. {entryPrice.toLocaleString('es-PY')}</span>
             </div>
 
             <div className="space-y-2 border-t border-border pt-4">
@@ -358,7 +358,7 @@ export function ClientRegistration({
                       <span className="font-medium text-muted-foreground">Vuelto a entregar:</span>
                       <span className={`font-bold text-sm ${entryCashReceived - entryPrice >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                         {entryCashReceived - entryPrice >= 0
-                          ? `$${(entryCashReceived - entryPrice).toLocaleString('es-CL')}`
+                          ? `Gs. ${(entryCashReceived - entryPrice).toLocaleString('es-PY')}`
                           : 'Monto insuficiente'
                         }
                       </span>
@@ -442,7 +442,7 @@ export function ClientRegistration({
                 </div>
                 <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
                   <span className="font-semibold text-lg">Total extra a cobrar:</span>
-                  <span className="font-bold text-2xl text-destructive">${extraAmount.toLocaleString()}</span>
+                  <span className="font-bold text-2xl text-destructive">Gs. {extraAmount.toLocaleString('es-PY')}</span>
                 </div>
               </>
             ) : (
@@ -516,7 +516,7 @@ export function ClientRegistration({
                       <span className="font-medium text-muted-foreground">Vuelto a entregar:</span>
                       <span className={`font-bold text-sm ${cashReceived - extraAmount >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                         {cashReceived - extraAmount >= 0
-                          ? `$${(cashReceived - extraAmount).toLocaleString('es-CL')}`
+                          ? `Gs. ${(cashReceived - extraAmount).toLocaleString('es-PY')}`
                           : 'Monto insuficiente'
                         }
                       </span>
@@ -556,7 +556,7 @@ export function ClientRegistration({
               Múltiples Casilleros Encontrados
             </DialogTitle>
             <DialogDescription>
-              El RUT ingresado tiene varios casilleros activos. Seleccione cuál desea entregar:
+              El número de Cédula / RUC tiene varios casilleros activos. Seleccione cuál desea entregar:
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 overflow-x-auto">
@@ -579,7 +579,7 @@ export function ClientRegistration({
                       <td className="px-4 py-3">{locker ? `${locker.row},${locker.col}` : r.lockerId}</td>
                       <td className="px-4 py-3">{r.size}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {new Date(r.entryTime).toLocaleString('es-CL')}
+                        {new Date(r.entryTime).toLocaleString('es-PY')}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button 

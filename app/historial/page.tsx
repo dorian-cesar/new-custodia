@@ -89,7 +89,7 @@ export default function HistorialPage() {
               <Input
                 value={searchDocument}
                 onChange={(e) => setSearchDocument(e.target.value)}
-                placeholder="RUT / DNI / Pasaporte"
+                placeholder="Cédula / RUC"
                 className="bg-input"
               />
             </div>
@@ -145,14 +145,14 @@ export default function HistorialPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">CÓDIGO / RUT</TableHead>
+                  <TableHead className="text-muted-foreground">CÓDIGO / CÉDULA</TableHead>
                   <TableHead className="text-muted-foreground"># CASILLERO</TableHead>
-                  <TableHead className="text-muted-foreground">RUT/DNI</TableHead>
+                  <TableHead className="text-muted-foreground">CÉDULA/RUC</TableHead>
                   <TableHead className="text-muted-foreground">ENTRADA</TableHead>
                   <TableHead className="text-muted-foreground">SALIDA</TableHead>
                   <TableHead className="text-muted-foreground">TAMANO</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
-                  <TableHead className="text-muted-foreground">$ VALOR</TableHead>
+                  <TableHead className="text-muted-foreground">Gs. VALOR</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -189,7 +189,7 @@ export default function HistorialPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-foreground">
-                        ${record.price.toLocaleString()}
+                        Gs. {record.price.toLocaleString('es-PY')}
                       </TableCell>
                     </TableRow>
                   ))

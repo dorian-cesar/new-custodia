@@ -7,11 +7,11 @@ export interface LockerSizeOption {
 }
 
 export const LOCKER_SIZES: LockerSizeOption[] = [
-  { value: 'S', label: 'S Bolso Pequeno', price: 1500 },
-  { value: 'M', label: 'M Maleta Mediana', price: 2500 },
-  { value: 'L', label: 'L Maleta Grande', price: 3500 },
-  { value: 'XL', label: 'XL Equipaje Extra Grande', price: 4500 },
-  { value: 'XXL', label: 'XXL Sacos / Fardos', price: 6000 },
+  { value: 'S', label: 'S Bolso Pequeno', price: 15000 },
+  { value: 'M', label: 'M Maleta Mediana', price: 25000 },
+  { value: 'L', label: 'L Maleta Grande', price: 35000 },
+  { value: 'XL', label: 'XL Equipaje Extra Grande', price: 45000 },
+  { value: 'XXL', label: 'XXL Sacos / Fardos', price: 60000 },
 ]
 
 export interface CustodyRecord {
@@ -84,7 +84,7 @@ export function generateCode(document: string): string {
 
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleString('es-CL', {
+  return d.toLocaleString('es-PY', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

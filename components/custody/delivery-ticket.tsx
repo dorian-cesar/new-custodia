@@ -69,7 +69,7 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
 
           <div style={{ textAlign: 'right', marginBottom: '5px' }}>
             <p style={{ margin: '3px 0', fontSize: '12px' }}>
-              Base Pagada: ${record.price.toLocaleString('es-CL')}
+              Base Pagada: Gs. {record.price.toLocaleString('es-PY')}
             </p>
             {extraAmount > 0 && (
               <>
@@ -77,7 +77,7 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
                   Hrs Extra: {extraHours.toFixed(2)}
                 </p>
                 <p style={{ margin: '3px 0', fontSize: '14px', fontWeight: 'bold' }}>
-                  Recargo: ${extraAmount.toLocaleString('es-CL')}
+                  Recargo: Gs. {extraAmount.toLocaleString('es-PY')}
                 </p>
               </>
             )}

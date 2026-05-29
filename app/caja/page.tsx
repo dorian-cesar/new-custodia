@@ -182,7 +182,7 @@ export default function CajaPage() {
                   {currentCashRegister && formatDateTime(currentCashRegister.openedAt)}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Monto inicial: ${currentCashRegister?.openingAmount.toLocaleString()}
+                  Monto inicial: Gs. {currentCashRegister?.openingAmount.toLocaleString('es-PY')}
                 </p>
               </div>
 
@@ -191,7 +191,7 @@ export default function CajaPage() {
                   <TrendingUp className="h-4 w-4" />
                   <span className="text-sm">Ventas</span>
                 </div>
-                <p className="text-2xl font-bold text-primary">${stats.totalSales.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-primary">Gs. {stats.totalSales.toLocaleString('es-PY')}</p>
               </div>
 
               <div className="bg-secondary/50 rounded-lg p-4">
@@ -207,7 +207,7 @@ export default function CajaPage() {
                   <DollarSign className="h-4 w-4" />
                   <span className="text-sm">Saldo Actual</span>
                 </div>
-                <p className="text-2xl font-bold text-accent">${stats.balance.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-accent">Gs. {stats.balance.toLocaleString('es-PY')}</p>
               </div>
             </div>
           ) : (
@@ -270,7 +270,7 @@ export default function CajaPage() {
                           tx.type === 'income' ? 'text-primary' : 'text-destructive'
                         }`}
                       >
-                        {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
+                        {tx.type === 'income' ? '+' : '-'}Gs. {tx.amount.toLocaleString('es-PY')}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -317,17 +317,17 @@ export default function CajaPage() {
                         {register.closedAt ? formatDateTime(register.closedAt) : '-'}
                       </TableCell>
                       <TableCell className="text-foreground text-right">
-                        ${register.openingAmount.toLocaleString()}
+                        Gs. {register.openingAmount.toLocaleString('es-PY')}
                       </TableCell>
                       <TableCell className="text-primary text-right font-medium">
-                        ${register.totalSales.toLocaleString()}
+                        Gs. {register.totalSales.toLocaleString('es-PY')}
                       </TableCell>
                       <TableCell className="text-accent text-right font-medium">
-                        ${(register.openingAmount + register.totalSales).toLocaleString()}
+                        Gs. {(register.openingAmount + register.totalSales).toLocaleString('es-PY')}
                       </TableCell>
                       <TableCell className="text-foreground text-right">
                         {register.closingAmount !== null
-                          ? `$${register.closingAmount.toLocaleString()}`
+                          ? `Gs. ${register.closingAmount.toLocaleString('es-PY')}`
                           : '-'}
                       </TableCell>
                       <TableCell className={`text-right font-medium ${
@@ -342,7 +342,7 @@ export default function CajaPage() {
                         {register.closingAmount !== null
                           ? (() => {
                               const diff = register.closingAmount - (register.openingAmount + register.totalSales)
-                              return `${diff > 0 ? '+' : ''}$${diff.toLocaleString()}`
+                              return `${diff > 0 ? '+' : ''}Gs. ${diff.toLocaleString('es-PY')}`
                             })()
                           : '-'}
                       </TableCell>
@@ -427,23 +427,23 @@ export default function CajaPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Monto Inicial</span>
-                <span className="text-sm font-semibold text-foreground">${currentCashRegister?.openingAmount.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-foreground">Gs. {currentCashRegister?.openingAmount.toLocaleString('es-PY')}</span>
               </div>
               <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Total Ventas</span>
-                <span className="text-sm font-semibold text-primary">${stats.totalSales.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-primary">Gs. {stats.totalSales.toLocaleString('es-PY')}</span>
               </div>
               <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">En Efectivo</span>
-                <span className="text-sm font-semibold text-foreground">${ingresosEfectivo.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-foreground">Gs. {ingresosEfectivo.toLocaleString('es-PY')}</span>
               </div>
               <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Por Tarjeta</span>
-                <span className="text-sm font-semibold text-muted-foreground">${ingresosTarjeta.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-muted-foreground">Gs. {ingresosTarjeta.toLocaleString('es-PY')}</span>
               </div>
               <div className="col-span-2 bg-accent/10 border border-accent/20 rounded-md p-2.5 flex justify-between items-center mt-1">
                 <span className="text-xs font-bold text-accent uppercase tracking-wider">Efectivo Físico Esperado</span>
-                <span className="text-lg font-black text-accent">${saldoEsperadoEfectivo.toLocaleString()}</span>
+                <span className="text-lg font-black text-accent">Gs. {saldoEsperadoEfectivo.toLocaleString('es-PY')}</span>
               </div>
             </div>
             <div className="space-y-2">
@@ -451,7 +451,7 @@ export default function CajaPage() {
                 <Label>Monto Físico Contado (Efectivo)</Label>
                 {diferenciaCaja !== null && (
                   <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
-                    {diferenciaCaja === 0 ? 'Caja Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                    {diferenciaCaja === 0 ? 'Caja Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +Gs. ${diferenciaCaja.toLocaleString('es-PY')}` : `Faltante: -Gs. ${Math.abs(diferenciaCaja).toLocaleString('es-PY')}`}
                   </span>
                 )}
               </div>

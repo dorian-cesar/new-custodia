@@ -55,7 +55,7 @@ export function LockerSelection({
             <SelectContent>
               {lockerSizes.map((size) => (
                 <SelectItem key={size.value} value={size.value}>
-                  {size.label} - ${size.price.toLocaleString()}
+                  {size.label} - Gs. {size.price.toLocaleString('es-PY')}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -65,12 +65,12 @@ export function LockerSelection({
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-sm text-muted-foreground">
             <CreditCard className="h-4 w-4" />
-            RUT / DNI / Pasaporte
+            Cédula / RUC
           </Label>
           <Input
             value={clientDocument}
             onChange={(e) => onChangeDocument(e.target.value)}
-            placeholder="12345678k"
+            placeholder="Ej: 1234567 o 80012345-1"
             className="bg-input"
           />
         </div>
