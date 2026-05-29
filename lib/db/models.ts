@@ -137,7 +137,7 @@ UserModel.init(
 );
 
 export const syncDatabase = async () => {
-  await sequelize.sync({ alter: true });
+  await sequelize.sync();
   
   // Upsert or reset the default test accounts so they are always guaranteed to work locally
   const cajeroHashed = await bcrypt.hash('1234', 10);
