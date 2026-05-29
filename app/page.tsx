@@ -6,6 +6,7 @@ import { Header } from '@/components/custody/header'
 import { LockerSelection } from '@/components/custody/locker-selection'
 import { ClientRegistration } from '@/components/custody/client-registration'
 import { CashStatusBanner } from '@/components/custody/cash-status-banner'
+import { OverdueAlert } from '@/components/custody/overdue-alert'
 import { useCustodyStore } from '@/lib/custody-store'
 import { type LockerSize, type CustodyRecord } from '@/lib/types'
 
@@ -82,6 +83,8 @@ export default function CustodyPage() {
       />
 
       <main className="container mx-auto px-6 py-8">
+        <OverdueAlert />
+        
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <LockerSelection

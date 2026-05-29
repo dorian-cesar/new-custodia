@@ -70,6 +70,16 @@ export default function CajaPage() {
     ? cashTransactions.filter((t) => t.registerId === currentCashRegister.id)
     : []
 
+  const ingresosTarjeta = Math.round(currentTransactions
+    .filter((t) => t.type === 'income' && t.description.includes('Tarjeta'))
+    .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
+
+  const ingresosEfectivo = stats.totalSales - ingresosTarjeta
+  const saldoEsperadoEfectivo = (currentCashRegister?.openingAmount || 0) + ingresosEfectivo
+  
+  const montoContado = parseFloat(closingAmount)
+  const diferenciaCaja = !isNaN(montoContado) ? montoContado - saldoEsperadoEfectivo : null
+
   const handleOpenCash = () => {
     setError('')
     const amount = parseFloat(openingAmount)
@@ -414,30 +424,43 @@ export default function CajaPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Monto inicial:</span>
-                <span className="text-foreground">
-                  ${currentCashRegister?.openingAmount.toLocaleString()}
-                </span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Monto Inicial</span>
+                <span className="text-sm font-semibold text-foreground">${currentCashRegister?.openingAmount.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Ventas totales:</span>
-                <span className="text-primary">${stats.totalSales.toLocaleString()}</span>
+              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Total Ventas</span>
+                <span className="text-sm font-semibold text-primary">${stats.totalSales.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between font-medium border-t border-border pt-2">
-                <span className="text-foreground">Saldo esperado:</span>
-                <span className="text-accent">${stats.balance.toLocaleString()}</span>
+              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">En Efectivo</span>
+                <span className="text-sm font-semibold text-foreground">${ingresosEfectivo.toLocaleString()}</span>
+              </div>
+              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Por Tarjeta</span>
+                <span className="text-sm font-semibold text-muted-foreground">${ingresosTarjeta.toLocaleString()}</span>
+              </div>
+              <div className="col-span-2 bg-accent/10 border border-accent/20 rounded-md p-2.5 flex justify-between items-center mt-1">
+                <span className="text-xs font-bold text-accent uppercase tracking-wider">Efectivo Físico Esperado</span>
+                <span className="text-lg font-black text-accent">${saldoEsperadoEfectivo.toLocaleString()}</span>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Monto Contado</Label>
+              <div className="flex justify-between items-end">
+                <Label>Monto Físico Contado (Efectivo)</Label>
+                {diferenciaCaja !== null && (
+                  <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
+                    {diferenciaCaja === 0 ? 'Caja Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                  </span>
+                )}
+              </div>
               <Input
                 type="number"
                 value={closingAmount}
                 onChange={(e) => setClosingAmount(e.target.value)}
                 placeholder="0"
-                className="bg-input"
+                className={`bg-input ${diferenciaCaja !== null && diferenciaCaja !== 0 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
             </div>
             <div className="space-y-2">

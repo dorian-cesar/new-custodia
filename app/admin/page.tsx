@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import {
   Users, Plus, Pencil, Trash2, Shield,
   User as UserIcon, LogOut, ArrowLeft,
-  History, Clock, BookOpen
+  History, Clock, BookOpen, Box,
+  DollarSign, Calendar, TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,7 @@ import {
 import { useCustodyStore } from '@/lib/custody-store'
 import { getUsers, createUser, updateUser, deleteUser, updatePrice, getInitialState } from '@/app/actions/db-actions'
 import { formatDateTime } from '@/lib/types'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
 interface UserRow {
   id: number
@@ -67,7 +69,8 @@ export default function AdminPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Price edit dialog state
-  const { lockerSizes, hydrateState, cashRegisters } = useCustodyStore()
+  // Dashboard state
+  const { lockerSizes, hydrateState, cashRegisters, lockers, records, cashTransactions } = useCustodyStore()
   const [showEditPriceDialog, setShowEditPriceDialog] = useState(false)
   const [editingSize, setEditingSize] = useState<{size: string, label: string} | null>(null)
   const [editPrice, setEditPrice] = useState<string>('')
@@ -228,6 +231,23 @@ export default function AdminPage() {
   }
 
   // ── Render ──
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const startOf7Days = startOfToday - (6 * 24 * 60 * 60 * 1000)
+  const startOf30Days = startOfToday - (29 * 24 * 60 * 60 * 1000)
+
+  const ingresosHoy = cashTransactions
+    .filter(t => t.type === 'income' && new Date(t.timestamp).getTime() >= startOfToday)
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  const ingresosSemana = cashTransactions
+    .filter(t => t.type === 'income' && new Date(t.timestamp).getTime() >= startOf7Days)
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  const ingresosMes = cashTransactions
+    .filter(t => t.type === 'income' && new Date(t.timestamp).getTime() >= startOf30Days)
+    .reduce((sum, t) => sum + t.amount, 0)
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -260,6 +280,100 @@ export default function AdminPage() {
       </header>
 
       <main className="container mx-auto px-6 py-8">
+        {/* ── Supervisor Dashboard ── */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-1 bg-card rounded-xl p-6 border border-border flex flex-col justify-center items-center h-[300px]">
+            <h2 className="text-lg font-semibold text-card-foreground mb-4 w-full flex items-center gap-2">
+              <Box className="h-5 w-5 text-muted-foreground" />
+              Ocupación Actual
+            </h2>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Ocupados', value: lockers.filter(l => l.isOccupied).length },
+                    { name: 'Disponibles', value: lockers.filter(l => !l.isOccupied).length }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  <Cell fill="var(--color-primary, #3b82f6)" />
+                  <Cell fill="var(--color-muted, #94a3b8)" />
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-border, #334155)', color: '#fff', borderRadius: '8px' }} 
+                  itemStyle={{ color: '#fff' }} 
+                />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+            <div className="bg-card rounded-xl p-4 border border-border flex flex-col justify-center">
+              <h3 className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5" /> Total Casilleros
+              </h3>
+              <p className="text-3xl font-bold text-foreground">{lockers.length}</p>
+            </div>
+            <div className="bg-card rounded-xl p-4 border border-border flex flex-col justify-center">
+              <h3 className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+                <Box className="h-3.5 w-3.5 text-emerald-500" /> Disponibles
+              </h3>
+              <p className="text-3xl font-bold text-emerald-500">{lockers.filter(l => !l.isOccupied).length}</p>
+            </div>
+            <div className="bg-card rounded-xl p-4 border border-border flex flex-col justify-center">
+              <h3 className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-amber-500" /> Ocupados
+              </h3>
+              <p className="text-3xl font-bold text-amber-500">{lockers.filter(l => l.isOccupied).length}</p>
+            </div>
+            <div className="bg-card rounded-xl p-4 border border-border flex flex-col justify-center">
+              <h3 className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-destructive" /> +24 Horas
+              </h3>
+              <p className="text-3xl font-bold text-destructive">
+                {records.filter(r => r.status === 'Activo' && (Date.now() - new Date(r.entryTime).getTime()) / (1000 * 60 * 60) >= 24).length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Income Metrics ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-card rounded-xl p-5 border border-border flex flex-col justify-center relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 text-emerald-500/10 group-hover:scale-110 transition-transform duration-300">
+              <DollarSign className="w-32 h-32" />
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-emerald-500" /> Ingresos Hoy
+            </h3>
+            <p className="text-3xl font-bold text-foreground relative z-10">${ingresosHoy.toLocaleString('es-CL')}</p>
+          </div>
+          <div className="bg-card rounded-xl p-5 border border-border flex flex-col justify-center relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 text-primary/10 group-hover:scale-110 transition-transform duration-300">
+              <Calendar className="w-32 h-32" />
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" /> Ingresos Últimos 7 Días
+            </h3>
+            <p className="text-3xl font-bold text-foreground relative z-10">${ingresosSemana.toLocaleString('es-CL')}</p>
+          </div>
+          <div className="bg-card rounded-xl p-5 border border-border flex flex-col justify-center relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 text-indigo-500/10 group-hover:scale-110 transition-transform duration-300">
+              <TrendingUp className="w-32 h-32" />
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-indigo-500" /> Ingresos Últimos 30 Días
+            </h3>
+            <p className="text-3xl font-bold text-foreground relative z-10">${ingresosMes.toLocaleString('es-CL')}</p>
+          </div>
+        </div>
+
         <div className="bg-card rounded-xl p-6 border border-border">
           {/* Title + Create button */}
           <div className="flex items-center justify-between mb-6">

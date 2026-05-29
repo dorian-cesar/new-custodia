@@ -270,13 +270,13 @@ export const useCustodyStore = create<CustodyState>()(
         (t) => t.registerId === currentCashRegister.id
       )
       
-      const totalSales = registerTransactions
+      const totalSales = Math.round(registerTransactions
         .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
       
-      const totalExpenses = registerTransactions
+      const totalExpenses = Math.round(registerTransactions
         .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
 
       const closedRegisterData = {
         ...currentCashRegister,
@@ -343,13 +343,13 @@ export const useCustodyStore = create<CustodyState>()(
         (t) => t.registerId === currentCashRegister.id
       )
 
-      const income = registerTransactions
+      const income = Math.round(registerTransactions
         .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
 
-      const expenses = registerTransactions
+      const expenses = Math.round(registerTransactions
         .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
 
       return {
         totalSales: income,

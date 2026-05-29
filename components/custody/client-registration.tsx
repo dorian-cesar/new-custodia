@@ -45,7 +45,7 @@ export function ClientRegistration({
 
   // State for Entry Payment Modal
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false)
-  const [entryPaymentMethod, setEntryPaymentMethod] = useState<'Efectivo' | 'Débito'>('Efectivo')
+  const [entryPaymentMethod, setEntryPaymentMethod] = useState<'Efectivo' | 'Tarjeta'>('Efectivo')
   const [entryCashReceived, setEntryCashReceived] = useState<number>(0)
 
   // State for Extracharge Modal
@@ -54,7 +54,7 @@ export function ClientRegistration({
   const [extraAmount, setExtraAmount] = useState(0)
   const [extraHours, setExtraHours] = useState(0)
   const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Débito'>('Efectivo')
+  const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Tarjeta'>('Efectivo')
   const [extraFolioState, setExtraFolioState] = useState<number | null>(null)
   const [cashReceived, setCashReceived] = useState<number>(0)
   const [exitAuthCode, setExitAuthCode] = useState<string | null>(null)
@@ -121,7 +121,7 @@ export function ClientRegistration({
     let authCode: string | null = null;
     let opNumber: string | null = null;
 
-    if (entryPaymentMethod === 'Débito') {
+    if (entryPaymentMethod === 'Tarjeta') {
       setIsProcessingCard(true)
       try {
         const ticketId = Math.floor(Math.random() * 90000) + 10000;
@@ -178,7 +178,9 @@ export function ClientRegistration({
     
     if (diffHours > 24) {
       extraH = diffHours - 24
-      amount = Math.round((record.price / 24) * extraH)
+      const rawAmount = (record.price / 24) * extraH
+      // Ley de redondeo en Chile (redondeo a la decena más cercana)
+      amount = Math.round(rawAmount / 10) * 10
     }
 
     setExtraHours(extraH > 0 ? extraH : 0)
@@ -213,11 +215,11 @@ export function ClientRegistration({
     }
   }
 
-  const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Débito') => {
+  const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
     let authCode: string | null = null;
     let opNumber: string | null = null;
 
-    if (method === 'Débito' && extraCharge > 0) {
+    if (method === 'Tarjeta' && extraCharge > 0) {
       setIsProcessingCard(true)
       try {
         const ticketId = Math.floor(Math.random() * 90000) + 10000;
@@ -416,16 +418,16 @@ export function ClientRegistration({
                 </Button>
                 <Button
                   type="button"
-                  variant={entryPaymentMethod === 'Débito' ? 'default' : 'outline'}
+                  variant={entryPaymentMethod === 'Tarjeta' ? 'default' : 'outline'}
                   className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
-                    entryPaymentMethod === 'Débito' 
+                    entryPaymentMethod === 'Tarjeta' 
                       ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
                       : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
                   }`}
-                  onClick={() => setEntryPaymentMethod('Débito')}
+                  onClick={() => setEntryPaymentMethod('Tarjeta')}
                 >
                   <CreditCard className="h-5 w-5" />
-                  Débito
+                  Tarjeta
                 </Button>
               </div>
 
@@ -574,16 +576,16 @@ export function ClientRegistration({
                 </Button>
                 <Button
                   type="button"
-                  variant={paymentMethod === 'Débito' ? 'default' : 'outline'}
+                  variant={paymentMethod === 'Tarjeta' ? 'default' : 'outline'}
                   className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
-                    paymentMethod === 'Débito' 
+                    paymentMethod === 'Tarjeta' 
                       ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
                       : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
                   }`}
-                  onClick={() => setPaymentMethod('Débito')}
+                  onClick={() => setPaymentMethod('Tarjeta')}
                 >
                   <CreditCard className="h-5 w-5" />
-                  Débito
+                  Tarjeta
                 </Button>
               </div>
 
