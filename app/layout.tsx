@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import Script from 'next/script'
 import { DbInitProvider } from '@/components/DbInitProvider'
 import { AuthWrapper } from '@/components/auth-wrapper'
 import './globals.css'
@@ -38,6 +39,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className="font-sans antialiased">
+        <Script 
+          src="https://vpos.infonet.com.py:8888/checkout/javascript/dist/bancard-checkout-4.0.0.js" 
+          strategy="beforeInteractive" 
+        />
         <DbInitProvider>
           <AuthWrapper>
             {children}

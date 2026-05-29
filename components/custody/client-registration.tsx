@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { type CustodyRecord, type LockerSize } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
+import { BancardModal } from './bancard-modal'
 
 interface ClientRegistrationProps {
   selectedLockerId: number | null
@@ -61,6 +62,9 @@ export function ClientRegistration({
   // State for Multiple Records Selection Modal
   const [multiRecords, setMultiRecords] = useState<CustodyRecord[]>([])
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false)
+  
+  const [bancardMode, setBancardMode] = useState<'entry' | 'delivery' | null>(null)
+  const [bancardAmount, setBancardAmount] = useState(0)
 
   const ticketRef = useRef<HTMLDivElement>(null)
   const deliveryTicketRef = useRef<HTMLDivElement>(null)
@@ -117,7 +121,12 @@ export function ClientRegistration({
 
   const confirmEntryPayment = async () => {
     setIsEntryModalOpen(false)
-    await onGenerateBarcode(entryPaymentMethod)
+    if (entryPaymentMethod === 'Tarjeta') {
+      setBancardAmount(entryPrice)
+      setBancardMode('entry')
+    } else {
+      await onGenerateBarcode(entryPaymentMethod)
+    }
   }
 
   const processDelivery = (record: CustodyRecord) => {
@@ -167,6 +176,16 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
+    if (method === 'Tarjeta' && extraCharge > 0) {
+      setIsModalOpen(false)
+      setBancardAmount(extraCharge)
+      setBancardMode('delivery')
+    } else {
+      executeDelivery(code, extraCharge, method)
+    }
+  }
+
+  const executeDelivery = (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
     // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
       if (pendingRecord) {
@@ -184,11 +203,29 @@ export function ClientRegistration({
     }, 150)
   }
 
+  const handleBancardSuccess = async () => {
+    if (bancardMode === 'entry') {
+      setBancardMode(null)
+      await onGenerateBarcode('Tarjeta')
+    } else if (bancardMode === 'delivery' && pendingRecord) {
+      setBancardMode(null)
+      executeDelivery(pendingRecord.code, extraAmount, 'Tarjeta')
+    }
+  }
+
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
       <Ticket ref={ticketRef} record={currentRecord} />
       <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} />
       
+      <BancardModal 
+        isOpen={bancardMode !== null} 
+        onClose={() => setBancardMode(null)} 
+        onSuccess={handleBancardSuccess} 
+        amount={bancardAmount} 
+        description={bancardMode === 'entry' ? `Custodia ${selectedSizeInfo?.label}` : `Recargo Custodia ${pendingRecord?.code}`}
+      />
+
       <div className="flex items-center gap-2 mb-6">
         <BarcodeIcon className="h-5 w-5 text-muted-foreground" />
         <h2 className="text-lg font-semibold text-card-foreground">Registro de Cliente</h2>
