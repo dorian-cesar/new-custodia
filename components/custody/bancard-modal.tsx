@@ -42,7 +42,7 @@ export function BancardModal({ isOpen, onClose, onSuccess, amount, description }
             body: JSON.stringify({
               shopProcessId,
               amount,
-              description,
+              description: "Pago de custodia",
               currency: 'PYG',
               servicio: 'custodia-equipaje',
               canal: 'totem-sucursal',
