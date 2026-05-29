@@ -34,16 +34,18 @@ export function BancardModal({ isOpen, onClose, onSuccess, amount, description }
         try {
           const shopProcessId = Math.floor(Math.random() * 1000000000); // Unique integer ID
           
-          const response = await fetch('/api/bancard/pagosimple', {
+          const backendUrl = process.env.NEXT_PUBLIC_BANCARD_API_URL || 'http://localhost:3002/api/bancard/pagosimple';
+          
+          const response = await fetch(backendUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               shopProcessId,
               amount,
-              currency: 'PYG',
               description,
-              servicio: 'Custodia Terminal',
-              canal: 'Totem-POS',
+              currency: 'PYG',
+              servicio: 'custodia-equipaje',
+              canal: 'totem-sucursal',
               id: `CUST-${shopProcessId}`
             })
           });
