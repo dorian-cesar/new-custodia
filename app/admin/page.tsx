@@ -74,6 +74,7 @@ export default function AdminPage() {
   const [showEditPriceDialog, setShowEditPriceDialog] = useState(false)
   const [editingSize, setEditingSize] = useState<{size: string, label: string} | null>(null)
   const [editPrice, setEditPrice] = useState<string>('')
+  const [editLabel, setEditLabel] = useState<string>('')
   const [priceError, setPriceError] = useState('')
   const [isSavingPrice, setIsSavingPrice] = useState(false)
 
@@ -198,6 +199,7 @@ export default function AdminPage() {
   const openEditPriceDialog = (sizeObj: { value: string, label: string, price: number }) => {
     setEditingSize({ size: sizeObj.value, label: sizeObj.label })
     setEditPrice(sizeObj.price.toString())
+    setEditLabel(sizeObj.label)
     setPriceError('')
     setShowEditPriceDialog(true)
   }
@@ -209,10 +211,14 @@ export default function AdminPage() {
       setPriceError('Ingrese un precio válido')
       return
     }
+    if (!editLabel.trim()) {
+      setPriceError('Ingrese una etiqueta válida')
+      return
+    }
 
     setIsSavingPrice(true)
     try {
-      const result = await updatePrice(editingSize.size, newPrice)
+      const result = await updatePrice(editingSize.size, newPrice, editLabel.trim())
       if (result.success) {
         setShowEditPriceDialog(false)
         setEditingSize(null)
@@ -678,15 +684,24 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
-              Modificar Precio
+              Modificar Talla y Precio
             </DialogTitle>
             <DialogDescription>
-              Establezca el nuevo precio para el tamaño <strong className="text-foreground">{editingSize?.label}</strong>.
+              Establezca la nueva etiqueta y precio base para la talla <strong className="text-foreground">{editingSize?.size}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Precio ($)</Label>
+              <Label>Nombre de la Talla (Etiqueta)</Label>
+              <Input 
+                type="text" 
+                value={editLabel} 
+                onChange={(e) => setEditLabel(e.target.value)} 
+                className="bg-input" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Precio (Gs.)</Label>
               <Input 
                 type="number" 
                 value={editPrice} 

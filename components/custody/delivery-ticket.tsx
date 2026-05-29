@@ -1,8 +1,9 @@
 'use client'
 
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useEffect, useRef } from 'react'
 import { type CustodyRecord, formatDateTime } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
+import JsBarcode from 'jsbarcode'
 
 interface DeliveryTicketProps {
   record: CustodyRecord | null
@@ -13,8 +14,28 @@ interface DeliveryTicketProps {
 
 export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
   ({ record, extraHours, extraAmount, paymentMethod }, ref) => {
+    const barcodeRef = useRef<SVGSVGElement>(null)
     const lockers = useCustodyStore((state) => state.lockers)
     const lockerSizes = useCustodyStore((state) => state.lockerSizes)
+
+    useEffect(() => {
+      if (barcodeRef.current && record?.code) {
+        try {
+          JsBarcode(barcodeRef.current, record.code, {
+            format: 'CODE128',
+            width: 1.5,
+            height: 60,
+            displayValue: true,
+            fontSize: 12,
+            margin: 5,
+            background: '#ffffff',
+            lineColor: '#000000',
+          })
+        } catch (err) {
+          console.error('Barcode error', err)
+        }
+      }
+    }, [record?.code])
 
     if (!record) return null
 
@@ -72,6 +93,10 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
           </div>
 
           <div style={{ borderBottom: '1px dashed black', margin: '10px 0' }}></div>
+
+          <div style={{ textAlign: 'center' }}>
+            <svg ref={barcodeRef} style={{ width: '100%', maxWidth: '50mm', height: 'auto' }} />
+          </div>
 
           <div style={{ textAlign: 'center', marginTop: '10px' }}>
             <p style={{ margin: '0 0 5px 0', fontSize: '14px', fontWeight: 'bold' }}>¡Gracias por su preferencia!</p>

@@ -279,12 +279,12 @@ export async function getPrices() {
   return prices.map(p => p.get({ plain: true })) as { size: string, label: string, price: number }[];
 }
 
-export async function updatePrice(size: string, newPrice: number) {
+export async function updatePrice(size: string, newPrice: number, newLabel: string) {
   await syncDatabase();
   try {
     const priceRecord = await PriceModel.findOne({ where: { size } });
     if (!priceRecord) return { success: false, error: 'Tamaño no encontrado' };
-    await PriceModel.update({ price: newPrice }, { where: { size } });
+    await PriceModel.update({ price: newPrice, label: newLabel }, { where: { size } });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
