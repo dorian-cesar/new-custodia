@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/dialog'
 import { type CustodyRecord, type LockerSize } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
-import { sendBoleta } from '@/app/actions/db-actions'
 
 interface ClientRegistrationProps {
   selectedLockerId: number | null
@@ -55,7 +54,6 @@ export function ClientRegistration({
   const [extraHours, setExtraHours] = useState(0)
   const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Tarjeta'>('Efectivo')
-  const [extraFolioState, setExtraFolioState] = useState<number | null>(null)
   const [cashReceived, setCashReceived] = useState<number>(0)
   const [exitAuthCode, setExitAuthCode] = useState<string | null>(null)
   const [exitOpNumber, setExitOpNumber] = useState<string | null>(null)
@@ -169,34 +167,17 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
-
-    const token = useCustodyStore.getState().currentUser?.token || ''
-    let extraFolio: number | null = null
-
-    if (extraCharge > 0 && token) {
-      try {
-        const boletaRes = await sendBoleta("Recargo Custodia", extraCharge, token)
-        if (boletaRes.success && boletaRes.data) {
-          extraFolio = boletaRes.data.folio
-        }
-      } catch (err) {
-        console.error("Error al emitir boleta de recargo:", err)
-      }
-    }
-
-    setExtraFolioState(extraFolio)
     // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
       if (pendingRecord) {
         handlePrintDelivery()
       }
 
-      const success = await onDeliver(code, extraCharge, method, extraFolio)
+      const success = await onDeliver(code, extraCharge, method)
       if (success) {
         setDeliveryCode('')
         setPendingRecord(null)
         setIsModalOpen(false)
-        setExtraFolioState(null)
       } else {
         setDeliveryError('Error procesando la entrega')
       }
@@ -206,7 +187,7 @@ export function ClientRegistration({
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
       <Ticket ref={ticketRef} record={currentRecord} />
-      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} extraFolio={extraFolioState} authCode={exitAuthCode} opNumber={exitOpNumber} />
+      <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} />
       
       <div className="flex items-center gap-2 mb-6">
         <BarcodeIcon className="h-5 w-5 text-muted-foreground" />

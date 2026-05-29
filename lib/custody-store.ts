@@ -21,7 +21,6 @@ import {
   dbOpenCashRegister,
   dbCloseCashRegister,
   dbAddTransaction,
-  sendBoleta,
 } from '@/app/actions/db-actions'
 
 export interface User {
@@ -131,21 +130,6 @@ export const useCustodyStore = create<CustodyState>()(
       const sizeOption = get().lockerSizes.find((s) => s.value === size)
       if (!sizeOption) return null
 
-      // Intentar emitir boleta electrónica si tenemos token del usuario
-      const token = currentUser?.token || ''
-      let folio: number | null = null
-
-      if (token) {
-        try {
-          const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price, token)
-          if (boletaRes.success && boletaRes.data) {
-            folio = boletaRes.data.folio
-          }
-        } catch (err) {
-          console.error('Error al emitir boleta en la entrada:', err)
-        }
-      }
-
       const code = generateCode(clientDocument)
       
       const recordData: Omit<CustodyRecord, 'id'> = {
@@ -157,7 +141,6 @@ export const useCustodyStore = create<CustodyState>()(
         size,
         status: 'Activo',
         price: sizeOption.price,
-        folio: folio || undefined,
       }
 
       // Sync record creation to DB to get ID
@@ -168,7 +151,7 @@ export const useCustodyStore = create<CustodyState>()(
       }))
 
       await get().occupyLocker(lockerId, newRecord.id)
-      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}${folio ? ` - Folio: ${folio}` : ''}`, newRecord.id)
+      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}`, newRecord.id)
 
       return newRecord
     },
