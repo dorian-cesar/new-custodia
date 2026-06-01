@@ -100,7 +100,7 @@ export function BancardModal({ isOpen, onClose, onSuccess, amount, description }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-card border-border sm:max-w-[700px] w-[95vw] max-h-[95vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border sm:max-w-[700px] w-[95vw]">
         <DialogHeader>
           <DialogTitle>Pago con Bancard</DialogTitle>
           <DialogDescription>
@@ -108,7 +108,7 @@ export function BancardModal({ isOpen, onClose, onSuccess, amount, description }
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex flex-col items-center justify-center min-h-[750px] w-full relative">
+        <div className="flex flex-col items-center justify-center min-h-[650px] w-full relative">
           {loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/80 z-10">
               <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
@@ -128,7 +128,7 @@ export function BancardModal({ isOpen, onClose, onSuccess, amount, description }
             </div>
           )}
 
-          <div id="iframe-container" ref={iframeContainerRef} style={{ width: '100%', minHeight: '750px', overflow: 'hidden' }}></div>
+          <div id="iframe-container" ref={iframeContainerRef} style={{ width: '100%', minHeight: '650px' }}></div>
         </div>
       </DialogContent>
     </Dialog>
