@@ -224,6 +224,7 @@ export function ClientRegistration({
         onSuccess={handleBancardSuccess} 
         amount={bancardAmount} 
         description={bancardMode === 'entry' ? `Custodia ${selectedSizeInfo?.label}` : `Recargo Custodia ${pendingRecord?.code}`}
+        clientId={useCustodyStore.getState().currentUser?.username || 'sin-usuario'}
       />
 
       <div className="flex items-center gap-2 mb-6">
@@ -567,7 +568,7 @@ export function ClientRegistration({
 
       {/* MULTIPLE RECORDS MODAL */}
       <Dialog open={isMultiModalOpen} onOpenChange={setIsMultiModalOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl">
+        <DialogContent className="bg-card border-border sm:max-w-[850px] w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Hash className="h-5 w-5" />

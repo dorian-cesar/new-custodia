@@ -46,10 +46,6 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className="font-sans antialiased">
-        <Script 
-          src="https://vpos.infonet.com.py:8888/checkout/javascript/dist/bancard-checkout-4.0.0.js" 
-          strategy="beforeInteractive" 
-        />
         <DbInitProvider>
           <AuthWrapper>
             {children}

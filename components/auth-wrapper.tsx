@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useCustodyStore } from '@/lib/custody-store'
 import { loginUser } from '@/app/actions/db-actions'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { Lock, User as UserIcon } from 'lucide-react'
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { currentUser, login } = useCustodyStore()
   const router = useRouter()
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   
   const [username, setUsername] = useState('')
@@ -29,6 +30,10 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
         <div className="text-foreground">Cargando...</div>
       </div>
     )
+  }
+
+  if (pathname?.startsWith('/totem')) {
+    return <>{children}</>
   }
 
   if (!currentUser) {

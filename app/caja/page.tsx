@@ -39,6 +39,7 @@ import { verifySupervisor } from '@/app/actions/db-actions'
 
 export default function CajaPage() {
   const {
+    currentUser,
     currentCashRegister,
     cashRegisters,
     cashTransactions,
@@ -58,6 +59,7 @@ export default function CajaPage() {
   const [supervisorUsername, setSupervisorUsername] = useState('')
   const [supervisorPassword, setSupervisorPassword] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
+  const [searchCajero, setSearchCajero] = useState('')
 
   useEffect(() => {
     setMounted(true)
@@ -79,6 +81,13 @@ export default function CajaPage() {
   
   const montoContado = parseFloat(closingAmount)
   const diferenciaCaja = !isNaN(montoContado) ? montoContado - saldoEsperadoEfectivo : null
+
+  const filteredCashRegisters = currentUser?.role === 'supervisor'
+    ? cashRegisters.filter((r) => 
+        !searchCajero || 
+        (r.openedBy || '').toLowerCase().includes(searchCajero.toLowerCase())
+      )
+    : cashRegisters.filter((r) => r.openedBy === currentUser?.username)
 
   const handleOpenCash = () => {
     setError('')
@@ -282,9 +291,22 @@ export default function CajaPage() {
 
         {/* Cash Register History */}
         <div className="bg-card rounded-xl p-6 border border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <History className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-card-foreground">Historial de Cajas</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-lg font-semibold text-card-foreground">Historial de Cajas</h3>
+            </div>
+            {currentUser?.role === 'supervisor' && (
+              <div className="w-full sm:w-72">
+                <Input
+                  type="text"
+                  placeholder="Buscar por cajero..."
+                  value={searchCajero}
+                  onChange={(e) => setSearchCajero(e.target.value)}
+                  className="bg-input h-9 text-sm"
+                />
+              </div>
+            )}
           </div>
           <div className="overflow-x-auto">
             <Table>
@@ -292,6 +314,9 @@ export default function CajaPage() {
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground">APERTURA</TableHead>
                   <TableHead className="text-muted-foreground">CIERRE</TableHead>
+                  {currentUser?.role === 'supervisor' && (
+                    <TableHead className="text-muted-foreground">CAJERO</TableHead>
+                  )}
                   <TableHead className="text-muted-foreground text-right">INICIAL</TableHead>
                   <TableHead className="text-muted-foreground text-right">VENTAS</TableHead>
                   <TableHead className="text-muted-foreground text-right">ESPERADO</TableHead>
@@ -301,14 +326,14 @@ export default function CajaPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cashRegisters.length === 0 ? (
+                {filteredCashRegisters.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={currentUser?.role === 'supervisor' ? 9 : 8} className="text-center py-8 text-muted-foreground">
                       No hay registros de caja
                     </TableCell>
                   </TableRow>
                 ) : (
-                  cashRegisters.map((register) => (
+                  filteredCashRegisters.map((register) => (
                     <TableRow key={register.id} className="border-border">
                       <TableCell className="text-foreground">
                         {formatDateTime(register.openedAt)}
@@ -316,6 +341,11 @@ export default function CajaPage() {
                       <TableCell className="text-foreground">
                         {register.closedAt ? formatDateTime(register.closedAt) : '-'}
                       </TableCell>
+                      {currentUser?.role === 'supervisor' && (
+                        <TableCell className="text-foreground capitalize font-medium">
+                          {register.openedBy || 'Desconocido'}
+                        </TableCell>
+                      )}
                       <TableCell className="text-foreground text-right">
                         Gs. {register.openingAmount.toLocaleString('es-PY')}
                       </TableCell>

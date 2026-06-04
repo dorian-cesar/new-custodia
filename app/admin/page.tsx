@@ -77,6 +77,7 @@ export default function AdminPage() {
   const [editLabel, setEditLabel] = useState<string>('')
   const [priceError, setPriceError] = useState('')
   const [isSavingPrice, setIsSavingPrice] = useState(false)
+  const [searchCajero, setSearchCajero] = useState('')
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -504,9 +505,20 @@ export default function AdminPage() {
 
         {/* ── Cash Register Supervision / Session History Section ── */}
         <div className="bg-card rounded-xl p-6 border border-border mt-8">
-          <div className="flex items-center gap-2 mb-6">
-            <History className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-card-foreground">Historial de Turnos y Cajas</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-card-foreground">Historial de Turnos y Cajas</h2>
+            </div>
+            <div className="w-full sm:w-72">
+              <Input
+                type="text"
+                placeholder="Buscar por cajero..."
+                value={searchCajero}
+                onChange={(e) => setSearchCajero(e.target.value)}
+                className="bg-input h-9 text-sm"
+              />
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -524,14 +536,23 @@ export default function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cashRegisters.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No hay turnos registrados
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  [...cashRegisters]
+                {(() => {
+                  const filteredRegisters = cashRegisters.filter((r) =>
+                    !searchCajero ||
+                    (r.openedBy || '').toLowerCase().includes(searchCajero.toLowerCase())
+                  );
+
+                  if (filteredRegisters.length === 0) {
+                    return (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          No hay turnos registrados
+                        </TableCell>
+                      </TableRow>
+                    )
+                  }
+
+                  return [...filteredRegisters]
                     .sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())
                     .map((register) => (
                       <TableRow key={register.id} className="border-border">
@@ -559,7 +580,7 @@ export default function AdminPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                )}
+                })()}
               </TableBody>
             </Table>
           </div>
