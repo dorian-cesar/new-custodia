@@ -59,6 +59,14 @@ export default function CajaPage() {
   const [supervisorPassword, setSupervisorPassword] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
+  // Pagination for cash registers
+  const [currentPageRegisters, setCurrentPageRegisters] = useState(1)
+  const REGISTERS_PER_PAGE = 5
+
+  const sortedRegisters = [...cashRegisters].sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())
+  const totalRegisterPages = Math.ceil(sortedRegisters.length / REGISTERS_PER_PAGE)
+  const paginatedRegisters = sortedRegisters.slice((currentPageRegisters - 1) * REGISTERS_PER_PAGE, currentPageRegisters * REGISTERS_PER_PAGE)
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -301,14 +309,14 @@ export default function CajaPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cashRegisters.length === 0 ? (
+                {paginatedRegisters.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No hay registros de caja
                     </TableCell>
                   </TableRow>
                 ) : (
-                  cashRegisters.map((register) => (
+                  paginatedRegisters.map((register) => (
                     <TableRow key={register.id} className="border-border">
                       <TableCell className="text-foreground">
                         {formatDateTime(register.openedAt)}
@@ -348,11 +356,11 @@ export default function CajaPage() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                             register.status === 'open'
-                              ? 'text-primary font-medium'
-                              : 'text-muted-foreground'
-                          }
+                              ? 'bg-emerald-500/20 text-emerald-500'
+                              : 'bg-zinc-500/20 text-zinc-400'
+                          }`}
                         >
                           {register.status === 'open' ? 'Abierta' : 'Cerrada'}
                         </span>
@@ -362,6 +370,29 @@ export default function CajaPage() {
                 )}
               </TableBody>
             </Table>
+            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+              <div>
+                Mostrando {Math.min(sortedRegisters.length, (currentPageRegisters - 1) * REGISTERS_PER_PAGE + 1)} a {Math.min(sortedRegisters.length, currentPageRegisters * REGISTERS_PER_PAGE)} de {sortedRegisters.length} registros
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageRegisters(p => Math.max(1, p - 1))}
+                  disabled={currentPageRegisters === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageRegisters(p => Math.min(totalRegisterPages, p + 1))}
+                  disabled={currentPageRegisters >= totalRegisterPages || totalRegisterPages === 0}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </main>

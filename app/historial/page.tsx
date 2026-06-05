@@ -47,6 +47,19 @@ export default function HistorialPage() {
     })
   }, [records, searchDocument, filterStatus, filterSize])
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchDocument, filterStatus, filterSize])
+
+  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE)
+  const paginatedRecords = useMemo(() => {
+    return filteredRecords.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  }, [filteredRecords, currentPage])
+
   const getSizeLabel = (size: LockerSize) => {
     return lockerSizes.find((s) => s.value === size)?.label || size
   }
@@ -156,14 +169,14 @@ export default function HistorialPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.length === 0 ? (
+                {paginatedRecords.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No se encontraron registros
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRecords.map((record) => (
+                  paginatedRecords.map((record) => (
                     <TableRow key={record.id} className="border-border">
                       <TableCell className="font-mono text-sm text-foreground">
                         {record.code}
@@ -196,6 +209,29 @@ export default function HistorialPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            <div>
+              Mostrando {Math.min(filteredRecords.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)} a {Math.min(filteredRecords.length, currentPage * ITEMS_PER_PAGE)} de {filteredRecords.length} registros
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages || totalPages === 0}
+              >
+                Siguiente
+              </Button>
+            </div>
           </div>
         </div>
       </main>

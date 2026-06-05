@@ -549,7 +549,7 @@ export function ClientRegistration({
 
       {/* MULTIPLE RECORDS MODAL */}
       <Dialog open={isMultiModalOpen} onOpenChange={setIsMultiModalOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl">
+        <DialogContent className="bg-card border-border max-w-[850px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Hash className="h-5 w-5" />
