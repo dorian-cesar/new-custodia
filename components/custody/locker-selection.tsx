@@ -1,6 +1,6 @@
 'use client'
 
-import { Grid3X3, Luggage, CreditCard } from 'lucide-react'
+import { Grid3X3, Luggage, CreditCard, Briefcase, Backpack, Package, Archive } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -53,11 +53,22 @@ export function LockerSelection({
               <SelectValue placeholder="Seleccione un tamano..." />
             </SelectTrigger>
             <SelectContent>
-              {lockerSizes.map((size) => (
-                <SelectItem key={size.value} value={size.value}>
-                  {size.label} - ${size.price.toLocaleString()}
-                </SelectItem>
-              ))}
+              {lockerSizes.map((size) => {
+                let Icon = Luggage
+                if (size.value === 'S') Icon = Briefcase
+                else if (size.value === 'M') Icon = Backpack
+                else if (size.value === 'L') Icon = Package
+                else if (size.value === 'XL' || size.value === 'XXL') Icon = Archive
+
+                return (
+                  <SelectItem key={size.value} value={size.value}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 opacity-70" />
+                      <span>{size.label} - ${size.price.toLocaleString()}</span>
+                    </div>
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>
