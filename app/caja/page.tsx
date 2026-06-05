@@ -106,6 +106,10 @@ export default function CajaPage() {
     setShowOpenDialog(false)
   }
 
+  // State for confirm close dialog
+  const [showConfirmCloseDialog, setShowConfirmCloseDialog] = useState(false)
+  const [closeSummary, setCloseSummary] = useState<{ expected: number, declared: number, difference: number } | null>(null)
+
   const handleCloseCash = async () => {
     setError('')
     const amount = parseFloat(closingAmount)
@@ -128,17 +132,37 @@ export default function CajaPage() {
         return
       }
 
-      await closeCashRegister(amount, notes)
+      // Instead of closing immediately, we show the confirmation dialog
+      const expected = stats.balance
+      const difference = amount - expected
+
+      setCloseSummary({ expected, declared: amount, difference })
+      setShowCloseDialog(false)
+      setShowConfirmCloseDialog(true)
+      
+    } catch (err) {
+      setError('Error al verificar credenciales')
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  const confirmAndExecuteClose = async () => {
+    if (!closeSummary) return
+    setIsVerifying(true)
+    try {
+      await closeCashRegister(closeSummary.declared, notes)
       setClosingAmount('')
       setNotes('')
       setSupervisorUsername('')
       setSupervisorPassword('')
-      setShowCloseDialog(false)
+      setShowConfirmCloseDialog(false)
+      setCloseSummary(null)
       
       // Auto logout according to requirements
       logout()
     } catch (err) {
-      setError('Error al verificar credenciales')
+      setError('Error al cerrar la caja')
     } finally {
       setIsVerifying(false)
     }
@@ -149,10 +173,6 @@ export default function CajaPage() {
     const amount = parseFloat(giroAmount)
     if (isNaN(amount) || amount <= 0) {
       setError('Ingrese un monto válido para el retiro')
-      return
-    }
-    if (!giroReason.trim()) {
-      setError('Debe especificar un motivo para el retiro')
       return
     }
 
@@ -377,8 +397,8 @@ export default function CajaPage() {
                   <TableHead className="text-muted-foreground text-right">INICIAL</TableHead>
                   <TableHead className="text-muted-foreground text-right">VENTAS</TableHead>
                   <TableHead className="text-muted-foreground text-right">RETIROS</TableHead>
-                  <TableHead className="text-muted-foreground text-right">ESPERADO</TableHead>
-                  <TableHead className="text-muted-foreground text-right">RETIRADO</TableHead>
+                  <TableHead className="text-muted-foreground text-right">MONTO</TableHead>
+                  <TableHead className="text-muted-foreground text-right">CIERRE DE CAJA</TableHead>
                   <TableHead className="text-muted-foreground text-right">DIFERENCIA</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                 </TableRow>
@@ -651,7 +671,7 @@ export default function CajaPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Motivo del Retiro</Label>
+              <Label>Motivo del Retiro (Opcional)</Label>
               <Input
                 type="text"
                 value={giroReason}
@@ -696,6 +716,60 @@ export default function CajaPage() {
             </Button>
             <Button onClick={handleGiro} className="bg-amber-500 hover:bg-amber-600 text-white" disabled={isVerifying || isProcessingGiro}>
               {isVerifying || isProcessingGiro ? 'Procesando...' : 'Confirmar Retiro'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Close Register Dialog */}
+      <Dialog open={showConfirmCloseDialog} onOpenChange={setShowConfirmCloseDialog}>
+        <DialogContent className="bg-card border-border sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              Confirmar Cierre de Caja
+            </DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Por favor, revisa el resumen del cierre antes de confirmar. <strong>Esta acción cerrará tu sesión automáticamente.</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          {closeSummary && (
+            <div className="space-y-4 py-4">
+              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Monto Esperado (Efectivo)</span>
+                  <span className="font-medium">${closeSummary.expected.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Cierre de Caja (Declarado)</span>
+                  <span className="font-medium">${closeSummary.declared.toLocaleString()}</span>
+                </div>
+                <div className="h-px bg-border my-2" />
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Diferencia</span>
+                  <span className={`font-bold ${closeSummary.difference === 0 ? 'text-emerald-500' : closeSummary.difference > 0 ? 'text-blue-500' : 'text-destructive'}`}>
+                    {closeSummary.difference === 0 
+                      ? 'Cuadrada ✓' 
+                      : closeSummary.difference > 0 
+                        ? `Sobrante: +$${closeSummary.difference.toLocaleString()}` 
+                        : `Faltante: -$${Math.abs(closeSummary.difference).toLocaleString()}`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setShowConfirmCloseDialog(false)
+              setShowCloseDialog(true) // let them edit the amount
+            }} disabled={isVerifying}>
+              Volver y Editar
+            </Button>
+            <Button onClick={confirmAndExecuteClose} disabled={isVerifying}>
+              {isVerifying ? 'Cerrando Caja...' : 'Confirmar y Salir'}
             </Button>
           </DialogFooter>
         </DialogContent>

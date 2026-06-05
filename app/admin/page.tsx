@@ -600,7 +600,7 @@ export default function AdminPage() {
                   <TableHead className="text-muted-foreground">EN TARJETA</TableHead>
                   <TableHead className="text-muted-foreground">VENTAS TOTALES</TableHead>
                   <TableHead className="text-muted-foreground">RETIROS</TableHead>
-                  <TableHead className="text-muted-foreground">MONTO FINAL (EFECTIVO)</TableHead>
+                  <TableHead className="text-muted-foreground">CIERRE DE CAJA</TableHead>
                   <TableHead className="text-muted-foreground">DIFERENCIA</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                   <TableHead className="text-muted-foreground">NOTAS</TableHead>
