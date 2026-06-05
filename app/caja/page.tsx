@@ -86,12 +86,9 @@ export default function CajaPage() {
     ? cashTransactions.filter((t) => t.registerId === currentCashRegister.id)
     : []
 
-  const ingresosTarjeta = Math.round(currentTransactions
-    .filter((t) => t.type === 'income' && t.description.includes('Tarjeta'))
-    .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
-
-  const ingresosEfectivo = stats.totalSales - ingresosTarjeta
-  const saldoEsperadoEfectivo = (currentCashRegister?.openingAmount || 0) + ingresosEfectivo
+  const ingresosTarjeta = stats.ingresosTarjeta || 0
+  const ingresosEfectivo = stats.ingresosEfectivo || 0
+  const saldoEsperadoEfectivo = stats.balance
   
   const montoContado = parseFloat(closingAmount)
   const diferenciaCaja = !isNaN(montoContado) ? montoContado - saldoEsperadoEfectivo : null
@@ -308,11 +305,17 @@ export default function CajaPage() {
                     <TableHead className="text-muted-foreground">HORA</TableHead>
                     <TableHead className="text-muted-foreground">TIPO</TableHead>
                     <TableHead className="text-muted-foreground">DESCRIPCION</TableHead>
+                    <TableHead className="text-muted-foreground">PAGO</TableHead>
                     <TableHead className="text-muted-foreground text-right">MONTO</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentTransactions.map((tx) => (
+                  {currentTransactions.map((tx) => {
+                    let paymentStr = '-'
+                    if (tx.description.includes('Efectivo')) paymentStr = 'Efectivo'
+                    else if (tx.description.includes('Tarjeta')) paymentStr = 'Tarjeta'
+
+                    return (
                     <TableRow key={tx.id} className="border-border">
                       <TableCell className="text-foreground">
                         {formatDateTime(tx.timestamp)}
@@ -334,6 +337,15 @@ export default function CajaPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-foreground">{tx.description}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          paymentStr === 'Efectivo' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' :
+                          paymentStr === 'Tarjeta' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-500' :
+                          'bg-secondary text-muted-foreground'
+                        }`}>
+                          {paymentStr}
+                        </span>
+                      </TableCell>
                       <TableCell
                         className={`text-right font-medium ${
                           tx.type === 'income' ? 'text-primary' : 'text-destructive'
@@ -342,7 +354,8 @@ export default function CajaPage() {
                         {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>

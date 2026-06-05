@@ -596,8 +596,11 @@ export default function AdminPage() {
                   <TableHead className="text-muted-foreground">APERTURA</TableHead>
                   <TableHead className="text-muted-foreground">CIERRE</TableHead>
                   <TableHead className="text-muted-foreground">MONTO INICIAL</TableHead>
-                  <TableHead className="text-muted-foreground">MONTO FINAL</TableHead>
+                  <TableHead className="text-muted-foreground">EN EFECTIVO</TableHead>
+                  <TableHead className="text-muted-foreground">EN TARJETA</TableHead>
                   <TableHead className="text-muted-foreground">VENTAS TOTALES</TableHead>
+                  <TableHead className="text-muted-foreground">MONTO FINAL (EFECTIVO)</TableHead>
+                  <TableHead className="text-muted-foreground">DIFERENCIA</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                   <TableHead className="text-muted-foreground">NOTAS</TableHead>
                 </TableRow>
@@ -605,12 +608,21 @@ export default function AdminPage() {
               <TableBody>
                 {cashRegisters.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No hay turnos registrados
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedRegisters.map((register) => (
+                  paginatedRegisters.map((register) => {
+                      const regTxs = cashTransactions.filter(t => t.registerId === register.id)
+                      const ingresosTarjeta = Math.round(regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+                      const ingresosEfectivo = Math.round(regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+                      const gastosEfectivo = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
+
+                      const saldoEsperadoEfectivo = register.openingAmount + ingresosEfectivo - gastosEfectivo
+                      const diferenciaCaja = register.closingAmount !== null ? register.closingAmount - saldoEsperadoEfectivo : null
+
+                      return (
                       <TableRow key={register.id} className="border-border">
                         <TableCell className="text-foreground font-medium">{register.openedBy || 'desconocido'}</TableCell>
                         <TableCell className="text-foreground text-sm">{formatDateTime(register.openedAt)}</TableCell>
@@ -618,10 +630,21 @@ export default function AdminPage() {
                           {register.closedAt ? formatDateTime(register.closedAt) : <span className="text-emerald-500 font-medium">Activo ahora</span>}
                         </TableCell>
                         <TableCell className="text-foreground">${register.openingAmount.toLocaleString()}</TableCell>
-                        <TableCell className="text-foreground">
+                        <TableCell className="text-foreground text-amber-500">${ingresosEfectivo.toLocaleString()}</TableCell>
+                        <TableCell className="text-foreground text-blue-500">${ingresosTarjeta.toLocaleString()}</TableCell>
+                        <TableCell className="text-foreground font-semibold">${(ingresosEfectivo + ingresosTarjeta).toLocaleString()}</TableCell>
+                        <TableCell className="text-foreground font-semibold">
                           {register.closingAmount !== null ? `$${register.closingAmount.toLocaleString()}` : '-'}
                         </TableCell>
-                        <TableCell className="text-foreground">${register.totalSales.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {diferenciaCaja !== null ? (
+                            <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
+                              {diferenciaCaja === 0 ? 'Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             register.status === 'open' 
@@ -635,7 +658,8 @@ export default function AdminPage() {
                           {register.notes || '-'}
                         </TableCell>
                       </TableRow>
-                    ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>

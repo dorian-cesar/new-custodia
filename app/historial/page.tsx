@@ -25,7 +25,7 @@ import { useCustodyStore } from '@/lib/custody-store'
 import { formatDateTime, type LockerSize } from '@/lib/types'
 
 export default function HistorialPage() {
-  const { records, lockers, lockerSizes } = useCustodyStore()
+  const { records, lockers, lockerSizes, cashTransactions } = useCustodyStore()
   const [mounted, setMounted] = useState(false)
   const [searchDocument, setSearchDocument] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -164,6 +164,7 @@ export default function HistorialPage() {
                   <TableHead className="text-muted-foreground">ENTRADA</TableHead>
                   <TableHead className="text-muted-foreground">SALIDA</TableHead>
                   <TableHead className="text-muted-foreground">TAMANO</TableHead>
+                  <TableHead className="text-muted-foreground">PAGO</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                   <TableHead className="text-muted-foreground">$ VALOR</TableHead>
                 </TableRow>
@@ -171,12 +172,27 @@ export default function HistorialPage() {
               <TableBody>
                 {paginatedRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No se encontraron registros
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedRecords.map((record) => (
+                  paginatedRecords.map((record) => {
+                    // Obtener la transaccion de pago si es que ya existe
+                    const txs = cashTransactions?.filter(t => t.recordId === record.id) || []
+                    let paymentStr = '-'
+                    if (txs.length > 0) {
+                      const methods = new Set<string>()
+                      txs.forEach(t => {
+                        if (t.description.includes('Efectivo')) methods.add('Efectivo')
+                        if (t.description.includes('Tarjeta')) methods.add('Tarjeta')
+                      })
+                      if (methods.size > 0) {
+                        paymentStr = Array.from(methods).join(' / ')
+                      }
+                    }
+
+                    return (
                     <TableRow key={record.id} className="border-border">
                       <TableCell className="font-mono text-sm text-foreground">
                         {record.code}
@@ -190,6 +206,15 @@ export default function HistorialPage() {
                         {record.exitTime ? formatDateTime(record.exitTime) : '-'}
                       </TableCell>
                       <TableCell className="text-foreground">{getSizeLabel(record.size)}</TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          paymentStr.includes('Efectivo') ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' :
+                          paymentStr.includes('Tarjeta') ? 'bg-blue-500/10 text-blue-600 dark:text-blue-500' :
+                          'bg-secondary text-muted-foreground'
+                        }`}>
+                          {paymentStr}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <span
                           className={
@@ -205,7 +230,8 @@ export default function HistorialPage() {
                         ${record.price.toLocaleString()}
                       </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>

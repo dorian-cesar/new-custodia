@@ -85,7 +85,7 @@ export default function CustodyPage() {
       />
 
       <main className="container mx-auto px-6 py-8">
-        {stats.balance >= 30000 && (
+        {stats.balance >= 300000 && (
           <div className="mb-6 bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-500/20 rounded-full">
@@ -96,7 +96,7 @@ export default function CustodyPage() {
                   Límite de Caja Alcanzado
                 </h3>
                 <p className="text-sm text-amber-600/80 dark:text-amber-500/80 mt-1">
-                  La caja actual ha alcanzado o superado los $30.000 (Saldo actual: ${stats.balance.toLocaleString()}). Por favor, realice un giro de caja a la brevedad.
+                  La caja actual ha alcanzado o superado los $300.000 (Saldo actual: ${stats.balance.toLocaleString()}). Por favor, realice un giro de caja a la brevedad.
                 </p>
               </div>
             </div>
