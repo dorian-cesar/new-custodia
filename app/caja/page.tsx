@@ -148,11 +148,11 @@ export default function CajaPage() {
     setError('')
     const amount = parseFloat(giroAmount)
     if (isNaN(amount) || amount <= 0) {
-      setError('Ingrese un monto válido para el giro')
+      setError('Ingrese un monto válido para el retiro')
       return
     }
     if (!giroReason.trim()) {
-      setError('Debe especificar un motivo para el giro')
+      setError('Debe especificar un motivo para el retiro')
       return
     }
 
@@ -172,7 +172,7 @@ export default function CajaPage() {
         return
       }
 
-      await addTransaction('expense', amount, `Giro de Caja: ${giroReason.trim()}`)
+      await addTransaction('expense', amount, `Retiro de Caja: ${giroReason.trim()}`)
       
       setGiroAmount('')
       setGiroReason('')
@@ -180,7 +180,7 @@ export default function CajaPage() {
       setSupervisorPassword('')
       setShowGiroDialog(false)
     } catch (err) {
-      setError('Error al procesar el giro')
+      setError('Error al procesar el retiro')
     } finally {
       setIsVerifying(false)
       setIsProcessingGiro(false)
@@ -215,7 +215,7 @@ export default function CajaPage() {
                   className="gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-500"
                 >
                   <TrendingDown className="h-4 w-4" />
-                  Giro de Caja
+                  Retiro de Caja
                 </Button>
                 <Button
                   onClick={() => setShowCloseDialog(true)}
@@ -376,6 +376,7 @@ export default function CajaPage() {
                   <TableHead className="text-muted-foreground">CIERRE</TableHead>
                   <TableHead className="text-muted-foreground text-right">INICIAL</TableHead>
                   <TableHead className="text-muted-foreground text-right">VENTAS</TableHead>
+                  <TableHead className="text-muted-foreground text-right">RETIROS</TableHead>
                   <TableHead className="text-muted-foreground text-right">ESPERADO</TableHead>
                   <TableHead className="text-muted-foreground text-right">RETIRADO</TableHead>
                   <TableHead className="text-muted-foreground text-right">DIFERENCIA</TableHead>
@@ -385,12 +386,21 @@ export default function CajaPage() {
               <TableBody>
                 {paginatedRegisters.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No hay registros de caja
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedRegisters.map((register) => (
+                  paginatedRegisters.map((register) => {
+                    const regTxs = cashTransactions.filter(t => t.registerId === register.id)
+                    const ingresosTarjeta = Math.round(regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+                    const ingresosEfectivo = Math.round(regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+                    const gastosEfectivo = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
+
+                    const saldoEsperadoEfectivo = register.openingAmount + ingresosEfectivo - gastosEfectivo
+                    const diferenciaCaja = register.closingAmount !== null ? register.closingAmount - saldoEsperadoEfectivo : null
+
+                    return (
                     <TableRow key={register.id} className="border-border">
                       <TableCell className="text-foreground">
                         {formatDateTime(register.openedAt)}
@@ -401,32 +411,31 @@ export default function CajaPage() {
                       <TableCell className="text-foreground text-right">
                         ${register.openingAmount.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-primary text-right font-medium">
-                        ${register.totalSales.toLocaleString()}
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-amber-500 font-medium text-xs">Efectivo: ${ingresosEfectivo.toLocaleString()}</span>
+                          <span className="text-blue-500 font-medium text-xs">Tarjeta: ${ingresosTarjeta.toLocaleString()}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-destructive text-right font-medium">
+                        ${gastosEfectivo.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-accent text-right font-medium">
-                        ${(register.openingAmount + register.totalSales).toLocaleString()}
+                        ${saldoEsperadoEfectivo.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-foreground text-right">
+                      <TableCell className="text-foreground text-right font-bold">
                         {register.closingAmount !== null
                           ? `$${register.closingAmount.toLocaleString()}`
                           : '-'}
                       </TableCell>
-                      <TableCell className={`text-right font-medium ${
-                        register.closingAmount !== null
-                          ? register.closingAmount - (register.openingAmount + register.totalSales) < 0
-                            ? 'text-destructive'
-                            : register.closingAmount - (register.openingAmount + register.totalSales) > 0
-                            ? 'text-primary'
-                            : 'text-muted-foreground'
-                          : ''
-                      }`}>
-                        {register.closingAmount !== null
-                          ? (() => {
-                              const diff = register.closingAmount - (register.openingAmount + register.totalSales)
-                              return `${diff > 0 ? '+' : ''}$${diff.toLocaleString()}`
-                            })()
-                          : '-'}
+                      <TableCell className="text-right">
+                        {diferenciaCaja !== null ? (
+                          <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
+                            {diferenciaCaja === 0 ? 'Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span
@@ -440,7 +449,8 @@ export default function CajaPage() {
                         </span>
                       </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
@@ -622,7 +632,7 @@ export default function CajaPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <TrendingDown className="h-5 w-5 text-amber-500" />
-              Realizar Giro de Caja
+              Realizar Retiro de Caja
             </DialogTitle>
             <DialogDescription>
               Retire efectivo de la caja actual. Esta acción requiere autorización del supervisor.
@@ -641,7 +651,7 @@ export default function CajaPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Motivo del Giro</Label>
+              <Label>Motivo del Retiro</Label>
               <Input
                 type="text"
                 value={giroReason}
@@ -685,7 +695,7 @@ export default function CajaPage() {
               Cancelar
             </Button>
             <Button onClick={handleGiro} className="bg-amber-500 hover:bg-amber-600 text-white" disabled={isVerifying || isProcessingGiro}>
-              {isVerifying || isProcessingGiro ? 'Procesando...' : 'Confirmar Giro'}
+              {isVerifying || isProcessingGiro ? 'Procesando...' : 'Confirmar Retiro'}
             </Button>
           </DialogFooter>
         </DialogContent>

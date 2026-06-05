@@ -96,7 +96,7 @@ export default function CustodyPage() {
                   Límite de Caja Alcanzado
                 </h3>
                 <p className="text-sm text-amber-600/80 dark:text-amber-500/80 mt-1">
-                  La caja actual ha alcanzado o superado los $300.000 (Saldo actual: ${stats.balance.toLocaleString()}). Por favor, realice un giro de caja a la brevedad.
+                  La caja actual ha alcanzado o superado los $300.000 (Saldo actual: ${stats.balance.toLocaleString()}). Por favor, realice un retiro de caja a la brevedad.
                 </p>
               </div>
             </div>

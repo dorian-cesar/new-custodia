@@ -599,6 +599,7 @@ export default function AdminPage() {
                   <TableHead className="text-muted-foreground">EN EFECTIVO</TableHead>
                   <TableHead className="text-muted-foreground">EN TARJETA</TableHead>
                   <TableHead className="text-muted-foreground">VENTAS TOTALES</TableHead>
+                  <TableHead className="text-muted-foreground">RETIROS</TableHead>
                   <TableHead className="text-muted-foreground">MONTO FINAL (EFECTIVO)</TableHead>
                   <TableHead className="text-muted-foreground">DIFERENCIA</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
@@ -608,7 +609,7 @@ export default function AdminPage() {
               <TableBody>
                 {cashRegisters.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No hay turnos registrados
                     </TableCell>
                   </TableRow>
@@ -633,6 +634,7 @@ export default function AdminPage() {
                         <TableCell className="text-foreground text-amber-500">${ingresosEfectivo.toLocaleString()}</TableCell>
                         <TableCell className="text-foreground text-blue-500">${ingresosTarjeta.toLocaleString()}</TableCell>
                         <TableCell className="text-foreground font-semibold">${(ingresosEfectivo + ingresosTarjeta).toLocaleString()}</TableCell>
+                        <TableCell className="text-destructive font-medium">${gastosEfectivo.toLocaleString()}</TableCell>
                         <TableCell className="text-foreground font-semibold">
                           {register.closingAmount !== null ? `$${register.closingAmount.toLocaleString()}` : '-'}
                         </TableCell>
