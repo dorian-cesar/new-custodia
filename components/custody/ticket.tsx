@@ -7,9 +7,10 @@ import JsBarcode from 'jsbarcode'
 
 interface TicketProps {
   record: CustodyRecord | null
+  paymentMethod?: string
 }
 
-export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) => {
+export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, paymentMethod }, ref) => {
   const barcodeRef = useRef<SVGSVGElement>(null)
   const lockers = useCustodyStore((state) => state.lockers)
   const lockerSizes = useCustodyStore((state) => state.lockerSizes)
@@ -83,7 +84,7 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
 
         <div style={{ textAlign: 'right', marginBottom: '15px' }}>
           <p style={{ margin: '3px 0', fontSize: '14px' }}>
-            <strong>Pagado: ${record.price.toLocaleString('es-CL')}</strong>
+            <strong>Pagado ({paymentMethod || 'Efectivo'}): ${record.price.toLocaleString('es-CL')}</strong>
           </p>
         </div>
 
