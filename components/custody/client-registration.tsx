@@ -448,51 +448,40 @@ export function ClientRegistration({
             ) : (
               <div className="flex flex-col justify-center items-center p-4 border border-dashed border-border rounded-lg bg-secondary/10">
                 <span className="text-muted-foreground font-medium text-sm">Sin recargos adicionales</span>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3 text-xs bg-card hover:bg-secondary/20"
-                  onClick={() => {
-                    setExtraAmount(5000);
-                    setExtraHours(2);
-                  }}
-                >
-                  🔧 Simular Recargo ($5.000) para Demo
-                </Button>
               </div>
             )}
 
-            <div className="space-y-2 border-t border-border pt-4">
-              <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  type="button"
-                  variant={paymentMethod === 'Efectivo' ? 'default' : 'outline'}
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
-                    paymentMethod === 'Efectivo' 
-                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setPaymentMethod('Efectivo')}
-                >
-                  <Coins className="h-5 w-5" />
-                  Efectivo
-                </Button>
-                <Button
-                  type="button"
-                  variant={paymentMethod === 'Tarjeta' ? 'default' : 'outline'}
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
-                    paymentMethod === 'Tarjeta' 
-                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setPaymentMethod('Tarjeta')}
-                >
-                  <CreditCard className="h-5 w-5" />
-                  Tarjeta
-                </Button>
-              </div>
+            {extraAmount > 0 && (
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'Efectivo' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                      paymentMethod === 'Efectivo' 
+                        ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                        : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setPaymentMethod('Efectivo')}
+                  >
+                    <Coins className="h-5 w-5" />
+                    Efectivo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'Tarjeta' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                      paymentMethod === 'Tarjeta' 
+                        ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                        : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setPaymentMethod('Tarjeta')}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    Tarjeta
+                  </Button>
+                </div>
 
               {paymentMethod === 'Efectivo' && extraAmount > 0 && (
                 <div className="space-y-2 mt-3 p-3 bg-secondary/10 border border-border rounded-lg animate-in fade-in slide-in-from-top-1">
@@ -525,6 +514,7 @@ export function ClientRegistration({
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <DialogFooter className="sm:justify-end">

@@ -46,6 +46,7 @@ export default function CajaPage() {
     closeCashRegister,
     getCurrentRegisterStats,
     logout,
+    addTransaction,
   } = useCustodyStore()
 
   const [mounted, setMounted] = useState(false)
@@ -54,6 +55,13 @@ export default function CajaPage() {
   const [notes, setNotes] = useState('')
   const [showOpenDialog, setShowOpenDialog] = useState(false)
   const [showCloseDialog, setShowCloseDialog] = useState(false)
+  
+  // Giro State
+  const [showGiroDialog, setShowGiroDialog] = useState(false)
+  const [giroAmount, setGiroAmount] = useState('')
+  const [giroReason, setGiroReason] = useState('')
+  const [isProcessingGiro, setIsProcessingGiro] = useState(false)
+
   const [error, setError] = useState('')
   const [supervisorUsername, setSupervisorUsername] = useState('')
   const [supervisorPassword, setSupervisorPassword] = useState('')
@@ -139,6 +147,49 @@ export default function CajaPage() {
     }
   }
 
+  const handleGiro = async () => {
+    setError('')
+    const amount = parseFloat(giroAmount)
+    if (isNaN(amount) || amount <= 0) {
+      setError('Ingrese un monto válido para el giro')
+      return
+    }
+    if (!giroReason.trim()) {
+      setError('Debe especificar un motivo para el giro')
+      return
+    }
+
+    if (!supervisorUsername.trim() || !supervisorPassword.trim()) {
+      setError('Debe ingresar las credenciales de un supervisor')
+      return
+    }
+
+    setIsVerifying(true)
+    setIsProcessingGiro(true)
+    try {
+      const authResult = await verifySupervisor(supervisorUsername, supervisorPassword)
+      if (!authResult.success) {
+        setError(authResult.error || 'Credenciales de supervisor incorrectas')
+        setIsVerifying(false)
+        setIsProcessingGiro(false)
+        return
+      }
+
+      await addTransaction('expense', amount, `Giro de Caja: ${giroReason.trim()}`)
+      
+      setGiroAmount('')
+      setGiroReason('')
+      setSupervisorUsername('')
+      setSupervisorPassword('')
+      setShowGiroDialog(false)
+    } catch (err) {
+      setError('Error al procesar el giro')
+    } finally {
+      setIsVerifying(false)
+      setIsProcessingGiro(false)
+    }
+  }
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -160,14 +211,24 @@ export default function CajaPage() {
               <h2 className="text-lg font-semibold text-card-foreground">Estado de Caja</h2>
             </div>
             {isCashOpen ? (
-              <Button
-                onClick={() => setShowCloseDialog(true)}
-                variant="destructive"
-                className="gap-2"
-              >
-                <Lock className="h-4 w-4" />
-                Cerrar Caja
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowGiroDialog(true)}
+                  variant="outline"
+                  className="gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-500"
+                >
+                  <TrendingDown className="h-4 w-4" />
+                  Giro de Caja
+                </Button>
+                <Button
+                  onClick={() => setShowCloseDialog(true)}
+                  variant="destructive"
+                  className="gap-2"
+                >
+                  <Lock className="h-4 w-4" />
+                  Cerrar Caja
+                </Button>
+              </div>
             ) : (
               <Button
                 onClick={() => setShowOpenDialog(true)}
@@ -538,6 +599,80 @@ export default function CajaPage() {
             </Button>
             <Button onClick={handleCloseCash} variant="destructive" disabled={isVerifying}>
               {isVerifying ? 'Verificando...' : 'Cerrar Caja'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Giro de Caja Dialog */}
+      <Dialog open={showGiroDialog} onOpenChange={setShowGiroDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-amber-500" />
+              Realizar Giro de Caja
+            </DialogTitle>
+            <DialogDescription>
+              Retire efectivo de la caja actual. Esta acción requiere autorización del supervisor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Monto a Retirar ($)</Label>
+              <Input
+                type="number"
+                value={giroAmount}
+                onChange={(e) => setGiroAmount(e.target.value)}
+                placeholder="0"
+                className="bg-input"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Motivo del Giro</Label>
+              <Input
+                type="text"
+                value={giroReason}
+                onChange={(e) => setGiroReason(e.target.value)}
+                placeholder="Ej: Límite de caja excedido, pago a proveedor..."
+                className="bg-input"
+              />
+            </div>
+            
+            <div className="space-y-4 border-t border-border pt-4 mt-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Lock className="h-4 w-4 text-amber-500" />
+                <h4 className="font-medium text-amber-600 dark:text-amber-500">Autorización de Supervisor Requerida</h4>
+              </div>
+              <div className="space-y-2">
+                <Label>Usuario Supervisor</Label>
+                <Input
+                  type="text"
+                  value={supervisorUsername}
+                  onChange={(e) => setSupervisorUsername(e.target.value)}
+                  placeholder="ej. admin"
+                  className="bg-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Contraseña Supervisor</Label>
+                <Input
+                  type="password"
+                  value={supervisorPassword}
+                  onChange={(e) => setSupervisorPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-input"
+                />
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowGiroDialog(false)} disabled={isVerifying || isProcessingGiro}>
+              Cancelar
+            </Button>
+            <Button onClick={handleGiro} className="bg-amber-500 hover:bg-amber-600 text-white" disabled={isVerifying || isProcessingGiro}>
+              {isVerifying || isProcessingGiro ? 'Procesando...' : 'Confirmar Giro'}
             </Button>
           </DialogFooter>
         </DialogContent>

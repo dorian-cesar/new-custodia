@@ -9,6 +9,8 @@ import { CashStatusBanner } from '@/components/custody/cash-status-banner'
 import { OverdueAlert } from '@/components/custody/overdue-alert'
 import { useCustodyStore } from '@/lib/custody-store'
 import { type LockerSize, type CustodyRecord } from '@/lib/types'
+import { AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function CustodyPage() {
   const router = useRouter()
@@ -83,6 +85,27 @@ export default function CustodyPage() {
       />
 
       <main className="container mx-auto px-6 py-8">
+        {stats.balance >= 30000 && (
+          <div className="mb-6 bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/20 rounded-full">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-600 dark:text-amber-500">
+                  Límite de Caja Alcanzado
+                </h3>
+                <p className="text-sm text-amber-600/80 dark:text-amber-500/80 mt-1">
+                  La caja actual ha alcanzado o superado los $30.000 (Saldo actual: ${stats.balance.toLocaleString()}). Por favor, realice un giro de caja a la brevedad.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" className="border-amber-500/20 text-amber-600 dark:text-amber-500 hover:bg-amber-500/10" onClick={() => router.push('/caja')}>
+              Ir a Caja
+            </Button>
+          </div>
+        )}
+
         <OverdueAlert />
         
         <div className="grid lg:grid-cols-3 gap-6">

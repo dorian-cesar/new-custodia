@@ -42,35 +42,61 @@ export function LockerSelection({
         <h2 className="text-lg font-semibold text-card-foreground">Seleccion de Casillero</h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="space-y-2">
+      <div className="space-y-6 mb-6">
+        <div className="space-y-3">
           <Label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Luggage className="h-4 w-4" />
             Tamano del equipaje
           </Label>
-          <Select value={selectedSize ?? ""} onValueChange={(v) => onSelectSize(v as LockerSize)}>
-            <SelectTrigger className="bg-input">
-              <SelectValue placeholder="Seleccione un tamano..." />
-            </SelectTrigger>
-            <SelectContent>
-              {lockerSizes.map((size) => {
-                let Icon = Luggage
-                if (size.value === 'S') Icon = Briefcase
-                else if (size.value === 'M') Icon = Backpack
-                else if (size.value === 'L') Icon = Package
-                else if (size.value === 'XL' || size.value === 'XXL') Icon = Archive
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {lockerSizes.map((size) => {
+              let Icon = Luggage
+              let iconSize = "h-5 w-5"
+              let textSize = "text-sm"
+              
+              if (size.value === 'S') {
+                Icon = Briefcase
+                iconSize = "h-5 w-5"
+                textSize = "text-sm"
+              } else if (size.value === 'M') {
+                Icon = Backpack
+                iconSize = "h-6 w-6"
+                textSize = "text-base"
+              } else if (size.value === 'L') {
+                Icon = Package
+                iconSize = "h-7 w-7"
+                textSize = "text-lg"
+              } else if (size.value === 'XL' || size.value === 'XXL') {
+                Icon = Archive
+                iconSize = "h-8 w-8"
+                textSize = "text-lg"
+              }
 
-                return (
-                  <SelectItem key={size.value} value={size.value}>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 opacity-70" />
-                      <span>{size.label} - ${size.price.toLocaleString()}</span>
-                    </div>
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
+              const isSelected = selectedSize === size.value
+
+              return (
+                <button
+                  key={size.value}
+                  onClick={() => onSelectSize(size.value as LockerSize)}
+                  className={`
+                    relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200
+                    ${isSelected 
+                      ? 'border-primary bg-primary/10 shadow-sm' 
+                      : 'border-border bg-card hover:border-primary/50 hover:bg-accent/50'
+                    }
+                  `}
+                >
+                  <Icon className={`${iconSize} mb-2 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className={`font-semibold ${isSelected ? 'text-foreground' : 'text-muted-foreground'} ${textSize} text-center`}>
+                    {size.label.split('-')[0].trim()}
+                  </span>
+                  <span className={`mt-1 font-bold ${isSelected ? 'text-primary' : 'text-muted-foreground'} text-sm`}>
+                    ${size.price.toLocaleString()}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -82,7 +108,7 @@ export function LockerSelection({
             value={clientDocument}
             onChange={(e) => onChangeDocument(e.target.value)}
             placeholder="12345678k"
-            className="bg-input"
+            className="bg-input max-w-md"
           />
         </div>
       </div>
