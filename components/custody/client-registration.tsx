@@ -230,7 +230,7 @@ export function ClientRegistration({
         <Button
           onClick={handleGenerateBarcode}
           disabled={!isCashOpen}
-          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <BarcodeIcon className="h-4 w-4 mr-2" />
           Cobrar y Generar Custodia

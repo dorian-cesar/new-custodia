@@ -146,7 +146,7 @@ export default function HistorialPage() {
 
             <div className="space-y-2">
               <Label className="text-sm text-transparent">Buscar</Label>
-              <Button onClick={handleSearch} className="w-full bg-accent hover:bg-accent/90">
+              <Button onClick={handleSearch} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Search className="h-4 w-4 mr-2" />
                 Buscar
               </Button>

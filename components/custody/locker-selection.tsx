@@ -79,18 +79,18 @@ export function LockerSelection({
                   key={size.value}
                   onClick={() => onSelectSize(size.value as LockerSize)}
                   className={`
-                    relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200
+                    relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
                     ${isSelected 
-                      ? 'border-primary bg-primary/10 shadow-sm' 
-                      : 'border-border bg-card hover:border-primary/50 hover:bg-accent/50'
+                      ? 'border-white bg-primary text-primary-foreground shadow-lg scale-[1.04]' 
+                      : 'border-transparent bg-primary/70 hover:bg-primary text-primary-foreground/90 hover:scale-[1.02]'
                     }
                   `}
                 >
-                  <Icon className={`${iconSize} mb-2 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <span className={`font-semibold ${isSelected ? 'text-foreground' : 'text-muted-foreground'} ${textSize} text-center`}>
+                  <Icon className={`${iconSize} mb-2 text-primary-foreground`} />
+                  <span className={`font-semibold text-primary-foreground ${textSize} text-center`}>
                     {size.label.split('-')[0].trim()}
                   </span>
-                  <span className={`mt-1 font-bold ${isSelected ? 'text-primary' : 'text-muted-foreground'} text-sm`}>
+                  <span className={`mt-1 font-bold text-primary-foreground text-sm`}>
                     ${size.price.toLocaleString()}
                   </span>
                 </button>

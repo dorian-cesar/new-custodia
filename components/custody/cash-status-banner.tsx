@@ -49,15 +49,6 @@ export function CashStatusBanner({ isOpen, balance, totalSales, transactions }: 
             </div>
           )}
         </div>
-        <Link
-          href="/caja"
-          className={cn(
-            'text-sm font-medium underline-offset-4 hover:underline',
-            isOpen ? 'text-primary' : 'text-destructive'
-          )}
-        >
-          {isOpen ? 'Ver Caja' : 'Abrir Caja'}
-        </Link>
       </div>
     </div>
   )
