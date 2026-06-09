@@ -82,9 +82,16 @@ export default function CajaPage() {
   const isCashOpen = currentCashRegister?.status === 'open'
   const stats = getCurrentRegisterStats()
 
+  // Pagination for transactions
+  const [currentTxPage, setCurrentTxPage] = useState(1)
+  const TX_PER_PAGE = 15
+
   const currentTransactions = currentCashRegister
     ? cashTransactions.filter((t) => t.registerId === currentCashRegister.id)
     : []
+
+  const totalTxPages = Math.ceil(currentTransactions.length / TX_PER_PAGE)
+  const paginatedTransactions = currentTransactions.slice((currentTxPage - 1) * TX_PER_PAGE, currentTxPage * TX_PER_PAGE)
 
   const ingresosTarjeta = stats.ingresosTarjeta || 0
   const ingresosEfectivo = stats.ingresosEfectivo || 0
@@ -330,7 +337,7 @@ export default function CajaPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentTransactions.map((tx) => {
+                  {paginatedTransactions.map((tx) => {
                     let paymentStr = '-'
                     if (tx.description.includes('Efectivo')) paymentStr = 'Efectivo'
                     else if (tx.description.includes('Tarjeta')) paymentStr = 'Tarjeta'
@@ -379,6 +386,31 @@ export default function CajaPage() {
                 </TableBody>
               </Table>
             </div>
+            {currentTransactions.length > 0 && (
+              <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground border-t border-border/50 pt-4">
+                <div>
+                  Mostrando {Math.min(currentTransactions.length, (currentTxPage - 1) * TX_PER_PAGE + 1)} a {Math.min(currentTransactions.length, currentTxPage * TX_PER_PAGE)} de {currentTransactions.length} registros
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentTxPage(p => Math.max(1, p - 1))}
+                    disabled={currentTxPage === 1}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentTxPage(p => Math.min(totalTxPages, p + 1))}
+                    disabled={currentTxPage >= totalTxPages || totalTxPages === 0}
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -517,9 +549,9 @@ export default function CajaPage() {
             <div className="space-y-2">
               <Label>Monto Inicial</Label>
               <Input
-                type="number"
-                value={openingAmount}
-                onChange={(e) => setOpeningAmount(e.target.value)}
+                type="text"
+                value={openingAmount ? Number(openingAmount).toLocaleString('es-CL') : ''}
+                onChange={(e) => setOpeningAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
                 className="bg-input"
               />
@@ -591,9 +623,9 @@ export default function CajaPage() {
                 )}
               </div>
               <Input
-                type="number"
-                value={closingAmount}
-                onChange={(e) => setClosingAmount(e.target.value)}
+                type="text"
+                value={closingAmount ? Number(closingAmount).toLocaleString('es-CL') : ''}
+                onChange={(e) => setClosingAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
                 className={`bg-input ${diferenciaCaja !== null && diferenciaCaja !== 0 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
@@ -662,12 +694,11 @@ export default function CajaPage() {
             <div className="space-y-2">
               <Label>Monto a Retirar ($)</Label>
               <Input
-                type="number"
-                value={giroAmount}
-                onChange={(e) => setGiroAmount(e.target.value)}
+                type="text"
+                value={giroAmount ? Number(giroAmount).toLocaleString('es-CL') : ''}
+                onChange={(e) => setGiroAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
                 className="bg-input"
-                min="0"
               />
             </div>
             <div className="space-y-2">

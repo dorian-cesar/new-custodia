@@ -118,6 +118,17 @@ export function ClientRegistration({
   }
 
   const confirmEntryPayment = async () => {
+    if (entryPaymentMethod === 'Efectivo') {
+      if (!entryCashReceived) {
+        alert("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.");
+        return;
+      }
+      if (entryCashReceived < entryPrice) {
+        alert("El efectivo recibido es menor al monto a cobrar.");
+        return;
+      }
+    }
+
     setIsEntryModalOpen(false)
     await onGenerateBarcode(entryPaymentMethod)
   }
@@ -169,6 +180,16 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
+    if (method === 'Efectivo' && extraCharge > 0) {
+      if (!cashReceived) {
+        alert("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.");
+        return;
+      }
+      if (cashReceived < extraCharge) {
+        alert("El efectivo recibido es menor al recargo a cobrar.");
+        return;
+      }
+    }
 
     const token = useCustodyStore.getState().currentUser?.token || ''
     let extraFolio: number | null = null
@@ -343,10 +364,10 @@ export function ClientRegistration({
                     <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
                     <Input
                       id="entryCashReceived"
-                      type="number"
-                      value={entryCashReceived === 0 ? '' : entryCashReceived}
+                      type="text"
+                      value={entryCashReceived === 0 ? '' : entryCashReceived.toLocaleString('es-CL')}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = Number(e.target.value.replace(/\D/g, ''));
                         setEntryCashReceived(val);
                       }}
                       placeholder="Monto entregado por el cliente"
@@ -381,7 +402,7 @@ export function ClientRegistration({
               type="button"
               className="bg-primary hover:bg-primary/90"
               onClick={confirmEntryPayment}
-              disabled={(entryPaymentMethod === 'Efectivo' && entryCashReceived > 0 && entryCashReceived < entryPrice) || isProcessingCard}
+              disabled={isProcessingCard}
             >
               {isProcessingCard ? 'Esperando POS...' : 'Confirmar Pago y Generar Ticket'}
             </Button>
@@ -490,10 +511,10 @@ export function ClientRegistration({
                     <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
                     <Input
                       id="cashReceived"
-                      type="number"
-                      value={cashReceived === 0 ? '' : cashReceived}
+                      type="text"
+                      value={cashReceived === 0 ? '' : cashReceived.toLocaleString('es-CL')}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = Number(e.target.value.replace(/\D/g, ''));
                         setCashReceived(val);
                       }}
                       placeholder="Monto entregado por el cliente"
@@ -529,7 +550,7 @@ export function ClientRegistration({
               type="button"
               className="bg-primary hover:bg-primary/90"
               onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount, paymentMethod)}
-              disabled={(paymentMethod === 'Efectivo' && cashReceived > 0 && cashReceived < extraAmount) || isProcessingCard}
+              disabled={isProcessingCard}
             >
               {isProcessingCard ? 'Esperando POS...' : (extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta')}
             </Button>
