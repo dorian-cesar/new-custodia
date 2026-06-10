@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { History, Search, Filter, Ruler } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { History, Search, Filter, Ruler, Printer } from 'lucide-react'
 import { Header } from '@/components/custody/header'
+import { Ticket } from '@/components/custody/ticket'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +32,31 @@ export default function HistorialPage() {
   const [searchDocument, setSearchDocument] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterSize, setFilterSize] = useState<string>('all')
+
+  const ticketRef = useRef<HTMLDivElement>(null)
+  const [recordToPrint, setRecordToPrint] = useState<any>(null)
+  const [paymentMethodToPrint, setPaymentMethodToPrint] = useState<string>('Efectivo')
+
+  const handlePrintAction = useReactToPrint({
+    contentRef: ticketRef,
+    documentTitle: 'Reimpresion_Ticket',
+  })
+
+  useEffect(() => {
+    if (recordToPrint) {
+      // Pequeño delay para asegurar que el componente Ticket y el SVG terminen de renderizar
+      const timer = setTimeout(() => {
+        handlePrintAction()
+        setRecordToPrint(null)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [recordToPrint, handlePrintAction])
+
+  const triggerReprint = (record: any, paymentMethod: string) => {
+    setPaymentMethodToPrint(paymentMethod)
+    setRecordToPrint(record)
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -167,12 +194,13 @@ export default function HistorialPage() {
                   <TableHead className="text-muted-foreground">PAGO</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                   <TableHead className="text-muted-foreground">$ VALOR</TableHead>
+                  <TableHead className="text-muted-foreground text-center">ACCIÓN</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No se encontraron registros
                     </TableCell>
                   </TableRow>
@@ -227,7 +255,17 @@ export default function HistorialPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-foreground">
-                        ${record.price.toLocaleString()}
+                        ${record.price.toLocaleString('es-CL')}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => triggerReprint(record, paymentStr.includes('Tarjeta') ? 'Tarjeta' : 'Efectivo')}
+                          title="Reimprimir Ticket"
+                        >
+                          <Printer className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                     )
@@ -261,6 +299,9 @@ export default function HistorialPage() {
           </div>
         </div>
       </main>
+
+      {/* Hidden ticket for printing */}
+      <Ticket record={recordToPrint} paymentMethod={paymentMethodToPrint} ref={ticketRef} />
     </div>
   )
 }
