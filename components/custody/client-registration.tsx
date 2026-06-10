@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Ticket } from './ticket'
 import { DeliveryTicket } from './delivery-ticket'
+import { printerService } from '@/lib/printer-service'
 import { Barcode as BarcodeIcon, Hash, Key, AlertTriangle, Coins, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -86,14 +87,22 @@ export function ClientRegistration({
   useEffect(() => {
     // Automatically print when a *new* record is generated and received
     if (currentRecord && currentRecord.id !== lastPrintedId) {
-      // Small delay to allow SVG Barcode inside Ticket to render completely
-      const timer = setTimeout(() => {
-        handlePrint()
+      if (printerService.isNative()) {
+        const sizeLabel = lockerSizes.find((s) => s.value === currentRecord.size)?.label || currentRecord.size
+        const locker = lockers.find((l) => l.id === currentRecord.lockerId)
+        const lockerDisplay = locker ? `${locker.row},${locker.col}` : currentRecord.lockerId.toString()
+        printerService.printEntryTicket(currentRecord, sizeLabel, lockerDisplay, entryPaymentMethod)
         setLastPrintedId(currentRecord.id)
-      }, 500)
-      return () => clearTimeout(timer)
+      } else {
+        // Small delay to allow SVG Barcode inside Ticket to render completely
+        const timer = setTimeout(() => {
+          handlePrint()
+          setLastPrintedId(currentRecord.id)
+        }, 500)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [currentRecord, lastPrintedId, handlePrint])
+  }, [currentRecord, lastPrintedId, handlePrint, lockers, lockerSizes, entryPaymentMethod])
   
   const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
   const lockers = useCustodyStore((state) => state.lockers)
@@ -209,7 +218,22 @@ export function ClientRegistration({
     // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
       if (pendingRecord) {
-        handlePrintDelivery()
+        if (printerService.isNative()) {
+          const sizeLabel = lockerSizes.find((s) => s.value === pendingRecord.size)?.label || pendingRecord.size
+          const locker = lockers.find((l) => l.id === pendingRecord.lockerId)
+          const lockerDisplay = locker ? `${locker.row},${locker.col}` : pendingRecord.lockerId.toString()
+          await printerService.printDeliveryTicket(
+            pendingRecord,
+            sizeLabel,
+            lockerDisplay,
+            method,
+            extraHours,
+            extraCharge,
+            extraFolio
+          )
+        } else {
+          handlePrintDelivery()
+        }
       }
 
       const success = await onDeliver(code, extraCharge, method, extraFolio)

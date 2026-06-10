@@ -6,6 +6,7 @@ import { History, Search, Filter, Ruler, Printer } from 'lucide-react'
 import { Header } from '@/components/custody/header'
 import { Ticket } from '@/components/custody/ticket'
 import { Button } from '@/components/ui/button'
+import { printerService } from '@/lib/printer-service'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -44,14 +45,22 @@ export default function HistorialPage() {
 
   useEffect(() => {
     if (recordToPrint) {
-      // Pequeño delay para asegurar que el componente Ticket y el SVG terminen de renderizar
-      const timer = setTimeout(() => {
-        handlePrintAction()
+      if (printerService.isNative()) {
+        const sizeLabel = lockerSizes.find((s) => s.value === recordToPrint.size)?.label || recordToPrint.size
+        const locker = lockers.find((l) => l.id === recordToPrint.lockerId)
+        const lockerDisplay = locker ? `${locker.row},${locker.col}` : recordToPrint.lockerId.toString()
+        printerService.printEntryTicket(recordToPrint, sizeLabel, lockerDisplay, paymentMethodToPrint)
         setRecordToPrint(null)
-      }, 300)
-      return () => clearTimeout(timer)
+      } else {
+        // Pequeño delay para asegurar que el componente Ticket y el SVG terminen de renderizar
+        const timer = setTimeout(() => {
+          handlePrintAction()
+          setRecordToPrint(null)
+        }, 300)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [recordToPrint, handlePrintAction])
+  }, [recordToPrint, handlePrintAction, lockers, lockerSizes, paymentMethodToPrint])
 
   const triggerReprint = (record: any, paymentMethod: string) => {
     setPaymentMethodToPrint(paymentMethod)
