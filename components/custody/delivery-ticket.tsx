@@ -28,9 +28,10 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
         <div
           ref={ref}
           style={{
-            width: '56mm', // Fits loosely in 58mm
+            width: '100%',
+            maxWidth: '58mm',
+            margin: '0 auto',
             padding: '2mm',
-            margin: 0,
             background: 'white',
             color: 'black',
             fontFamily: 'monospace',

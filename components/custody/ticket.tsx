@@ -46,9 +46,10 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, payment
         ref={ref}
         // Tailwind is great but inline styles assure it prints well in pure B&W with restricted width
         style={{
-          width: '56mm', // Fits loosely in 58mm
+          width: '100%', 
+          maxWidth: '58mm', // Fluid width to prevent Android print spooler from collapsing
+          margin: '0 auto',
           padding: '2mm',
-          margin: 0,
           background: 'white',
           color: 'black',
           fontFamily: 'monospace',
