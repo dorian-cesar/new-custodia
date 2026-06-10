@@ -11,7 +11,7 @@ interface TicketProps {
 }
 
 export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, paymentMethod }, ref) => {
-  const barcodeRef = useRef<SVGSVGElement>(null)
+  const barcodeRef = useRef<HTMLImageElement>(null)
   const lockers = useCustodyStore((state) => state.lockers)
   const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
@@ -90,7 +90,7 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, payment
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <svg ref={barcodeRef} style={{ width: '100%', maxWidth: '50mm', height: 'auto' }} />
+          <img ref={barcodeRef} alt="barcode" style={{ width: '100%', maxWidth: '50mm', height: 'auto' }} />
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '10px' }}>
