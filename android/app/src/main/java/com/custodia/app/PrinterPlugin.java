@@ -307,7 +307,7 @@ public class PrinterPlugin extends Plugin {
                         data.add(DataForSendToPrinterPos80.setBarcodeHeight(90));
                         data.add(DataForSendToPrinterPos80.selectHRICharacterPrintPosition(2)); // Underneath
                         
-                        String cleanedBarcode = barcode.replaceAll("[^A-Za-z0-9]", "");
+                        String cleanedBarcode = barcode.replaceAll("[^A-Za-z0-9/]", "");
                         if (cleanedBarcode.isEmpty()) cleanedBarcode = "CUSTODIA";
                         
                         data.add(DataForSendToPrinterPos80.printBarcode(73, cleanedBarcode.length(), cleanedBarcode));
