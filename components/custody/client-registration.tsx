@@ -79,6 +79,14 @@ export function ClientRegistration({
     documentTitle: 'Ticket_Retiro',
   })
 
+  const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
+  const lockers = useCustodyStore((state) => state.lockers)
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
+  const selectedLocker = lockers.find(l => l.id === selectedLockerId)
+  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
+  const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
+  const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
+
   // Reset cashReceived when modal or pendingRecord changes
   useEffect(() => {
     setCashReceived(0)
@@ -103,14 +111,7 @@ export function ClientRegistration({
       }
     }
   }, [currentRecord, lastPrintedId, handlePrint, lockers, lockerSizes, entryPaymentMethod])
-  
-  const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
-  const lockers = useCustodyStore((state) => state.lockers)
-  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
-  const selectedLocker = lockers.find(l => l.id === selectedLockerId)
-  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
-  const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
-  const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
+
 
   const handleGenerateBarcode = () => {
     if (!isCashOpen) {
