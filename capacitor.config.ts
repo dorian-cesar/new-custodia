@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Custodia',
   webDir: 'out',
   server: {
-    url: 'https://custodia-terminal-sur.netlify.app',
+    url: 'https://new-custodia-py.netlify.app',
     cleartext: true
   }
 };
