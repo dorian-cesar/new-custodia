@@ -315,15 +315,19 @@ export const useCustodyStore = create<CustodyState>()(
       const { currentCashRegister, cashTransactions } = get()
       
       if (!currentCashRegister) {
-        return { totalSales: 0, totalTransactions: 0, balance: 0 }
+        return { totalSales: 0, totalTransactions: 0, balance: 0, ingresosEfectivo: 0, ingresosTarjeta: 0 }
       }
 
       const registerTransactions = cashTransactions.filter(
         (t) => t.registerId === currentCashRegister.id
       )
 
-      const income = registerTransactions
-        .filter((t) => t.type === 'income')
+      const incomeEfectivo = registerTransactions
+        .filter((t) => t.type === 'income' && !t.description.includes('Tarjeta'))
+        .reduce((sum, t) => sum + t.amount, 0)
+
+      const incomeTarjeta = registerTransactions
+        .filter((t) => t.type === 'income' && t.description.includes('Tarjeta'))
         .reduce((sum, t) => sum + t.amount, 0)
 
       const expenses = registerTransactions
@@ -331,9 +335,11 @@ export const useCustodyStore = create<CustodyState>()(
         .reduce((sum, t) => sum + t.amount, 0)
 
       return {
-        totalSales: income,
+        totalSales: incomeEfectivo + incomeTarjeta,
+        ingresosEfectivo: incomeEfectivo,
+        ingresosTarjeta: incomeTarjeta,
         totalTransactions: registerTransactions.length,
-        balance: currentCashRegister.openingAmount + income - expenses,
+        balance: currentCashRegister.openingAmount + incomeEfectivo - expenses,
       }
     },
   })

@@ -7,10 +7,11 @@ import JsBarcode from 'jsbarcode'
 
 interface TicketProps {
   record: CustodyRecord | null
+  paymentMethod?: string
 }
 
-export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) => {
-  const barcodeRef = useRef<SVGSVGElement>(null)
+export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, paymentMethod }, ref) => {
+  const barcodeRef = useRef<HTMLImageElement>(null)
   const lockers = useCustodyStore((state) => state.lockers)
   const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
@@ -45,9 +46,10 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
         ref={ref}
         // Tailwind is great but inline styles assure it prints well in pure B&W with restricted width
         style={{
-          width: '56mm', // Fits loosely in 58mm
+          width: '100%', 
+          maxWidth: '58mm', // Fluid width to prevent Android print spooler from collapsing
+          margin: '0 auto',
           padding: '2mm',
-          margin: 0,
           background: 'white',
           color: 'black',
           fontFamily: 'monospace',
@@ -72,12 +74,12 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record }, ref) 
 
         <div style={{ textAlign: 'right', marginBottom: '15px' }}>
           <p style={{ margin: '3px 0', fontSize: '14px' }}>
-            <strong>Pagado: Gs. {record.price.toLocaleString('es-PY')}</strong>
+            <strong>Pagado ({paymentMethod || 'Efectivo'}): Gs. {record.price.toLocaleString('es-PY')}</strong>
           </p>
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <svg ref={barcodeRef} style={{ width: '100%', maxWidth: '50mm', height: 'auto' }} />
+          <img ref={barcodeRef} alt="barcode" style={{ width: '100%', maxWidth: '50mm', height: 'auto' }} />
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '10px' }}>

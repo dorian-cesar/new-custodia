@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { History, Search, Filter, Ruler } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { History, Search, Filter, Ruler, Printer } from 'lucide-react'
 import { Header } from '@/components/custody/header'
+import { Ticket } from '@/components/custody/ticket'
 import { Button } from '@/components/ui/button'
+import { printerService } from '@/lib/printer-service'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -25,11 +28,44 @@ import { useCustodyStore } from '@/lib/custody-store'
 import { formatDateTime, type LockerSize } from '@/lib/types'
 
 export default function HistorialPage() {
-  const { records, lockers, lockerSizes } = useCustodyStore()
+  const { records, lockers, lockerSizes, cashTransactions } = useCustodyStore()
   const [mounted, setMounted] = useState(false)
   const [searchDocument, setSearchDocument] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterSize, setFilterSize] = useState<string>('all')
+
+  const ticketRef = useRef<HTMLDivElement>(null)
+  const [recordToPrint, setRecordToPrint] = useState<any>(null)
+  const [paymentMethodToPrint, setPaymentMethodToPrint] = useState<string>('Efectivo')
+
+  const handlePrintAction = useReactToPrint({
+    contentRef: ticketRef,
+    documentTitle: 'Reimpresion_Ticket',
+  })
+
+  useEffect(() => {
+    if (recordToPrint) {
+      if (printerService.isNative()) {
+        const sizeLabel = lockerSizes.find((s) => s.value === recordToPrint.size)?.label || recordToPrint.size
+        const locker = lockers.find((l) => l.id === recordToPrint.lockerId)
+        const lockerDisplay = locker ? `${locker.row},${locker.col}` : recordToPrint.lockerId.toString()
+        printerService.printEntryTicket(recordToPrint, sizeLabel, lockerDisplay, paymentMethodToPrint)
+        setRecordToPrint(null)
+      } else {
+        // Pequeño delay para asegurar que el componente Ticket y el SVG terminen de renderizar
+        const timer = setTimeout(() => {
+          handlePrintAction()
+          setRecordToPrint(null)
+        }, 300)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [recordToPrint, handlePrintAction, lockers, lockerSizes, paymentMethodToPrint])
+
+  const triggerReprint = (record: any, paymentMethod: string) => {
+    setPaymentMethodToPrint(paymentMethod)
+    setRecordToPrint(record)
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -46,6 +82,19 @@ export default function HistorialPage() {
       return matchesDocument && matchesStatus && matchesSize
     })
   }, [records, searchDocument, filterStatus, filterSize])
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 15
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchDocument, filterStatus, filterSize])
+
+  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE)
+  const paginatedRecords = useMemo(() => {
+    return filteredRecords.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  }, [filteredRecords, currentPage])
 
   const getSizeLabel = (size: LockerSize) => {
     return lockerSizes.find((s) => s.value === size)?.label || size
@@ -133,7 +182,7 @@ export default function HistorialPage() {
 
             <div className="space-y-2">
               <Label className="text-sm text-transparent">Buscar</Label>
-              <Button onClick={handleSearch} className="w-full bg-accent hover:bg-accent/90">
+              <Button onClick={handleSearch} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Search className="h-4 w-4 mr-2" />
                 Buscar
               </Button>
@@ -151,19 +200,36 @@ export default function HistorialPage() {
                   <TableHead className="text-muted-foreground">ENTRADA</TableHead>
                   <TableHead className="text-muted-foreground">SALIDA</TableHead>
                   <TableHead className="text-muted-foreground">TAMANO</TableHead>
+                  <TableHead className="text-muted-foreground">PAGO</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                   <TableHead className="text-muted-foreground">Gs. VALOR</TableHead>
+                  <TableHead className="text-muted-foreground text-center">ACCIÓN</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.length === 0 ? (
+                {paginatedRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No se encontraron registros
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRecords.map((record) => (
+                  paginatedRecords.map((record) => {
+                    // Obtener la transaccion de pago si es que ya existe
+                    const txs = cashTransactions?.filter(t => t.recordId === record.id) || []
+                    let paymentStr = '-'
+                    if (txs.length > 0) {
+                      const methods = new Set<string>()
+                      txs.forEach(t => {
+                        if (t.description.includes('Efectivo')) methods.add('Efectivo')
+                        if (t.description.includes('Tarjeta')) methods.add('Tarjeta')
+                      })
+                      if (methods.size > 0) {
+                        paymentStr = Array.from(methods).join(' / ')
+                      }
+                    }
+
+                    return (
                     <TableRow key={record.id} className="border-border">
                       <TableCell className="font-mono text-sm text-foreground">
                         {record.code}
@@ -178,6 +244,15 @@ export default function HistorialPage() {
                       </TableCell>
                       <TableCell className="text-foreground">{getSizeLabel(record.size)}</TableCell>
                       <TableCell>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          paymentStr.includes('Efectivo') ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' :
+                          paymentStr.includes('Tarjeta') ? 'bg-blue-500/10 text-blue-600 dark:text-blue-500' :
+                          'bg-secondary text-muted-foreground'
+                        }`}>
+                          {paymentStr}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <span
                           className={
                             record.status === 'Activo'
@@ -191,14 +266,51 @@ export default function HistorialPage() {
                       <TableCell className="text-foreground">
                         Gs. {record.price.toLocaleString('es-PY')}
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => triggerReprint(record, paymentStr.includes('Tarjeta') ? 'Tarjeta' : 'Efectivo')}
+                          title="Reimprimir Ticket"
+                        >
+                          <Printer className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
           </div>
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            <div>
+              Mostrando {Math.min(filteredRecords.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)} a {Math.min(filteredRecords.length, currentPage * ITEMS_PER_PAGE)} de {filteredRecords.length} registros
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages || totalPages === 0}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Hidden ticket for printing */}
+      <Ticket record={recordToPrint} paymentMethod={paymentMethodToPrint} ref={ticketRef} />
     </div>
   )
 }

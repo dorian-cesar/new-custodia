@@ -28,7 +28,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { useCustodyStore } from '@/lib/custody-store'
-import { getUsers, createUser, updateUser, deleteUser, updatePrice, getInitialState } from '@/app/actions/db-actions'
+import { getUsers, createUser, updateUser, deleteUser, updatePrice, createPrice, deletePrice, getInitialState } from '@/app/actions/db-actions'
 import { formatDateTime } from '@/lib/types'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
@@ -77,6 +77,22 @@ export default function AdminPage() {
   const [editLabel, setEditLabel] = useState<string>('')
   const [priceError, setPriceError] = useState('')
   const [isSavingPrice, setIsSavingPrice] = useState(false)
+
+  const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false)
+  const [newSizeCode, setNewSizeCode] = useState('')
+  const [newSizeLabel, setNewSizeLabel] = useState('')
+  const [newSizePrice, setNewSizePrice] = useState('')
+  
+  const [showDeletePriceDialog, setShowDeletePriceDialog] = useState(false)
+  const [deletingSize, setDeletingSize] = useState<{size: string, label: string} | null>(null)
+
+  // Pagination for cash registers
+  const [currentPageRegisters, setCurrentPageRegisters] = useState(1)
+  const REGISTERS_PER_PAGE = 5
+  
+  const sortedRegisters = [...cashRegisters].sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())
+  const totalRegisterPages = Math.ceil(sortedRegisters.length / REGISTERS_PER_PAGE)
+  const paginatedRegisters = sortedRegisters.slice((currentPageRegisters - 1) * REGISTERS_PER_PAGE, currentPageRegisters * REGISTERS_PER_PAGE)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -212,7 +228,7 @@ export default function AdminPage() {
       return
     }
     if (!editLabel.trim()) {
-      setPriceError('Ingrese una etiqueta válida')
+      setPriceError('El nombre no puede estar vacío')
       return
     }
 
@@ -230,6 +246,50 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error(err)
+      setPriceError('Error inesperado')
+    } finally {
+      setIsSavingPrice(false)
+    }
+  }
+
+  const handleCreatePrice = async () => {
+    const newPrice = parseInt(newSizePrice, 10)
+    if (!newSizeCode.trim()) { setPriceError('El código (tamaño) es requerido'); return }
+    if (!newSizeLabel.trim()) { setPriceError('El nombre es requerido'); return }
+    if (isNaN(newPrice) || newPrice <= 0) { setPriceError('Ingrese un precio válido'); return }
+
+    setIsSavingPrice(true)
+    try {
+      const result = await createPrice(newSizeCode.trim().toUpperCase(), newSizeLabel.trim(), newPrice)
+      if (result.success) {
+        setShowCreatePriceDialog(false)
+        setNewSizeCode(''); setNewSizeLabel(''); setNewSizePrice('')
+        const res = await getInitialState()
+        if (res.success && res.data) hydrateState(res.data)
+      } else {
+        setPriceError(result.error || 'Error al crear tamaño')
+      }
+    } catch (err) {
+      setPriceError('Error inesperado')
+    } finally {
+      setIsSavingPrice(false)
+    }
+  }
+
+  const handleDeletePrice = async () => {
+    if (!deletingSize) return
+    setIsSavingPrice(true)
+    try {
+      const result = await deletePrice(deletingSize.size)
+      if (result.success) {
+        setShowDeletePriceDialog(false)
+        setDeletingSize(null)
+        const res = await getInitialState()
+        if (res.success && res.data) hydrateState(res.data)
+      } else {
+        setPriceError(result.error || 'Error al eliminar tamaño')
+      }
+    } catch (err) {
       setPriceError('Error inesperado')
     } finally {
       setIsSavingPrice(false)
@@ -470,9 +530,18 @@ export default function AdminPage() {
 
         {/* ── Prices Section ── */}
         <div className="bg-card rounded-xl p-6 border border-border mt-8">
-          <div className="flex items-center gap-2 mb-6">
-            <Shield className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-card-foreground">Precios de Casilleros</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-card-foreground">Precios de Casilleros</h2>
+            </div>
+            <Button
+              onClick={() => { setPriceError(''); setShowCreatePriceDialog(true) }}
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo Tamaño
+            </Button>
           </div>
           
           <div className="overflow-x-auto">
@@ -490,10 +559,20 @@ export default function AdminPage() {
                     <TableCell className="text-foreground font-medium">{sizeObj.label}</TableCell>
                     <TableCell className="text-foreground">Gs. {sizeObj.price.toLocaleString('es-PY')}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => openEditPriceDialog(sizeObj)} className="gap-1">
-                        <Pencil className="h-3.5 w-3.5" />
-                        Modifica precio y talla
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditPriceDialog(sizeObj)} className="gap-1">
+                          <Pencil className="h-3.5 w-3.5" />
+                          Modifica precio y talla
+                        </Button>
+                        <Button
+                          variant="outline" size="sm"
+                          onClick={() => { setDeletingSize({ size: sizeObj.value, label: sizeObj.label }); setShowDeletePriceDialog(true); }}
+                          className="gap-1 text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/20"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Eliminar
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -517,8 +596,12 @@ export default function AdminPage() {
                   <TableHead className="text-muted-foreground">APERTURA</TableHead>
                   <TableHead className="text-muted-foreground">CIERRE</TableHead>
                   <TableHead className="text-muted-foreground">MONTO INICIAL</TableHead>
-                  <TableHead className="text-muted-foreground">MONTO FINAL</TableHead>
+                  <TableHead className="text-muted-foreground">EN EFECTIVO</TableHead>
+                  <TableHead className="text-muted-foreground">EN TARJETA</TableHead>
                   <TableHead className="text-muted-foreground">VENTAS TOTALES</TableHead>
+                  <TableHead className="text-muted-foreground">RETIROS</TableHead>
+                  <TableHead className="text-muted-foreground">CIERRE DE CAJA</TableHead>
+                  <TableHead className="text-muted-foreground">DIFERENCIA</TableHead>
                   <TableHead className="text-muted-foreground">ESTADO</TableHead>
                   <TableHead className="text-muted-foreground">NOTAS</TableHead>
                 </TableRow>
@@ -526,14 +609,21 @@ export default function AdminPage() {
               <TableBody>
                 {cashRegisters.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No hay turnos registrados
                     </TableCell>
                   </TableRow>
                 ) : (
-                  [...cashRegisters]
-                    .sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime())
-                    .map((register) => (
+                  paginatedRegisters.map((register) => {
+                      const regTxs = cashTransactions.filter(t => t.registerId === register.id)
+                      const ingresosTarjeta = regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0)
+                      const ingresosEfectivo = regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0)
+                      const gastosEfectivo = regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+
+                      const saldoEsperadoEfectivo = register.openingAmount + ingresosEfectivo - gastosEfectivo
+                      const diferenciaCaja = register.closingAmount !== null ? register.closingAmount - saldoEsperadoEfectivo : null
+
+                      return (
                       <TableRow key={register.id} className="border-border">
                         <TableCell className="text-foreground font-medium">{register.openedBy || 'desconocido'}</TableCell>
                         <TableCell className="text-foreground text-sm">{formatDateTime(register.openedAt)}</TableCell>
@@ -541,10 +631,22 @@ export default function AdminPage() {
                           {register.closedAt ? formatDateTime(register.closedAt) : <span className="text-emerald-500 font-medium">Activo ahora</span>}
                         </TableCell>
                         <TableCell className="text-foreground">Gs. {register.openingAmount.toLocaleString('es-PY')}</TableCell>
-                        <TableCell className="text-foreground">
+                        <TableCell className="text-foreground text-amber-500">Gs. {ingresosEfectivo.toLocaleString('es-PY')}</TableCell>
+                        <TableCell className="text-foreground text-blue-500">Gs. {ingresosTarjeta.toLocaleString('es-PY')}</TableCell>
+                        <TableCell className="text-foreground font-semibold">Gs. {(ingresosEfectivo + ingresosTarjeta).toLocaleString('es-PY')}</TableCell>
+                        <TableCell className="text-destructive font-medium">Gs. {gastosEfectivo.toLocaleString('es-PY')}</TableCell>
+                        <TableCell className="text-foreground font-semibold">
                           {register.closingAmount !== null ? `Gs. ${register.closingAmount.toLocaleString('es-PY')}` : '-'}
                         </TableCell>
-                        <TableCell className="text-foreground">Gs. {register.totalSales.toLocaleString('es-PY')}</TableCell>
+                        <TableCell>
+                          {diferenciaCaja !== null ? (
+                            <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
+                              {diferenciaCaja === 0 ? 'Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +Gs. ${diferenciaCaja.toLocaleString('es-PY')}` : `Faltante: -Gs. ${Math.abs(diferenciaCaja).toLocaleString('es-PY')}`}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             register.status === 'open' 
@@ -558,10 +660,34 @@ export default function AdminPage() {
                           {register.notes || '-'}
                         </TableCell>
                       </TableRow>
-                    ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
+            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+              <div>
+                Mostrando {Math.min(sortedRegisters.length, (currentPageRegisters - 1) * REGISTERS_PER_PAGE + 1)} a {Math.min(sortedRegisters.length, currentPageRegisters * REGISTERS_PER_PAGE)} de {sortedRegisters.length} registros
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageRegisters(p => Math.max(1, p - 1))}
+                  disabled={currentPageRegisters === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageRegisters(p => Math.min(totalRegisterPages, p + 1))}
+                  disabled={currentPageRegisters >= totalRegisterPages || totalRegisterPages === 0}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -684,15 +810,15 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
-              Modificar Talla y Precio
+              Modificar Tamaño y Precio
             </DialogTitle>
             <DialogDescription>
-              Establezca la nueva etiqueta y precio base para la talla <strong className="text-foreground">{editingSize?.size}</strong>.
+              Edite el nombre o precio para el tamaño <strong className="text-foreground">{editingSize?.size}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Nombre de la Talla (Etiqueta)</Label>
+              <Label>Nombre / Descripción</Label>
               <Input 
                 type="text" 
                 value={editLabel} 
@@ -716,11 +842,92 @@ export default function AdminPage() {
           <DialogFooter>
             <Button variant="secondary" onClick={() => setShowEditPriceDialog(false)} disabled={isSavingPrice}>Cancelar</Button>
             <Button onClick={handleEditPrice} className="bg-primary hover:bg-primary/90" disabled={isSavingPrice}>
-              {isSavingPrice ? 'Guardando...' : 'Guardar Precio'}
+              {isSavingPrice ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Create Price Dialog ── */}
+      <Dialog open={showCreatePriceDialog} onOpenChange={setShowCreatePriceDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Nuevo Tamaño de Casillero
+            </DialogTitle>
+            <DialogDescription>
+              Agregue un nuevo tamaño y su precio asociado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Código / Tamaño (ej. XXXL)</Label>
+              <Input 
+                type="text" 
+                value={newSizeCode} 
+                onChange={(e) => setNewSizeCode(e.target.value.toUpperCase())} 
+                className="bg-input uppercase" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nombre / Descripción</Label>
+              <Input 
+                type="text" 
+                value={newSizeLabel} 
+                onChange={(e) => setNewSizeLabel(e.target.value)} 
+                className="bg-input" 
+                placeholder="ej. XXXL Equipaje Especial"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Precio (Gs.)</Label>
+              <Input 
+                type="number" 
+                value={newSizePrice} 
+                onChange={(e) => setNewSizePrice(e.target.value)} 
+                className="bg-input" 
+                min="0"
+                step="100"
+              />
+            </div>
+            {priceError && <p className="text-sm text-destructive">{priceError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowCreatePriceDialog(false)} disabled={isSavingPrice}>Cancelar</Button>
+            <Button onClick={handleCreatePrice} className="bg-primary hover:bg-primary/90" disabled={isSavingPrice}>
+              {isSavingPrice ? 'Creando...' : 'Crear Tamaño'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Price Confirmation ── */}
+      <AlertDialog open={showDeletePriceDialog} onOpenChange={setShowDeletePriceDialog}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Eliminar Tamaño
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Está seguro que desea eliminar el tamaño{' '}
+              <strong className="text-foreground">{deletingSize?.label}</strong>?
+              Esta acción eliminará la tarifa, pero los casilleros existentes no se verán afectados directamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSavingPrice}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePrice}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={isSavingPrice}
+            >
+              {isSavingPrice ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { Ticket } from './ticket'
 import { DeliveryTicket } from './delivery-ticket'
+import { printerService } from '@/lib/printer-service'
 import { Barcode as BarcodeIcon, Hash, Key, AlertTriangle, Coins, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -76,6 +77,14 @@ export function ClientRegistration({
     documentTitle: 'Ticket_Retiro',
   })
 
+  const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
+  const lockers = useCustodyStore((state) => state.lockers)
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
+  const selectedLocker = lockers.find(l => l.id === selectedLockerId)
+  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
+  const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
+  const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
+
   // Reset cashReceived when modal or pendingRecord changes
   useEffect(() => {
     setCashReceived(0)
@@ -84,22 +93,23 @@ export function ClientRegistration({
   useEffect(() => {
     // Automatically print when a *new* record is generated and received
     if (currentRecord && currentRecord.id !== lastPrintedId) {
-      // Small delay to allow SVG Barcode inside Ticket to render completely
-      const timer = setTimeout(() => {
-        handlePrint()
+      if (printerService.isNative()) {
+        const sizeLabel = lockerSizes.find((s) => s.value === currentRecord.size)?.label || currentRecord.size
+        const locker = lockers.find((l) => l.id === currentRecord.lockerId)
+        const lockerDisplay = locker ? `${locker.row},${locker.col}` : currentRecord.lockerId.toString()
+        printerService.printEntryTicket(currentRecord, sizeLabel, lockerDisplay, entryPaymentMethod)
         setLastPrintedId(currentRecord.id)
-      }, 500)
-      return () => clearTimeout(timer)
+      } else {
+        // Small delay to allow SVG Barcode inside Ticket to render completely
+        const timer = setTimeout(() => {
+          handlePrint()
+          setLastPrintedId(currentRecord.id)
+        }, 500)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [currentRecord, lastPrintedId, handlePrint])
-  
-  const getActiveRecordsByInput = useCustodyStore((state) => state.getActiveRecordsByInput)
-  const lockers = useCustodyStore((state) => state.lockers)
-  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
-  const selectedLocker = lockers.find(l => l.id === selectedLockerId)
-  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
-  const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
-  const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
+  }, [currentRecord, lastPrintedId, handlePrint, lockers, lockerSizes, entryPaymentMethod])
+
 
   const handleGenerateBarcode = () => {
     if (!isCashOpen) {
@@ -116,6 +126,17 @@ export function ClientRegistration({
   }
 
   const confirmEntryPayment = async () => {
+    if (entryPaymentMethod === 'Efectivo') {
+      if (!entryCashReceived) {
+        alert("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.");
+        return;
+      }
+      if (entryCashReceived < entryPrice) {
+        alert("El efectivo recibido es menor al monto a cobrar.");
+        return;
+      }
+    }
+
     setIsEntryModalOpen(false)
     await onGenerateBarcode(entryPaymentMethod)
   }
@@ -167,10 +188,35 @@ export function ClientRegistration({
   }
 
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
+    if (method === 'Efectivo' && extraCharge > 0) {
+      if (!cashReceived) {
+        alert("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.");
+        return;
+      }
+      if (cashReceived < extraCharge) {
+        alert("El efectivo recibido es menor al recargo a cobrar.");
+        return;
+      }
+    }
     // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
       if (pendingRecord) {
-        handlePrintDelivery()
+        if (printerService.isNative()) {
+          const sizeLabel = lockerSizes.find((s) => s.value === pendingRecord.size)?.label || pendingRecord.size
+          const locker = lockers.find((l) => l.id === pendingRecord.lockerId)
+          const lockerDisplay = locker ? `${locker.row},${locker.col}` : pendingRecord.lockerId.toString()
+          await printerService.printDeliveryTicket(
+            pendingRecord,
+            sizeLabel,
+            lockerDisplay,
+            method,
+            extraHours,
+            extraCharge,
+            null
+          )
+        } else {
+          handlePrintDelivery()
+        }
       }
 
       const success = await onDeliver(code, extraCharge, method)
@@ -186,7 +232,7 @@ export function ClientRegistration({
 
   return (
     <div className="bg-card rounded-xl p-6 border border-border">
-      <Ticket ref={ticketRef} record={currentRecord} />
+      <Ticket ref={ticketRef} record={currentRecord} paymentMethod={entryPaymentMethod} />
       <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} />
       
       <div className="flex items-center gap-2 mb-6">
@@ -211,7 +257,7 @@ export function ClientRegistration({
         <Button
           onClick={handleGenerateBarcode}
           disabled={!isCashOpen}
-          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <BarcodeIcon className="h-4 w-4 mr-2" />
           Cobrar y Generar Custodia
@@ -324,10 +370,10 @@ export function ClientRegistration({
                     <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
                     <Input
                       id="entryCashReceived"
-                      type="number"
-                      value={entryCashReceived === 0 ? '' : entryCashReceived}
+                      type="text"
+                      value={entryCashReceived === 0 ? '' : entryCashReceived.toLocaleString('es-CL')}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = Number(e.target.value.replace(/\D/g, ''));
                         setEntryCashReceived(val);
                       }}
                       placeholder="Monto entregado por el cliente"
@@ -362,7 +408,7 @@ export function ClientRegistration({
               type="button"
               className="bg-primary hover:bg-primary/90"
               onClick={confirmEntryPayment}
-              disabled={(entryPaymentMethod === 'Efectivo' && entryCashReceived > 0 && entryCashReceived < entryPrice) || isProcessingCard}
+              disabled={isProcessingCard}
             >
               {isProcessingCard ? 'Esperando POS...' : 'Confirmar Pago y Generar Ticket'}
             </Button>
@@ -429,51 +475,40 @@ export function ClientRegistration({
             ) : (
               <div className="flex flex-col justify-center items-center p-4 border border-dashed border-border rounded-lg bg-secondary/10">
                 <span className="text-muted-foreground font-medium text-sm">Sin recargos adicionales</span>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3 text-xs bg-card hover:bg-secondary/20"
-                  onClick={() => {
-                    setExtraAmount(5000);
-                    setExtraHours(2);
-                  }}
-                >
-                  🔧 Simular Recargo ($5.000) para Demo
-                </Button>
               </div>
             )}
 
-            <div className="space-y-2 border-t border-border pt-4">
-              <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  type="button"
-                  variant={paymentMethod === 'Efectivo' ? 'default' : 'outline'}
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
-                    paymentMethod === 'Efectivo' 
-                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setPaymentMethod('Efectivo')}
-                >
-                  <Coins className="h-5 w-5" />
-                  Efectivo
-                </Button>
-                <Button
-                  type="button"
-                  variant={paymentMethod === 'Tarjeta' ? 'default' : 'outline'}
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
-                    paymentMethod === 'Tarjeta' 
-                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
-                  }`}
-                  onClick={() => setPaymentMethod('Tarjeta')}
-                >
-                  <CreditCard className="h-5 w-5" />
-                  Tarjeta
-                </Button>
-              </div>
+            {extraAmount > 0 && (
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'Efectivo' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                      paymentMethod === 'Efectivo' 
+                        ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                        : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setPaymentMethod('Efectivo')}
+                  >
+                    <Coins className="h-5 w-5" />
+                    Efectivo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'Tarjeta' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                      paymentMethod === 'Tarjeta' 
+                        ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
+                        : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setPaymentMethod('Tarjeta')}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    Tarjeta
+                  </Button>
+                </div>
 
               {paymentMethod === 'Efectivo' && extraAmount > 0 && (
                 <div className="space-y-2 mt-3 p-3 bg-secondary/10 border border-border rounded-lg animate-in fade-in slide-in-from-top-1">
@@ -482,10 +517,10 @@ export function ClientRegistration({
                     <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
                     <Input
                       id="cashReceived"
-                      type="number"
-                      value={cashReceived === 0 ? '' : cashReceived}
+                      type="text"
+                      value={cashReceived === 0 ? '' : cashReceived.toLocaleString('es-CL')}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = Number(e.target.value.replace(/\D/g, ''));
                         setCashReceived(val);
                       }}
                       placeholder="Monto entregado por el cliente"
@@ -506,6 +541,7 @@ export function ClientRegistration({
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <DialogFooter className="sm:justify-end">
@@ -520,7 +556,7 @@ export function ClientRegistration({
               type="button"
               className="bg-primary hover:bg-primary/90"
               onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount, paymentMethod)}
-              disabled={(paymentMethod === 'Efectivo' && cashReceived > 0 && cashReceived < extraAmount) || isProcessingCard}
+              disabled={isProcessingCard}
             >
               {isProcessingCard ? 'Esperando POS...' : (extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta')}
             </Button>
@@ -530,7 +566,7 @@ export function ClientRegistration({
 
       {/* MULTIPLE RECORDS MODAL */}
       <Dialog open={isMultiModalOpen} onOpenChange={setIsMultiModalOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl">
+        <DialogContent className="bg-card border-border sm:max-w-[850px] w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Hash className="h-5 w-5" />

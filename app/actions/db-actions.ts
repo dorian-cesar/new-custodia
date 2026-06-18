@@ -279,12 +279,42 @@ export async function getPrices() {
   return prices.map(p => p.get({ plain: true })) as { size: string, label: string, price: number }[];
 }
 
-export async function updatePrice(size: string, newPrice: number, newLabel: string) {
+export async function updatePrice(size: string, newPrice: number, newLabel?: string) {
   await syncDatabase();
   try {
     const priceRecord = await PriceModel.findOne({ where: { size } });
     if (!priceRecord) return { success: false, error: 'Tamaño no encontrado' };
-    await PriceModel.update({ price: newPrice, label: newLabel }, { where: { size } });
+    
+    const updateData: any = { price: newPrice };
+    if (newLabel) updateData.label = newLabel;
+    
+    await PriceModel.update(updateData, { where: { size } });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createPrice(size: string, label: string, price: number) {
+  await syncDatabase();
+  try {
+    const existing = await PriceModel.findOne({ where: { size } });
+    if (existing) return { success: false, error: 'El tamaño (ID) ya existe' };
+    
+    await PriceModel.create({ size, label, price });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deletePrice(size: string) {
+  await syncDatabase();
+  try {
+    const record = await PriceModel.findOne({ where: { size } });
+    if (!record) return { success: false, error: 'Tamaño no encontrado' };
+    
+    await PriceModel.destroy({ where: { size } });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
