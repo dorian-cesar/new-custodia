@@ -11,6 +11,7 @@ import { useCustodyStore } from '@/lib/custody-store'
 import { type LockerSize, type CustodyRecord } from '@/lib/types'
 import { AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { printerService } from '@/lib/printer-service'
 
 export default function CustodyPage() {
   const router = useRouter()
@@ -32,6 +33,15 @@ export default function CustodyPage() {
 
   useEffect(() => {
     setMounted(true)
+    if (printerService.isNative()) {
+      printerService.requestPermissions()
+        .then((granted) => {
+          console.log('Bluetooth permissions state:', granted)
+        })
+        .catch((err) => {
+          console.error('Failed to request Bluetooth permissions:', err)
+        })
+    }
   }, [])
 
   // Redirect supervisors to admin panel

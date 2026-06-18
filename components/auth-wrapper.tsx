@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Lock, User as UserIcon } from 'lucide-react'
+import { printerService } from '@/lib/printer-service'
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { currentUser, login } = useCustodyStore()
@@ -21,6 +22,15 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true)
+    if (printerService.isNative()) {
+      printerService.requestPermissions()
+        .then((granted) => {
+          console.log('Bluetooth permissions state:', granted)
+        })
+        .catch((err) => {
+          console.error('Failed to request Bluetooth permissions:', err)
+        })
+    }
   }, [])
 
   if (!mounted) {

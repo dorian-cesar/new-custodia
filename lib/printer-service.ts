@@ -25,6 +25,25 @@ export const printerService = {
     return typeof window !== 'undefined' && Capacitor.isNativePlatform()
   },
 
+  async requestPermissions(): Promise<boolean> {
+    const plugin = getPrinterPlugin()
+    if (!plugin) return true
+    try {
+      if (plugin.checkPermissions && plugin.requestPermissions) {
+        const check = await plugin.checkPermissions()
+        if (check.bluetooth === 'granted') {
+          return true
+        }
+        const req = await plugin.requestPermissions()
+        return req.bluetooth === 'granted'
+      }
+      return true
+    } catch (err) {
+      console.error('Requesting permissions failed:', err)
+      return false
+    }
+  },
+
   async getBluetoothDevices(): Promise<BluetoothDevice[]> {
     const plugin = getPrinterPlugin()
     if (!plugin) return []
