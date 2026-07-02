@@ -35,6 +35,8 @@ export interface Locker {
   isOccupied: boolean
   currentRecordId: number | null
   size: LockerSize
+  area?: string
+  label?: string
 }
 
 export interface CashRegister {
@@ -66,28 +68,64 @@ export const LOCKER_ROWS = [0, 1, 2, 3, 4, 5]
 export function generateLockers(): Omit<Locker, 'id'>[] {
   const lockers: Omit<Locker, 'id'>[] = []
   
-  const sizes: { size: LockerSize, maxRows: number, maxColsCount: number }[] = [
-    { size: 'S', maxRows: 10, maxColsCount: 10 },
-    { size: 'M', maxRows: 8, maxColsCount: 10 },
-    { size: 'L', maxRows: 5, maxColsCount: 10 },
-    { size: 'XL', maxRows: 2, maxColsCount: 5 },
-    { size: 'XXL', maxRows: 2, maxColsCount: 5 },
+  const layout = [
+    // Area A
+    { area: 'A', size: 'S' as LockerSize, count: 10, prefix: 'AS' },
+    { area: 'A', size: 'M' as LockerSize, count: 8, prefix: 'AM' },
+    { area: 'A', size: 'L' as LockerSize, count: 8, prefix: 'AL' },
+
+    // Area B
+    { area: 'B', size: 'S' as LockerSize, count: 12, prefix: 'BS' },
+    { area: 'B', size: 'M' as LockerSize, count: 6, prefix: 'BM' },
+    { area: 'B', size: 'L' as LockerSize, count: 6, prefix: 'BL' },
+
+    // Area C
+    { area: 'C', size: 'S' as LockerSize, count: 12, prefix: 'CS' },
+    { area: 'C', size: 'M' as LockerSize, count: 6, prefix: 'CM' },
+    { area: 'C', size: 'L' as LockerSize, count: 6, prefix: 'CL' },
+
+    // Area D
+    { area: 'D', size: 'S' as LockerSize, count: 6, prefix: 'DS' },
+    { area: 'D', size: 'M' as LockerSize, count: 4, prefix: 'DM' },
+    { area: 'D', size: 'L' as LockerSize, count: 4, prefix: 'DL' },
+
+    // Otros
+    { area: 'Otros', size: 'S' as LockerSize, count: 60, prefix: 'ES' },
+    { area: 'Otros', size: 'M' as LockerSize, count: 56, prefix: 'EM' },
+    { area: 'Otros', size: 'L' as LockerSize, count: 26, prefix: 'EL' },
+    { area: 'Otros', size: 'XL' as LockerSize, count: 10, prefix: 'EXL' },
+    { area: 'Otros', size: 'XXL' as LockerSize, count: 10, prefix: 'EXXL' },
   ]
+
+  const sizeCounters: Record<LockerSize, number> = {
+    S: 0,
+    M: 0,
+    L: 0,
+    XL: 0,
+    XXL: 0
+  }
 
   const alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
-  for (const config of sizes) {
-    for (let row = 0; row < config.maxRows; row++) {
-      for (let colIdx = 0; colIdx < config.maxColsCount; colIdx++) {
-        const col = alphabet[colIdx]
-        lockers.push({
-          row,
-          col,
-          isOccupied: false,
-          currentRecordId: null,
-          size: config.size,
-        })
-      }
+  for (const group of layout) {
+    for (let i = 1; i <= group.count; i++) {
+      const idx = sizeCounters[group.size]
+      sizeCounters[group.size]++
+
+      const maxCols = (group.size === 'XL' || group.size === 'XXL') ? 5 : 10
+      const row = Math.floor(idx / maxCols)
+      const colIdx = idx % maxCols
+      const col = alphabet[colIdx]
+
+      lockers.push({
+        row,
+        col,
+        isOccupied: false,
+        currentRecordId: null,
+        size: group.size,
+        area: group.area,
+        label: `${group.prefix}${i}`
+      })
     }
   }
   

@@ -9,6 +9,8 @@ export class LockerModel extends Model {
   declare isOccupied: boolean;
   declare currentRecordId: number | null;
   declare size: string;
+  declare area: string | null;
+  declare label: string | null;
 }
 
 LockerModel.init(
@@ -19,6 +21,8 @@ LockerModel.init(
     isOccupied: { type: DataTypes.BOOLEAN, defaultValue: false },
     currentRecordId: { type: DataTypes.INTEGER, allowNull: true },
     size: { type: DataTypes.STRING, allowNull: false, defaultValue: 'S' },
+    area: { type: DataTypes.STRING, allowNull: true },
+    label: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, modelName: 'Locker', tableName: 'lockers', timestamps: false }
 );

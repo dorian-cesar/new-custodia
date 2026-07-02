@@ -85,7 +85,7 @@ export function ClientRegistration({
   const lockers = useCustodyStore((state) => state.lockers)
   const lockerSizes = useCustodyStore((state) => state.lockerSizes)
   const selectedLocker = lockers.find(l => l.id === selectedLockerId)
-  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
+  const displayLockerName = selectedLocker ? (selectedLocker.label || `${selectedLocker.row + 1}-${selectedLocker.col}`) : ''
   const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
   const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
 
