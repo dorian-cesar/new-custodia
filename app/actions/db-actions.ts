@@ -23,7 +23,10 @@ const initDbAndFetch = async () => {
   await syncDatabase();
   
   const lockerCount = await LockerModel.count();
-  if (lockerCount === 0) {
+  if (lockerCount !== 250) {
+    // Recreate/reseed all lockers to ensure we have exactly 250 lockers with correct sizes
+    await CustodyRecordModel.destroy({ where: {} });
+    await LockerModel.destroy({ where: {} });
     const defaultLockers = generateLockers();
     await LockerModel.bulkCreate(defaultLockers as any[]);
   }

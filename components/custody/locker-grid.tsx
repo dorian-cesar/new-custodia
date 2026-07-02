@@ -2,17 +2,36 @@
 
 import { Grid3X3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { type Locker, LOCKER_COLS, LOCKER_ROWS } from '@/lib/types'
+import { type Locker, type LockerSize } from '@/lib/types'
 
 interface LockerGridProps {
   lockers: Locker[]
   selectedLockerId: number | null
   onSelectLocker: (lockerId: number) => void
+  selectedSize: LockerSize | null
 }
 
-export function LockerGrid({ lockers, selectedLockerId, onSelectLocker }: LockerGridProps) {
+export function LockerGrid({ lockers, selectedLockerId, onSelectLocker, selectedSize }: LockerGridProps) {
+  // Filter lockers by size
+  const filteredLockers = selectedSize
+    ? lockers.filter((l) => l.size === selectedSize)
+    : []
+
+  if (filteredLockers.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-border rounded-lg bg-secondary/10 flex flex-col items-center justify-center gap-2">
+        <Grid3X3 className="h-8 w-8 opacity-45" />
+        <span className="font-medium text-sm">Seleccione un tamaño de equipaje para ver los casilleros disponibles.</span>
+      </div>
+    )
+  }
+
+  // Get unique sorted rows and cols for the selected locker size
+  const uniqueRows = Array.from(new Set(filteredLockers.map((l) => l.row))).sort((a, b) => a - b)
+  const uniqueCols = Array.from(new Set(filteredLockers.map((l) => l.col))).sort()
+
   const getLocker = (row: number, col: string) => {
-    return lockers.find((l) => l.row === row && l.col === col)
+    return filteredLockers.find((l) => l.row === row && l.col === col)
   }
 
   return (
@@ -20,7 +39,7 @@ export function LockerGrid({ lockers, selectedLockerId, onSelectLocker }: Locker
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Grid3X3 className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Casilleros Disponibles</span>
+          <span className="text-sm font-medium text-foreground">Casilleros Disponibles ({selectedSize})</span>
         </div>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
@@ -35,17 +54,23 @@ export function LockerGrid({ lockers, selectedLockerId, onSelectLocker }: Locker
       </div>
 
       <div className="grid gap-1.5">
-        {LOCKER_ROWS.map((row) => (
-          <div key={row} className="grid grid-cols-8 gap-1.5">
-            {LOCKER_COLS.map((col) => {
+        {uniqueRows.map((row) => (
+          <div 
+            key={row} 
+            className="grid gap-1.5" 
+            style={{ gridTemplateColumns: `repeat(${uniqueCols.length}, minmax(0, 1fr))` }}
+          >
+            {uniqueCols.map((col) => {
               const locker = getLocker(row, col)
-              const isOccupied = locker?.isOccupied ?? false
-              const isSelected = selectedLockerId === locker?.id
+              if (!locker) return <div key={`${row}-${col}`} className="min-h-[2.5rem]" />
+              
+              const isOccupied = locker.isOccupied
+              const isSelected = selectedLockerId === locker.id
               
               return (
                 <button
                   key={`${row}-${col}`}
-                  onClick={() => !isOccupied && locker && onSelectLocker(locker.id)}
+                  onClick={() => !isOccupied && onSelectLocker(locker.id)}
                   disabled={isOccupied}
                   className={cn(
                     'py-2 px-2 rounded text-sm font-medium transition-all min-h-[2.5rem]',

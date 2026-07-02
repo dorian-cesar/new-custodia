@@ -8,6 +8,7 @@ export class LockerModel extends Model {
   declare col: string;
   declare isOccupied: boolean;
   declare currentRecordId: number | null;
+  declare size: string;
 }
 
 LockerModel.init(
@@ -17,6 +18,7 @@ LockerModel.init(
     col: { type: DataTypes.STRING, allowNull: false },
     isOccupied: { type: DataTypes.BOOLEAN, defaultValue: false },
     currentRecordId: { type: DataTypes.INTEGER, allowNull: true },
+    size: { type: DataTypes.STRING, allowNull: false, defaultValue: 'S' },
   },
   { sequelize, modelName: 'Locker', tableName: 'lockers', timestamps: false }
 );
@@ -137,7 +139,7 @@ UserModel.init(
 );
 
 export const syncDatabase = async () => {
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
   
   // Upsert or reset the default test accounts so they are always guaranteed to work locally
   const cajeroHashed = await bcrypt.hash('1234', 10);

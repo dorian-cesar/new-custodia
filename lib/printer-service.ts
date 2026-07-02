@@ -204,4 +204,44 @@ export const printerService = {
       return false
     }
   },
+
+  async printWithdrawalTicket(
+    amount: number,
+    cajero: string,
+    supervisor: string,
+    reason: string,
+    timestamp: string
+  ): Promise<boolean> {
+    const plugin = getPrinterPlugin()
+    if (!plugin) return false
+
+    const dateStr = new Date(timestamp).toLocaleString('es-CL')
+    const lines = [
+      'COMPROBANTE DE RETIRO',
+      '--------------------------------',
+      `Fecha: ${dateStr}`,
+      `Cajero: ${cajero}`,
+      `Supervisor: ${supervisor}`,
+      `Motivo: ${reason || 'Retiro de caja'}`,
+      '--------------------------------',
+      `MONTO RETIRADO: $${amount.toLocaleString('es-CL')}`,
+      '--------------------------------',
+      '\n\n',
+      'Firma Cajero    Firma Supervisor',
+      '\n\n',
+    ]
+
+    try {
+      await plugin.printTicket({
+        header: 'CUSTODIA TERMINAL SUR',
+        title: 'RETIRO DE EFECTIVO',
+        lines: lines,
+        barcode: null,
+      })
+      return true
+    } catch (err) {
+      console.error('Print withdrawal ticket failed:', err)
+      return false
+    }
+  },
 }

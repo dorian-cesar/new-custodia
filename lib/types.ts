@@ -34,6 +34,7 @@ export interface Locker {
   col: string
   isOccupied: boolean
   currentRecordId: number | null
+  size: LockerSize
 }
 
 export interface CashRegister {
@@ -64,16 +65,32 @@ export const LOCKER_ROWS = [0, 1, 2, 3, 4, 5]
 
 export function generateLockers(): Omit<Locker, 'id'>[] {
   const lockers: Omit<Locker, 'id'>[] = []
-  for (const row of LOCKER_ROWS) {
-    for (const col of LOCKER_COLS) {
-      lockers.push({
-        row,
-        col,
-        isOccupied: false,
-        currentRecordId: null,
-      })
+  
+  const sizes: { size: LockerSize, maxRows: number, maxColsCount: number }[] = [
+    { size: 'S', maxRows: 10, maxColsCount: 10 },
+    { size: 'M', maxRows: 8, maxColsCount: 10 },
+    { size: 'L', maxRows: 5, maxColsCount: 10 },
+    { size: 'XL', maxRows: 2, maxColsCount: 5 },
+    { size: 'XXL', maxRows: 2, maxColsCount: 5 },
+  ]
+
+  const alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+
+  for (const config of sizes) {
+    for (let row = 0; row < config.maxRows; row++) {
+      for (let colIdx = 0; colIdx < config.maxColsCount; colIdx++) {
+        const col = alphabet[colIdx]
+        lockers.push({
+          row,
+          col,
+          isOccupied: false,
+          currentRecordId: null,
+          size: config.size,
+        })
+      }
     }
   }
+  
   return lockers
 }
 

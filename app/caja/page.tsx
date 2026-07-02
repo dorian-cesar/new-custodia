@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { WithdrawalTicket } from '@/components/custody/withdrawal-ticket'
+import { printerService } from '@/lib/printer-service'
 import {
   DollarSign,
   Lock,
@@ -50,6 +53,19 @@ export default function CajaPage() {
   } = useCustodyStore()
 
   const [mounted, setMounted] = useState(false)
+  const [withdrawalData, setWithdrawalData] = useState<{
+    amount: number
+    cajero: string
+    supervisor: string
+    reason: string
+    timestamp: string
+  } | null>(null)
+
+  const withdrawalTicketRef = useRef<HTMLDivElement>(null)
+  const handlePrintWithdrawal = useReactToPrint({
+    contentRef: withdrawalTicketRef,
+    documentTitle: 'Comprobante_Retiro',
+  })
   const [openingAmount, setOpeningAmount] = useState('')
   const [closingAmount, setClosingAmount] = useState('')
   const [notes, setNotes] = useState('')
@@ -78,6 +94,26 @@ export default function CajaPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (showCloseDialog && stats) {
+      setClosingAmount(stats.balance.toString())
+    }
+  }, [showCloseDialog, stats])
+
+  useEffect(() => {
+    if (showGiroDialog && stats) {
+      setGiroAmount(stats.balance.toString())
+    }
+  }, [showGiroDialog, stats])
+
+  useEffect(() => {
+    if (withdrawalData) {
+      if (!printerService.isNative()) {
+        handlePrintWithdrawal()
+      }
+    }
+  }, [withdrawalData])
 
   const isCashOpen = currentCashRegister?.status === 'open'
   const stats = getCurrentRegisterStats()
@@ -201,6 +237,26 @@ export default function CajaPage() {
 
       await addTransaction('expense', amount, `Retiro de Caja: ${giroReason.trim()}`)
       
+      const timestamp = new Date().toISOString()
+      const data = {
+        amount,
+        cajero: currentCashRegister?.openedBy || 'desconocido',
+        supervisor: supervisorUsername,
+        reason: giroReason.trim(),
+        timestamp
+      }
+      setWithdrawalData(data)
+
+      if (printerService.isNative()) {
+        await printerService.printWithdrawalTicket(
+          amount,
+          data.cajero,
+          data.supervisor,
+          data.reason,
+          timestamp
+        )
+      }
+
       setGiroAmount('')
       setGiroReason('')
       setSupervisorUsername('')
@@ -805,6 +861,7 @@ export default function CajaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <WithdrawalTicket ref={withdrawalTicketRef} data={withdrawalData} />
     </div>
   )
 }
