@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import { WithdrawalTicket } from '@/components/custody/withdrawal-ticket'
+import { ClosureTicket } from '@/components/custody/closure-ticket'
 import { printerService } from '@/lib/printer-service'
 import {
   DollarSign,
@@ -66,6 +67,27 @@ export default function CajaPage() {
     contentRef: withdrawalTicketRef,
     documentTitle: 'Comprobante_Retiro',
   })
+
+  const [closureData, setClosureData] = useState<{
+    cajero: string
+    openedAt: string
+    closedAt: string
+    openingAmount: number
+    salesCash: number
+    salesCard: number
+    withdrawals: number
+    expectedAmount: number
+    declaredAmount: number
+    difference: number
+    notes?: string
+  } | null>(null)
+
+  const closureTicketRef = useRef<HTMLDivElement>(null)
+  const handlePrintClosure = useReactToPrint({
+    contentRef: closureTicketRef,
+    documentTitle: 'Comprobante_Cierre_Caja',
+  })
+
   const [openingAmount, setOpeningAmount] = useState('')
   const [closingAmount, setClosingAmount] = useState('')
   const [notes, setNotes] = useState('')
@@ -117,6 +139,31 @@ export default function CajaPage() {
       }
     }
   }, [withdrawalData])
+
+  const [lastPrintedClosureTime, setLastPrintedClosureTime] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (closureData && closureData.closedAt !== lastPrintedClosureTime) {
+      const executeClose = async () => {
+        if (!printerService.isNative()) {
+          // Small delay to ensure the DOM elements are fully loaded
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          handlePrintClosure()
+        }
+        await closeCashRegister(closureData.declaredAmount, closureData.notes || '')
+        setClosingAmount('')
+        setNotes('')
+        setSupervisorUsername('')
+        setSupervisorPassword('')
+        setShowConfirmCloseDialog(false)
+        setCloseSummary(null)
+        logout()
+      }
+      
+      executeClose()
+      setLastPrintedClosureTime(closureData.closedAt)
+    }
+  }, [closureData, lastPrintedClosureTime, handlePrintClosure, closeCashRegister, logout])
 
   // Pagination for transactions
   const [currentTxPage, setCurrentTxPage] = useState(1)
@@ -191,22 +238,43 @@ export default function CajaPage() {
   }
 
   const confirmAndExecuteClose = async () => {
-    if (!closeSummary) return
+    if (!closeSummary || !currentCashRegister) return
     setIsVerifying(true)
     try {
-      await closeCashRegister(closeSummary.declared, notes)
-      setClosingAmount('')
-      setNotes('')
-      setSupervisorUsername('')
-      setSupervisorPassword('')
-      setShowConfirmCloseDialog(false)
-      setCloseSummary(null)
+      const regTxs = cashTransactions.filter(t => t.registerId === currentCashRegister.id)
+      const salesCard = Math.round(regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+      const salesCash = Math.round(regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+      const withdrawals = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
+
+      const data = {
+        cajero: currentCashRegister.openedBy,
+        openedAt: currentCashRegister.openedAt,
+        closedAt: new Date().toISOString(),
+        openingAmount: currentCashRegister.openingAmount,
+        salesCash,
+        salesCard,
+        withdrawals,
+        expectedAmount: closeSummary.expected,
+        declaredAmount: closeSummary.declared,
+        difference: closeSummary.difference,
+        notes: notes
+      }
       
-      // Auto logout according to requirements
-      logout()
+      setClosureData(data)
+
+      if (printerService.isNative()) {
+        await printerService.printClosureTicket(data)
+        await closeCashRegister(closeSummary.declared, notes)
+        setClosingAmount('')
+        setNotes('')
+        setSupervisorUsername('')
+        setSupervisorPassword('')
+        setShowConfirmCloseDialog(false)
+        setCloseSummary(null)
+        logout()
+      }
     } catch (err) {
       setError('Error al cerrar la caja')
-    } finally {
       setIsVerifying(false)
     }
   }
@@ -899,6 +967,7 @@ export default function CajaPage() {
         </DialogContent>
       </Dialog>
       <WithdrawalTicket ref={withdrawalTicketRef} data={withdrawalData} />
+      <ClosureTicket ref={closureTicketRef} data={closureData} />
     </div>
   )
 }

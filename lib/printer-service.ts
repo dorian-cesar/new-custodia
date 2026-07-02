@@ -244,4 +244,54 @@ export const printerService = {
       return false
     }
   },
+
+  async printClosureTicket(data: any): Promise<boolean> {
+    const plugin = getPrinterPlugin()
+    if (!plugin) return false
+
+    const openStr = new Date(data.openedAt).toLocaleString('es-CL')
+    const closeStr = new Date(data.closedAt).toLocaleString('es-CL')
+    
+    const diffText = data.difference === 0 
+      ? 'CUADRADA ✓' 
+      : data.difference > 0 
+        ? `SOBRANTE: +$${data.difference.toLocaleString('es-CL')}` 
+        : `FALTANTE: -$${Math.abs(data.difference).toLocaleString('es-CL')}`
+
+    const lines = [
+      'COMPROBANTE DE CIERRE DE CAJA',
+      '--------------------------------',
+      `Cajero: ${data.cajero}`,
+      `Apertura: ${openStr}`,
+      `Cierre: ${closeStr}`,
+      '--------------------------------',
+      `Monto Inicial: $${data.openingAmount.toLocaleString('es-CL')}`,
+      `Ventas Efectivo: $${data.salesCash.toLocaleString('es-CL')}`,
+      `Ventas Tarjeta: $${data.salesCard.toLocaleString('es-CL')}`,
+      `Retiros: -$${data.withdrawals.toLocaleString('es-CL')}`,
+      '--------------------------------',
+      `Monto Esperado: $${data.expectedAmount.toLocaleString('es-CL')}`,
+      `Monto Declarado: $${data.declaredAmount.toLocaleString('es-CL')}`,
+      `Diferencia: ${diffText}`,
+      '--------------------------------',
+      `Observaciones: ${data.notes || 'Ninguna'}`,
+      '--------------------------------',
+      '\n\n',
+      'Firma Cajero    Firma Supervisor',
+      '\n\n',
+    ]
+
+    try {
+      await plugin.printTicket({
+        header: 'CUSTODIA TERMINAL SUR',
+        title: 'CIERRE DE CAJA (ARQUEO)',
+        lines: lines,
+        barcode: null,
+      })
+      return true
+    } catch (err) {
+      console.error('Print closure ticket failed:', err)
+      return false
+    }
+  },
 }
