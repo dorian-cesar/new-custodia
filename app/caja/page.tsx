@@ -91,6 +91,9 @@ export default function CajaPage() {
   const totalRegisterPages = Math.ceil(sortedRegisters.length / REGISTERS_PER_PAGE)
   const paginatedRegisters = sortedRegisters.slice((currentPageRegisters - 1) * REGISTERS_PER_PAGE, currentPageRegisters * REGISTERS_PER_PAGE)
 
+  const isCashOpen = currentCashRegister?.status === 'open'
+  const stats = getCurrentRegisterStats()
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -114,9 +117,6 @@ export default function CajaPage() {
       }
     }
   }, [withdrawalData])
-
-  const isCashOpen = currentCashRegister?.status === 'open'
-  const stats = getCurrentRegisterStats()
 
   // Pagination for transactions
   const [currentTxPage, setCurrentTxPage] = useState(1)
