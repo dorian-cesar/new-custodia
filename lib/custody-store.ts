@@ -65,7 +65,7 @@ interface CustodyState {
   openCashRegister: (openingAmount: number, notes?: string) => Promise<CashRegister>
   closeCashRegister: (closingAmount: number, notes?: string) => Promise<CashRegister | null>
   addTransaction: (type: 'income' | 'expense', amount: number, description: string, recordId?: number) => Promise<void>
-  getCurrentRegisterStats: () => { totalSales: number; totalTransactions: number; balance: number }
+  getCurrentRegisterStats: () => { totalSales: number; totalTransactions: number; balance: number; ingresosEfectivo: number; ingresosTarjeta: number }
 }
 
 export const useCustodyStore = create<CustodyState>()(

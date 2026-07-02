@@ -270,364 +270,366 @@ export default function CajaPage() {
     }
   }
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Cargando...</div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header showBack />
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
+      <div className="w-full max-w-[960px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-6">
+        <Header showBack />
 
-      <main className="container mx-auto px-6 py-8">
-        {/* Current Cash Register Status */}
-        <div className="bg-card rounded-xl p-6 border border-border mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold text-card-foreground">Estado de Caja</h2>
-            </div>
-            {isCashOpen ? (
+        <main className="flex-1 flex flex-col gap-6 p-6">
+          {/* Current Cash Register Status */}
+          <div>
+            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center justify-between">
               <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                <span>Estado de Caja</span>
+              </div>
+              {isCashOpen ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setShowGiroDialog(true)}
+                    variant="outline"
+                    className="h-7 text-[10px] uppercase font-bold border-amber-500/50 text-amber-600 bg-white hover:bg-amber-50"
+                  >
+                    <TrendingDown className="h-3 w-3 mr-1" />
+                    Retiro de Caja
+                  </Button>
+                  <Button
+                    onClick={() => setShowCloseDialog(true)}
+                    variant="destructive"
+                    className="h-7 text-[10px] uppercase font-bold bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Lock className="h-3 w-3 mr-1" />
+                    Cerrar Caja
+                  </Button>
+                </div>
+              ) : (
                 <Button
-                  onClick={() => setShowGiroDialog(true)}
-                  variant="outline"
-                  className="gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-500"
+                  onClick={() => setShowOpenDialog(true)}
+                  className="h-7 text-[10px] uppercase font-bold bg-[#1588b3] hover:bg-[#0a354c] text-white"
                 >
-                  <TrendingDown className="h-4 w-4" />
-                  Retiro de Caja
+                  <Unlock className="h-3 w-3 mr-1" />
+                  Abrir Caja
                 </Button>
-                <Button
-                  onClick={() => setShowCloseDialog(true)}
-                  variant="destructive"
-                  className="gap-2"
-                >
-                  <Lock className="h-4 w-4" />
-                  Cerrar Caja
-                </Button>
+              )}
+            </div>
+
+            {isCashOpen ? (
+              <div className="grid sm:grid-cols-4 gap-4">
+                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Apertura</span>
+                  </div>
+                  <p className="text-zinc-800 font-extrabold text-sm">
+                    {currentCashRegister && formatDateTime(currentCashRegister.openedAt)}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 font-bold mt-1">
+                    Monto inicial: ${currentCashRegister?.openingAmount.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <TrendingUp className="h-4 w-4 text-[#0a354c]" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Ventas</span>
+                  </div>
+                  <p className="text-2xl font-black text-[#0a354c]">${stats.totalSales.toLocaleString()}</p>
+                </div>
+
+                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <Receipt className="h-4 w-4 text-zinc-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Transacciones</span>
+                  </div>
+                  <p className="text-2xl font-black text-zinc-800">{stats.totalTransactions}</p>
+                </div>
+
+                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <DollarSign className="h-4 w-4 text-[#1588b3]" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Saldo Actual</span>
+                  </div>
+                  <p className="text-2xl font-black text-[#1588b3]">${stats.balance.toLocaleString()}</p>
+                </div>
               </div>
             ) : (
-              <Button
-                onClick={() => setShowOpenDialog(true)}
-                className="gap-2 bg-primary hover:bg-primary/90"
-              >
-                <Unlock className="h-4 w-4" />
-                Abrir Caja
-              </Button>
+              <div className="flex items-center gap-3 p-5 bg-white border border-zinc-300 rounded-xl shadow-sm">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+                <div>
+                  <p className="font-extrabold text-[#242424]">La caja está cerrada</p>
+                  <p className="text-xs text-zinc-500 font-medium">
+                    Debe abrir la caja para comenzar a registrar custodias.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
 
-          {isCashOpen ? (
-            <div className="grid sm:grid-cols-4 gap-4">
-              <div className="bg-secondary/50 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm">Apertura</span>
-                </div>
-                <p className="text-foreground font-medium">
-                  {currentCashRegister && formatDateTime(currentCashRegister.openedAt)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Monto inicial: ${currentCashRegister?.openingAmount.toLocaleString()}
-                </p>
+          {/* Current Session Transactions */}
+          {isCashOpen && currentTransactions.length > 0 && (
+            <div>
+              <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center gap-2">
+                <Receipt className="h-4 w-4" />
+                <span>Transacciones de la Sesión Actual</span>
               </div>
+              <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+                <Table>
+                  <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                    <TableRow className="hover:bg-transparent border-none">
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">HORA</TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">TIPO</TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">DESCRIPCIÓN</TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">PAGO</TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-right">MONTO</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedTransactions.map((tx) => {
+                      let paymentStr = '-'
+                      if (tx.description.includes('Efectivo')) paymentStr = 'Efectivo'
+                      else if (tx.description.includes('Tarjeta')) paymentStr = 'Tarjeta'
 
-              <div className="bg-secondary/50 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">Ventas</span>
-                </div>
-                <p className="text-2xl font-bold text-primary">${stats.totalSales.toLocaleString()}</p>
-              </div>
+                      return (
+                        <TableRow key={tx.id} className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50">
+                          <TableCell className="text-zinc-800 font-medium text-xs py-3">
+                            {formatDateTime(tx.timestamp)}
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span
+                              className={`text-xs font-bold flex items-center gap-1 ${
+                                tx.type === 'income' ? 'text-[#0a354c]' : 'text-red-600'
+                              }`}
+                            >
+                              {tx.type === 'income' ? (
+                                <TrendingUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <TrendingDown className="h-3.5 w-3.5" />
+                              )}
+                              {tx.type === 'income' ? 'Ingreso' : 'Egreso'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-zinc-800 text-xs py-3 font-semibold">{tx.description}</TableCell>
+                          <TableCell className="py-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                              paymentStr === 'Efectivo' ? 'bg-amber-500/10 text-amber-600' :
+                              paymentStr === 'Tarjeta' ? 'bg-blue-500/10 text-blue-600' :
+                              'bg-zinc-100 text-zinc-500'
+                            }`}>
+                              {paymentStr}
+                            </span>
+                          </TableCell>
+                          <TableCell
+                            className={`text-right font-black text-xs py-3 ${
+                              tx.type === 'income' ? 'text-[#0a354c]' : 'text-red-600'
+                            }`}
+                          >
+                            {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
 
-              <div className="bg-secondary/50 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Receipt className="h-4 w-4" />
-                  <span className="text-sm">Transacciones</span>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{stats.totalTransactions}</p>
-              </div>
-
-              <div className="bg-secondary/50 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="text-sm">Saldo Actual</span>
-                </div>
-                <p className="text-2xl font-bold text-accent">${stats.balance.toLocaleString()}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              <div>
-                <p className="font-medium text-foreground">La caja esta cerrada</p>
-                <p className="text-sm text-muted-foreground">
-                  Debe abrir la caja para comenzar a registrar custodias
-                </p>
+                {currentTransactions.length > 0 && (
+                  <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
+                    <div>
+                      Mostrando {Math.min(currentTransactions.length, (currentTxPage - 1) * TX_PER_PAGE + 1)} a {Math.min(currentTransactions.length, currentTxPage * TX_PER_PAGE)} de {currentTransactions.length} registros
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentTxPage(p => Math.max(1, p - 1))}
+                        disabled={currentTxPage === 1}
+                        className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                      >
+                        Anterior
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentTxPage(p => Math.min(totalTxPages, p + 1))}
+                        disabled={currentTxPage >= totalTxPages || totalTxPages === 0}
+                        className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
-        </div>
 
-        {/* Current Session Transactions */}
-        {isCashOpen && currentTransactions.length > 0 && (
-          <div className="bg-card rounded-xl p-6 border border-border mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Receipt className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-lg font-semibold text-card-foreground">
-                Transacciones de la Sesion Actual
-              </h3>
+          {/* Cash Register History */}
+          <div>
+            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center gap-2">
+              <History className="h-4 w-4" />
+              <span>Historial de Cajas</span>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
               <Table>
-                <TableHeader>
-                  <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">HORA</TableHead>
-                    <TableHead className="text-muted-foreground">TIPO</TableHead>
-                    <TableHead className="text-muted-foreground">DESCRIPCION</TableHead>
-                    <TableHead className="text-muted-foreground">PAGO</TableHead>
-                    <TableHead className="text-muted-foreground text-right">MONTO</TableHead>
+                <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                  <TableRow className="hover:bg-transparent border-none">
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">APERTURA</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">CIERRE</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">INICIAL</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">VENTAS</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">RETIROS</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">ESPERADO</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">ENTREGADO</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">DIFERENCIA</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-center">ESTADO</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedTransactions.map((tx) => {
-                    let paymentStr = '-'
-                    if (tx.description.includes('Efectivo')) paymentStr = 'Efectivo'
-                    else if (tx.description.includes('Tarjeta')) paymentStr = 'Tarjeta'
-
-                    return (
-                    <TableRow key={tx.id} className="border-border">
-                      <TableCell className="text-foreground">
-                        {formatDateTime(tx.timestamp)}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            tx.type === 'income'
-                              ? 'flex items-center gap-1 text-primary'
-                              : 'flex items-center gap-1 text-destructive'
-                          }
-                        >
-                          {tx.type === 'income' ? (
-                            <TrendingUp className="h-4 w-4" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4" />
-                          )}
-                          {tx.type === 'income' ? 'Ingreso' : 'Egreso'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-foreground">{tx.description}</TableCell>
-                      <TableCell>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          paymentStr === 'Efectivo' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' :
-                          paymentStr === 'Tarjeta' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-500' :
-                          'bg-secondary text-muted-foreground'
-                        }`}>
-                          {paymentStr}
-                        </span>
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          tx.type === 'income' ? 'text-primary' : 'text-destructive'
-                        }`}
-                      >
-                        {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
+                  {paginatedRegisters.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-zinc-500 font-semibold">
+                        No hay registros de caja
                       </TableCell>
                     </TableRow>
-                    )
-                  })}
+                  ) : (
+                    paginatedRegisters.map((register) => {
+                      const regTxs = cashTransactions.filter(t => t.registerId === register.id)
+                      const ingresosTarjeta = Math.round(regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+                      const ingresosEfectivo = Math.round(regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+                      const gastosEfectivo = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
+
+                      const saldoEsperadoEfectivo = register.openingAmount + ingresosEfectivo - gastosEfectivo
+                      const diferenciaCaja = register.closingAmount !== null ? register.closingAmount - saldoEsperadoEfectivo : null
+
+                      return (
+                        <TableRow key={register.id} className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50">
+                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">
+                            {formatDateTime(register.openedAt)}
+                          </TableCell>
+                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">
+                            {register.closedAt ? formatDateTime(register.closedAt) : '-'}
+                          </TableCell>
+                          <TableCell className="text-zinc-850 font-bold text-xs py-3 text-right">
+                            ${register.openingAmount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span className="text-amber-600 font-extrabold text-[10px]">EF: ${ingresosEfectivo.toLocaleString()}</span>
+                              <span className="text-blue-600 font-extrabold text-[10px]">TJ: ${ingresosTarjeta.toLocaleString()}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-red-600 text-right font-extrabold text-xs py-3">
+                            ${gastosEfectivo.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-zinc-850 text-right font-extrabold text-xs py-3">
+                            ${saldoEsperadoEfectivo.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-zinc-850 text-right font-black text-xs py-3">
+                            {register.closingAmount !== null
+                              ? `$${register.closingAmount.toLocaleString()}`
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-right py-3">
+                            {diferenciaCaja !== null ? (
+                              <span className={`text-[10px] font-black ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-500 font-semibold">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center py-3">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                register.status === 'open'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-zinc-100 text-zinc-500'
+                              }`}
+                            >
+                              {register.status === 'open' ? 'Abierta' : 'Cerrada'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
                 </TableBody>
               </Table>
-            </div>
-            {currentTransactions.length > 0 && (
-              <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground border-t border-border/50 pt-4">
+              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
                 <div>
-                  Mostrando {Math.min(currentTransactions.length, (currentTxPage - 1) * TX_PER_PAGE + 1)} a {Math.min(currentTransactions.length, currentTxPage * TX_PER_PAGE)} de {currentTransactions.length} registros
+                  Mostrando {Math.min(sortedRegisters.length, (currentPageRegisters - 1) * REGISTERS_PER_PAGE + 1)} a {Math.min(sortedRegisters.length, currentPageRegisters * REGISTERS_PER_PAGE)} de {sortedRegisters.length} registros
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentTxPage(p => Math.max(1, p - 1))}
-                    disabled={currentTxPage === 1}
+                    onClick={() => setCurrentPageRegisters(p => Math.max(1, p - 1))}
+                    disabled={currentPageRegisters === 1}
+                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
                   >
                     Anterior
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentTxPage(p => Math.min(totalTxPages, p + 1))}
-                    disabled={currentTxPage >= totalTxPages || totalTxPages === 0}
+                    onClick={() => setCurrentPageRegisters(p => Math.min(totalRegisterPages, p + 1))}
+                    disabled={currentPageRegisters >= totalRegisterPages || totalRegisterPages === 0}
+                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
                   >
                     Siguiente
                   </Button>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Cash Register History */}
-        <div className="bg-card rounded-xl p-6 border border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <History className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-card-foreground">Historial de Cajas</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">APERTURA</TableHead>
-                  <TableHead className="text-muted-foreground">CIERRE</TableHead>
-                  <TableHead className="text-muted-foreground text-right">INICIAL</TableHead>
-                  <TableHead className="text-muted-foreground text-right">VENTAS</TableHead>
-                  <TableHead className="text-muted-foreground text-right">RETIROS</TableHead>
-                  <TableHead className="text-muted-foreground text-right">MONTO</TableHead>
-                  <TableHead className="text-muted-foreground text-right">CIERRE DE CAJA</TableHead>
-                  <TableHead className="text-muted-foreground text-right">DIFERENCIA</TableHead>
-                  <TableHead className="text-muted-foreground">ESTADO</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedRegisters.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                      No hay registros de caja
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedRegisters.map((register) => {
-                    const regTxs = cashTransactions.filter(t => t.registerId === register.id)
-                    const ingresosTarjeta = Math.round(regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
-                    const ingresosEfectivo = Math.round(regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
-                    const gastosEfectivo = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
-
-                    const saldoEsperadoEfectivo = register.openingAmount + ingresosEfectivo - gastosEfectivo
-                    const diferenciaCaja = register.closingAmount !== null ? register.closingAmount - saldoEsperadoEfectivo : null
-
-                    return (
-                    <TableRow key={register.id} className="border-border">
-                      <TableCell className="text-foreground">
-                        {formatDateTime(register.openedAt)}
-                      </TableCell>
-                      <TableCell className="text-foreground">
-                        {register.closedAt ? formatDateTime(register.closedAt) : '-'}
-                      </TableCell>
-                      <TableCell className="text-foreground text-right">
-                        ${register.openingAmount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-col items-end">
-                          <span className="text-amber-500 font-medium text-xs">Efectivo: ${ingresosEfectivo.toLocaleString()}</span>
-                          <span className="text-blue-500 font-medium text-xs">Tarjeta: ${ingresosTarjeta.toLocaleString()}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-destructive text-right font-medium">
-                        ${gastosEfectivo.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-accent text-right font-medium">
-                        ${saldoEsperadoEfectivo.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-foreground text-right font-bold">
-                        {register.closingAmount !== null
-                          ? `$${register.closingAmount.toLocaleString()}`
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {diferenciaCaja !== null ? (
-                          <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
-                            {diferenciaCaja === 0 ? 'Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            register.status === 'open'
-                              ? 'bg-emerald-500/20 text-emerald-500'
-                              : 'bg-zinc-500/20 text-zinc-400'
-                          }`}
-                        >
-                          {register.status === 'open' ? 'Abierta' : 'Cerrada'}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-              <div>
-                Mostrando {Math.min(sortedRegisters.length, (currentPageRegisters - 1) * REGISTERS_PER_PAGE + 1)} a {Math.min(sortedRegisters.length, currentPageRegisters * REGISTERS_PER_PAGE)} de {sortedRegisters.length} registros
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPageRegisters(p => Math.max(1, p - 1))}
-                  disabled={currentPageRegisters === 1}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPageRegisters(p => Math.min(totalRegisterPages, p + 1))}
-                  disabled={currentPageRegisters >= totalRegisterPages || totalRegisterPages === 0}
-                >
-                  Siguiente
-                </Button>
-              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Open Cash Dialog */}
       <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Unlock className="h-5 w-5" />
-              Abrir Caja
+        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
+          <DialogHeader className="bg-[#242424] text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <Unlock className="h-4 w-4" />
+              <span>Abrir Caja</span>
             </DialogTitle>
-            <DialogDescription>
-              Ingrese el monto inicial para comenzar la sesion de caja
+            <DialogDescription className="text-zinc-300 text-xs mt-1">
+              Ingrese el monto inicial para comenzar la sesión de caja.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label>Monto Inicial</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Inicial ($)</Label>
               <Input
                 type="text"
                 value={openingAmount ? Number(openingAmount).toLocaleString('es-CL') : ''}
                 onChange={(e) => setOpeningAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="bg-input"
+                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
               />
             </div>
             <div className="space-y-2">
-              <Label>Notas (opcional)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Notas (opcional)</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observaciones de apertura..."
-                className="bg-input"
+                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-20 resize-none"
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowOpenDialog(false)}>
+          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowOpenDialog(false)}
+              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleOpenCash} className="bg-primary hover:bg-primary/90">
+            <Button 
+              onClick={handleOpenCash} 
+              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
+            >
               Abrir Caja
             </Button>
           </DialogFooter>
@@ -636,45 +638,46 @@ export default function CajaPage() {
 
       {/* Close Cash Dialog */}
       <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Cerrar Caja
+        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
+          <DialogHeader className="bg-[#242424] text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <Lock className="h-4 w-4" />
+              <span>Cerrar Caja</span>
             </DialogTitle>
-            <DialogDescription>
-              Ingrese el monto final contado en caja para cerrar la sesion
+            <DialogDescription className="text-zinc-300 text-xs mt-1">
+              Ingrese el monto final contado en caja para cerrar la sesión.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Monto Inicial</span>
-                <span className="text-sm font-semibold text-foreground">${currentCashRegister?.openingAmount.toLocaleString()}</span>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-2 text-zinc-800">
+              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Monto Inicial</span>
+                <span className="text-xs font-black">${currentCashRegister?.openingAmount.toLocaleString()}</span>
               </div>
-              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Total Ventas</span>
-                <span className="text-sm font-semibold text-primary">${stats.totalSales.toLocaleString()}</span>
+              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Total Ventas</span>
+                <span className="text-xs font-black text-[#0a354c]">${stats.totalSales.toLocaleString()}</span>
               </div>
-              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">En Efectivo</span>
-                <span className="text-sm font-semibold text-foreground">${ingresosEfectivo.toLocaleString()}</span>
+              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">En Efectivo</span>
+                <span className="text-xs font-black">${ingresosEfectivo.toLocaleString()}</span>
               </div>
-              <div className="bg-secondary/40 rounded-md p-2 flex flex-col justify-center">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Por Tarjeta</span>
-                <span className="text-sm font-semibold text-muted-foreground">${ingresosTarjeta.toLocaleString()}</span>
+              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Por Tarjeta</span>
+                <span className="text-xs font-black text-zinc-500">${ingresosTarjeta.toLocaleString()}</span>
               </div>
-              <div className="col-span-2 bg-accent/10 border border-accent/20 rounded-md p-2.5 flex justify-between items-center mt-1">
-                <span className="text-xs font-bold text-accent uppercase tracking-wider">Efectivo Físico Esperado</span>
-                <span className="text-lg font-black text-accent">${saldoEsperadoEfectivo.toLocaleString()}</span>
+              <div className="col-span-2 bg-[#cef3ff] border border-zinc-300 rounded-lg p-2.5 flex justify-between items-center mt-1 shadow-sm">
+                <span className="text-[10px] font-black text-zinc-700 uppercase tracking-wider">Efectivo Físico Esperado</span>
+                <span className="text-base font-black text-[#0a354c]">${saldoEsperadoEfectivo.toLocaleString()}</span>
               </div>
             </div>
+
             <div className="space-y-2">
               <div className="flex justify-between items-end">
-                <Label>Monto Físico Contado (Efectivo)</Label>
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Físico Contado ($)</Label>
                 {diferenciaCaja !== null && (
-                  <span className={`text-xs font-bold ${diferenciaCaja === 0 ? 'text-emerald-500' : diferenciaCaja > 0 ? 'text-blue-500' : 'text-destructive'}`}>
-                    {diferenciaCaja === 0 ? 'Caja Cuadrada ✓' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                  <span className={`text-[10px] font-black uppercase ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                    {diferenciaCaja === 0 ? 'Caja Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
                   </span>
                 )}
               </div>
@@ -683,125 +686,150 @@ export default function CajaPage() {
                 value={closingAmount ? Number(closingAmount).toLocaleString('es-CL') : ''}
                 onChange={(e) => setClosingAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className={`bg-input ${diferenciaCaja !== null && diferenciaCaja !== 0 ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                className={`bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] ${diferenciaCaja !== null && diferenciaCaja !== 0 ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
               />
             </div>
+            
             <div className="space-y-2">
-              <Label>Notas (opcional)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Notas (opcional)</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observaciones de cierre..."
-                className="bg-input"
+                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-16 resize-none"
               />
             </div>
-            <div className="space-y-4 border-t border-border pt-4 mt-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Lock className="h-4 w-4 text-destructive" />
-                <h4 className="font-medium text-destructive">Autorización de Supervisor Requerida</h4>
+
+            <div className="space-y-3 border-t border-zinc-300 pt-4 mt-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Lock className="h-4 w-4 text-red-600" />
+                <h4 className="font-extrabold text-xs text-red-600 uppercase tracking-wider">Autorización de Supervisor</h4>
               </div>
-              <div className="space-y-2">
-                <Label>Usuario Supervisor</Label>
-                <Input
-                  type="text"
-                  value={supervisorUsername}
-                  onChange={(e) => setSupervisorUsername(e.target.value)}
-                  placeholder="ej. admin"
-                  className="bg-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Contraseña Supervisor</Label>
-                <Input
-                  type="password"
-                  value={supervisorPassword}
-                  onChange={(e) => setSupervisorPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-input"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">Usuario</Label>
+                  <Input
+                    type="text"
+                    value={supervisorUsername}
+                    onChange={(e) => setSupervisorUsername(e.target.value)}
+                    placeholder="ej. admin"
+                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">Contraseña</Label>
+                  <Input
+                    type="password"
+                    value={supervisorPassword}
+                    onChange={(e) => setSupervisorPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                  />
+                </div>
               </div>
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowCloseDialog(false)} disabled={isVerifying}>
+          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCloseDialog(false)} 
+              disabled={isVerifying}
+              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleCloseCash} variant="destructive" disabled={isVerifying}>
+            <Button 
+              onClick={handleCloseCash} 
+              disabled={isVerifying}
+              className="bg-red-600 text-white hover:bg-red-700 font-bold h-9 text-xs"
+            >
               {isVerifying ? 'Verificando...' : 'Cerrar Caja'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* Giro de Caja Dialog */}
       <Dialog open={showGiroDialog} onOpenChange={setShowGiroDialog}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-amber-500" />
-              Realizar Retiro de Caja
+        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
+          <DialogHeader className="bg-[#242424] text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <TrendingDown className="h-4 w-4 text-amber-500" />
+              <span>Realizar Retiro de Caja</span>
             </DialogTitle>
-            <DialogDescription>
-              Retire efectivo de la caja actual. Esta acción requiere autorización del supervisor.
+            <DialogDescription className="text-zinc-300 text-xs mt-1">
+              Retire efectivo de la caja actual. Requiere autorización del supervisor.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label>Monto a Retirar ($)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto a Retirar ($)</Label>
               <Input
                 type="text"
                 value={giroAmount ? Number(giroAmount).toLocaleString('es-CL') : ''}
                 onChange={(e) => setGiroAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="bg-input"
+                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
               />
             </div>
             <div className="space-y-2">
-              <Label>Motivo del Retiro (Opcional)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Motivo del Retiro</Label>
               <Input
                 type="text"
                 value={giroReason}
                 onChange={(e) => setGiroReason(e.target.value)}
                 placeholder="Ej: Límite de caja excedido, pago a proveedor..."
-                className="bg-input"
+                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
               />
             </div>
             
-            <div className="space-y-4 border-t border-border pt-4 mt-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Lock className="h-4 w-4 text-amber-500" />
-                <h4 className="font-medium text-amber-600 dark:text-amber-500">Autorización de Supervisor Requerida</h4>
+            <div className="space-y-3 border-t border-zinc-300 pt-4 mt-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Lock className="h-4 w-4 text-amber-600" />
+                <h4 className="font-extrabold text-xs text-amber-600 uppercase tracking-wider">Autorización de Supervisor</h4>
               </div>
-              <div className="space-y-2">
-                <Label>Usuario Supervisor</Label>
-                <Input
-                  type="text"
-                  value={supervisorUsername}
-                  onChange={(e) => setSupervisorUsername(e.target.value)}
-                  placeholder="ej. admin"
-                  className="bg-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Contraseña Supervisor</Label>
-                <Input
-                  type="password"
-                  value={supervisorPassword}
-                  onChange={(e) => setSupervisorPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-input"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">Usuario</Label>
+                  <Input
+                    type="text"
+                    value={supervisorUsername}
+                    onChange={(e) => setSupervisorUsername(e.target.value)}
+                    placeholder="ej. admin"
+                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">Contraseña</Label>
+                  <Input
+                    type="password"
+                    value={supervisorPassword}
+                    onChange={(e) => setSupervisorPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                  />
+                </div>
               </div>
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowGiroDialog(false)} disabled={isVerifying || isProcessingGiro}>
+          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGiroDialog(false)} 
+              disabled={isVerifying || isProcessingGiro}
+              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleGiro} className="bg-amber-500 hover:bg-amber-600 text-white" disabled={isVerifying || isProcessingGiro}>
+            <Button 
+              onClick={handleGiro} 
+              disabled={isVerifying || isProcessingGiro}
+              className="bg-amber-600 text-white hover:bg-amber-700 font-bold h-9 text-xs"
+            >
               {isVerifying || isProcessingGiro ? 'Procesando...' : 'Confirmar Retiro'}
             </Button>
           </DialogFooter>
@@ -810,32 +838,32 @@ export default function CajaPage() {
 
       {/* Confirm Close Register Dialog */}
       <Dialog open={showConfirmCloseDialog} onOpenChange={setShowConfirmCloseDialog}>
-        <DialogContent className="bg-card border-border sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <AlertCircle className="h-5 w-5 text-primary" />
-              Confirmar Cierre de Caja
+        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm">
+          <DialogHeader className="bg-[#242424] text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <span>Confirmar Cierre de Caja</span>
             </DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              Por favor, revisa el resumen del cierre antes de confirmar. <strong>Esta acción cerrará tu sesión automáticamente.</strong>
+            <DialogDescription className="text-zinc-300 text-xs mt-1">
+              Por favor, revise el resumen del cierre antes de confirmar. <strong>Esta acción cerrará tu sesión automáticamente.</strong>
             </DialogDescription>
           </DialogHeader>
           
           {closeSummary && (
-            <div className="space-y-4 py-4">
-              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Monto Esperado (Efectivo)</span>
-                  <span className="font-medium">${closeSummary.expected.toLocaleString()}</span>
+            <div className="p-6 space-y-4 text-zinc-800">
+              <div className="bg-white border border-zinc-300 rounded-lg p-4 space-y-3 shadow-sm">
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-zinc-500">Monto Esperado (Efectivo)</span>
+                  <span className="font-extrabold">${closeSummary.expected.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Cierre de Caja (Declarado)</span>
-                  <span className="font-medium">${closeSummary.declared.toLocaleString()}</span>
+                <div className="flex justify-between items-center text-xs font-semibold">
+                  <span className="text-zinc-500">Cierre de Caja (Declarado)</span>
+                  <span className="font-extrabold">${closeSummary.declared.toLocaleString()}</span>
                 </div>
-                <div className="h-px bg-border my-2" />
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Diferencia</span>
-                  <span className={`font-bold ${closeSummary.difference === 0 ? 'text-emerald-500' : closeSummary.difference > 0 ? 'text-blue-500' : 'text-destructive'}`}>
+                <div className="h-px bg-zinc-200 my-1" />
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-bold text-zinc-700">Diferencia</span>
+                  <span className={`font-black ${closeSummary.difference === 0 ? 'text-emerald-600' : closeSummary.difference > 0 ? 'text-blue-600' : 'text-red-600'}`}>
                     {closeSummary.difference === 0 
                       ? 'Cuadrada ✓' 
                       : closeSummary.difference > 0 
@@ -848,14 +876,23 @@ export default function CajaPage() {
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => {
-              setShowConfirmCloseDialog(false)
-              setShowCloseDialog(true) // let them edit the amount
-            }} disabled={isVerifying}>
+          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowConfirmCloseDialog(false)
+                setShowCloseDialog(true)
+              }} 
+              disabled={isVerifying}
+              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+            >
               Volver y Editar
             </Button>
-            <Button onClick={confirmAndExecuteClose} disabled={isVerifying}>
+            <Button 
+              onClick={confirmAndExecuteClose} 
+              disabled={isVerifying}
+              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
+            >
               {isVerifying ? 'Cerrando Caja...' : 'Confirmar y Salir'}
             </Button>
           </DialogFooter>
@@ -865,3 +902,4 @@ export default function CajaPage() {
     </div>
   )
 }
+
