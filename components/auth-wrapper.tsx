@@ -40,7 +40,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
       try {
         const result = await loginUser(username, password)
         if (result.success && result.user) {
-          login(result.user)
+          login(result.user as any)
           if (result.user.role === 'supervisor') {
             router.push('/admin')
           }
@@ -55,63 +55,77 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card w-full max-w-md rounded-xl border border-border p-8 shadow-lg">
-          <div className="flex flex-col items-center mb-8">
-            <div className="bg-primary/20 p-3 rounded-full mb-4">
-              <Lock className="h-8 w-8 text-primary" />
+      <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4 font-sans select-none">
+        <div className="bg-[#d7d7d8] w-full max-w-md rounded-lg border border-zinc-400 shadow-xl overflow-hidden flex flex-col pb-6">
+          
+          {/* Header (Logo & Subtitle) */}
+          <div className="bg-white py-6 border-b-2 border-zinc-300 text-center flex flex-col items-center gap-1.5">
+            <div className="flex items-center">
+              <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
+                <span className="text-[#0a354c] leading-none">n</span>
+                <span className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle" style={{ borderWidth: '3.5px' }} />
+                <span className="text-[#0a354c] leading-none">d</span>
+                <span className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle" style={{ borderWidth: '3.5px' }} />
+              </span>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Sistema de Custodia</h1>
-            <p className="text-muted-foreground mt-2">Ingrese sus credenciales para acceder</p>
+            <h1 className="text-xl font-bold tracking-wider text-[#242424] leading-tight">CUSTODIA</h1>
+            <p className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">Sistema de Control de Casilleros</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="username">Usuario</Label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10 bg-input"
-                  placeholder="Ingrese su usuario"
-                  required
-                />
-              </div>
+          {/* Form Content */}
+          <div className="px-6 py-4 flex flex-col gap-4">
+            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider">
+              INICIAR SESIÓN
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 bg-input"
-                  placeholder="••••••••"
-                  required
-                />
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-zinc-700">Usuario</Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 bg-white border border-zinc-300 rounded-md text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                    placeholder="Ingrese su usuario"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm text-center">
-                {error}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-zinc-700">Contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 bg-white border border-zinc-300 rounded-md text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
               </div>
-            )}
 
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Verificando...' : 'Iniciar Sesión'}
-            </Button>
-          </form>
+              {error && (
+                <div className="p-3 bg-red-100 border border-red-200 rounded-md text-red-700 font-semibold text-xs text-center">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-sm font-bold py-3 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Verificando...' : 'Entrar al Sistema'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     )

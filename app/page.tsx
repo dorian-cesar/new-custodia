@@ -29,6 +29,7 @@ export default function CustodyPage() {
   const [clientDocument, setClientDocument] = useState('')
   const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [serviceMode, setServiceMode] = useState<'entrega' | 'retiro'>('entrega')
 
   useEffect(() => {
     setMounted(true)
@@ -67,49 +68,87 @@ export default function CustodyPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Cargando...</div>
+      <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
+        <div className="text-zinc-600 font-semibold">Cargando...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header showHistory showCash />
-      
-      <CashStatusBanner 
-        isOpen={isCashOpen} 
-        balance={stats.balance}
-        totalSales={stats.totalSales}
-        transactions={stats.totalTransactions}
-      />
-
-      <main className="container mx-auto px-6 py-8">
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
+      {/* Upper Alerts (outside card) */}
+      <div className="w-full max-w-[720px] space-y-4 mb-4">
         {stats.balance >= 300000 && (
-          <div className="mb-6 bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-center justify-between">
+          <div className="bg-amber-500/10 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/20 rounded-full">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
+              <div className="p-1.5 bg-amber-500/20 rounded-full">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-amber-600 dark:text-amber-500">
+                <h3 className="font-bold text-xs text-amber-700">
                   Límite de Caja Alcanzado
                 </h3>
-                <p className="text-sm text-amber-600/80 dark:text-amber-500/80 mt-1">
-                  La caja actual ha alcanzado o superado los $300.000 (Saldo actual: ${stats.balance.toLocaleString()}). Por favor, realice un retiro de caja a la brevedad.
+                <p className="text-[10px] text-amber-700/90 mt-0.5">
+                  La caja actual ha alcanzado o superado los $300.000. Por favor, realice un retiro.
                 </p>
               </div>
             </div>
-            <Button variant="outline" className="border-amber-500/20 text-amber-600 dark:text-amber-500 hover:bg-amber-500/10" onClick={() => router.push('/caja')}>
+            <Button variant="outline" size="sm" className="h-7 text-[10px] border-amber-500/20 text-amber-700 hover:bg-amber-500/10" onClick={() => router.push('/caja')}>
               Ir a Caja
             </Button>
           </div>
         )}
-
         <OverdueAlert />
+      </div>
+
+      {/* Main Cashier Card */}
+      <div className="w-full max-w-[720px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
+        {/* Header inside Card */}
+        <Header showHistory showCash />
         
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        {/* Cash Status Bar */}
+        <CashStatusBanner 
+          isOpen={isCashOpen} 
+          balance={stats.balance}
+          totalSales={stats.totalSales}
+          transactions={stats.totalTransactions}
+        />
+
+        {/* Content Area */}
+        <div className="flex flex-col gap-4 py-4">
+          {/* SERVICIO Section */}
+          <div className="px-4">
+            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-3">
+              SERVICIO
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                type="button"
+                onClick={() => setServiceMode('entrega')} 
+                className={`py-4 text-lg font-black rounded-xl border border-zinc-400 transition-all duration-200 cursor-pointer ${
+                  serviceMode === 'entrega' 
+                    ? 'bg-[#0a354c] text-white shadow-md' 
+                    : 'bg-[#0a354c]/60 text-white/70 hover:bg-[#0a354c]/85 hover:scale-[1.01]'
+                }`}
+              >
+                ENTREGA
+              </button>
+              <button 
+                type="button"
+                onClick={() => setServiceMode('retiro')} 
+                className={`py-4 text-lg font-black rounded-xl border border-zinc-400 transition-all duration-200 cursor-pointer ${
+                  serviceMode === 'retiro' 
+                    ? 'bg-[#1588b3] text-white shadow-md' 
+                    : 'bg-[#1588b3]/60 text-white/70 hover:bg-[#1588b3]/85 hover:scale-[1.01]'
+                }`}
+              >
+                RETIRO
+              </button>
+            </div>
+          </div>
+
+          {/* Form based on serviceMode */}
+          {serviceMode === 'entrega' && (
             <LockerSelection
               lockers={lockers}
               selectedLockerId={selectedLockerId}
@@ -119,20 +158,19 @@ export default function CustodyPage() {
               clientDocument={clientDocument}
               onChangeDocument={setClientDocument}
             />
-          </div>
-          <div>
-            <ClientRegistration
-              selectedLockerId={selectedLockerId}
-              selectedSize={selectedSize}
-              clientDocument={clientDocument}
-              onGenerateBarcode={handleGenerateBarcode}
-              onDeliver={handleDeliver}
-              currentRecord={currentRecord}
-              isCashOpen={isCashOpen}
-            />
-          </div>
+          )}
+          <ClientRegistration
+            selectedLockerId={selectedLockerId}
+            selectedSize={selectedSize}
+            clientDocument={clientDocument}
+            onGenerateBarcode={handleGenerateBarcode}
+            onDeliver={handleDeliver}
+            currentRecord={currentRecord}
+            isCashOpen={isCashOpen}
+            mode={serviceMode}
+          />
         </div>
-      </main>
+      </div>
     </div>
   )
 }

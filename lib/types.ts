@@ -7,11 +7,11 @@ export interface LockerSizeOption {
 }
 
 export const LOCKER_SIZES: LockerSizeOption[] = [
-  { value: 'S', label: 'S Bolso Pequeno', price: 1500 },
-  { value: 'M', label: 'M Maleta Mediana', price: 2500 },
-  { value: 'L', label: 'L Maleta Grande', price: 3500 },
-  { value: 'XL', label: 'XL Equipaje Extra Grande', price: 4500 },
-  { value: 'XXL', label: 'XXL Sacos / Fardos', price: 6000 },
+  { value: 'S', label: 'S Bolso Pequeno', price: 2500 },
+  { value: 'M', label: 'M Maleta Mediana', price: 3500 },
+  { value: 'L', label: 'L Maleta Grande', price: 5000 },
+  { value: 'XL', label: 'XL Equipaje Extra Grande', price: 6000 },
+  { value: 'XXL', label: 'XXL Sacos / Fardos', price: 8000 },
 ]
 
 export interface CustodyRecord {

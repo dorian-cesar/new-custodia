@@ -10,10 +10,12 @@ interface DeliveryTicketProps {
   extraAmount: number
   paymentMethod: string
   extraFolio?: number | null
+  authCode?: string | null
+  opNumber?: string | null
 }
 
 export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
-  ({ record, extraHours, extraAmount, paymentMethod, extraFolio }, ref) => {
+  ({ record, extraHours, extraAmount, paymentMethod, extraFolio, authCode, opNumber }, ref) => {
     const lockers = useCustodyStore((state) => state.lockers)
     const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
@@ -64,6 +66,8 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
             <p style={{ margin: '3px 0' }}><strong>Tipo:</strong> {sizeLabel}</p>
             <p style={{ margin: '3px 0' }}><strong>Casillero:</strong> {lockerDisplay}</p>
             <p style={{ margin: '3px 0' }}><strong>Medio de Pago:</strong> {paymentMethod}</p>
+            {authCode && <p style={{ margin: '3px 0' }}><strong>Cód. Autorización:</strong> {authCode}</p>}
+            {opNumber && <p style={{ margin: '3px 0' }}><strong>N° Operación:</strong> {opNumber}</p>}
           </div>
 
           <div style={{ borderBottom: '1px dashed black', margin: '10px 0' }}></div>

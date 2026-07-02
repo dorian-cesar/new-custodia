@@ -30,6 +30,7 @@ interface ClientRegistrationProps {
   onDeliver: (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null) => Promise<boolean>
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
+  mode?: 'entrega' | 'retiro'
 }
 
 export function ClientRegistration({
@@ -40,6 +41,7 @@ export function ClientRegistration({
   onDeliver,
   currentRecord,
   isCashOpen,
+  mode = 'entrega',
 }: ClientRegistrationProps) {
   const [deliveryCode, setDeliveryCode] = useState('')
   const [deliveryError, setDeliveryError] = useState('')
@@ -250,144 +252,127 @@ export function ClientRegistration({
   }
 
   return (
-    <div className="bg-card rounded-xl p-6 border border-border">
+    <div className="bg-[#d7d7d8] px-4 pb-4">
       <Ticket ref={ticketRef} record={currentRecord} paymentMethod={entryPaymentMethod} />
       <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} extraFolio={extraFolioState} authCode={exitAuthCode} opNumber={exitOpNumber} />
       
-      <div className="flex items-center gap-2 mb-6">
-        <BarcodeIcon className="h-5 w-5 text-muted-foreground" />
-        <h2 className="text-lg font-semibold text-card-foreground">Registro de Cliente</h2>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Hash className="h-4 w-4" />
-            Casillero Seleccionado
-          </Label>
-          <Input
-            value={displayLockerName}
-            readOnly
-            placeholder="Seleccione un casillero en la matriz"
-            className="bg-input"
-          />
-        </div>
-
-        <Button
-          onClick={handleGenerateBarcode}
-          disabled={!isCashOpen}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          <BarcodeIcon className="h-4 w-4 mr-2" />
-          Cobrar y Generar Custodia
-        </Button>
-
-        {!isCashOpen && (
-          <p className="text-sm text-destructive text-center">
-            Debe abrir la caja para registrar custodias
-          </p>
-        )}
-
-        <div className="py-2">
-          <Barcode value={currentRecord?.code || ''} />
-        </div>
-
-        <div className="border-t border-border pt-4 space-y-3">
-          <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Key className="h-4 w-4" />
-            Entregar Custodia (Código o RUT)
-          </Label>
-          <Input
-            value={deliveryCode}
-            onChange={(e) => setDeliveryCode(e.target.value)}
-            placeholder="Código de barras o RUT / DNI"
-            className="bg-input"
-          />
-          {deliveryError && (
-            <p className="text-sm text-destructive">{deliveryError}</p>
-          )}
-          <Button
-            onClick={handleDeliverClick}
+      {mode === 'entrega' ? (
+        <div className="w-full flex flex-col items-center">
+          <button
+            type="button"
+            onClick={handleGenerateBarcode}
             disabled={!isCashOpen}
-            className="w-full bg-primary hover:bg-primary/90"
+            className="w-full max-w-[320px] bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-lg font-bold py-3.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2 text-center"
           >
-            <Key className="h-4 w-4 mr-2" />
-            Entrega
-          </Button>
+            GENERAR CÓDIGO
+          </button>
+          {!isCashOpen && (
+            <p className="text-xs font-semibold text-destructive text-center mt-2 animate-pulse">
+              Debe abrir la caja para registrar custodias
+            </p>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-3">
+              REGISTRO DEL CLIENTE
+            </div>
+            <input
+              type="text"
+              value={deliveryCode}
+              onChange={(e) => setDeliveryCode(e.target.value)}
+              placeholder="Código de barras o RUT / DNI del cliente"
+              className="w-full bg-white border border-zinc-300 rounded-md px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff] font-semibold"
+            />
+            {deliveryError && (
+              <p className="text-xs font-semibold text-destructive mt-1.5">{deliveryError}</p>
+            )}
+          </div>
+          <div className="w-full flex flex-col items-center">
+            <button
+              type="button"
+              onClick={handleDeliverClick}
+              disabled={!isCashOpen}
+              className="w-full max-w-[320px] bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-lg font-bold py-3.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2 text-center"
+            >
+              BUSCAR Y RETIRAR
+            </button>
+            {!isCashOpen && (
+              <p className="text-xs font-semibold text-destructive text-center mt-2 animate-pulse">
+                Debe abrir la caja para retirar custodias
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Entry Payment Confirmation Modal */}
       <Dialog open={isEntryModalOpen} onOpenChange={setIsEntryModalOpen}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Coins className="h-5 w-5 text-primary" />
-              Pago de Custodia
-            </DialogTitle>
-            <DialogDescription>
-              Confirme el cobro antes de generar el ticket y abrir el casillero.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-md bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden">
+          <div className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between">
+            <h3 className="text-lg font-bold tracking-wide flex items-center gap-2">
+              <Coins className="h-5 w-5 text-[#00c5ff]" />
+              PAGO DE CUSTODIA
+            </h3>
+          </div>
           
-          <div className="flex flex-col gap-4 py-4">
-            <div className="bg-secondary/20 p-4 rounded-lg space-y-2 text-sm mb-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Cliente:</span>
-                <span className="font-mono">{clientDocument}</span>
+          <div className="px-6 py-4 flex flex-col gap-4">
+            <div className="bg-white border border-zinc-300 p-4 rounded-lg space-y-2 text-sm">
+              <div className="flex justify-between font-semibold text-zinc-700">
+                <span>Cliente:</span>
+                <span className="font-mono text-zinc-900">{clientDocument}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Casillero:</span>
-                <span>{displayLockerName}</span>
+              <div className="flex justify-between font-semibold text-zinc-700">
+                <span>Casillero:</span>
+                <span className="text-zinc-900">{displayLockerName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tamaño:</span>
-                <span>{selectedSizeInfo?.label}</span>
+              <div className="flex justify-between font-semibold text-zinc-700">
+                <span>Tamaño:</span>
+                <span className="text-zinc-900">{selectedSizeInfo?.label}</span>
               </div>
             </div>
 
-            <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
-              <span className="font-semibold text-lg">Total a cobrar:</span>
-              <span className="font-bold text-2xl text-primary">${entryPrice.toLocaleString()}</span>
+            <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
+              <span className="font-bold text-zinc-800 text-lg">Total a cobrar:</span>
+              <span className="font-black text-2xl text-[#0a354c]">${entryPrice.toLocaleString('es-CL')}</span>
             </div>
 
-            <div className="space-y-2 border-t border-border pt-4">
-              <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700">Medio de Pago</Label>
               <div className="grid grid-cols-2 gap-3">
-                <Button
+                <button
                   type="button"
-                  variant={entryPaymentMethod === 'Efectivo' ? 'default' : 'outline'}
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
                     entryPaymentMethod === 'Efectivo' 
-                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                      ? 'bg-[#0a354c] text-white shadow-md' 
+                      : 'bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800'
                   }`}
                   onClick={() => setEntryPaymentMethod('Efectivo')}
                 >
                   <Coins className="h-5 w-5" />
                   Efectivo
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  variant={entryPaymentMethod === 'Tarjeta' ? 'default' : 'outline'}
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
                     entryPaymentMethod === 'Tarjeta' 
-                      ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                      : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                      ? 'bg-[#1588b3] text-white shadow-md' 
+                      : 'bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800'
                   }`}
                   onClick={() => setEntryPaymentMethod('Tarjeta')}
                 >
                   <CreditCard className="h-5 w-5" />
                   Tarjeta
-                </Button>
+                </button>
               </div>
 
               {entryPaymentMethod === 'Efectivo' && entryPrice > 0 && (
-                <div className="space-y-2 mt-3 p-3 bg-secondary/10 border border-border rounded-lg animate-in fade-in slide-in-from-top-1">
-                  <Label htmlFor="entryCashReceived" className="text-xs font-semibold text-muted-foreground">Efectivo Recibido</Label>
+                <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
+                  <Label htmlFor="entryCashReceived" className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Efectivo Recibido</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
-                    <Input
+                    <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">$</span>
+                    <input
                       id="entryCashReceived"
                       type="text"
                       value={entryCashReceived === 0 ? '' : entryCashReceived.toLocaleString('es-CL')}
@@ -396,13 +381,13 @@ export function ClientRegistration({
                         setEntryCashReceived(val);
                       }}
                       placeholder="Monto entregado por el cliente"
-                      className="pl-7 bg-card h-9 text-sm"
+                      className="pl-7 bg-white border border-zinc-300 rounded-md w-full h-9 text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                     />
                   </div>
                   {entryCashReceived > 0 && (
-                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-border text-xs">
-                      <span className="font-medium text-muted-foreground">Vuelto a entregar:</span>
-                      <span className={`font-bold text-sm ${entryCashReceived - entryPrice >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-zinc-300 text-xs font-semibold">
+                      <span className="text-zinc-500">Vuelto a entregar:</span>
+                      <span className={`text-sm font-bold ${entryCashReceived - entryPrice >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {entryCashReceived - entryPrice >= 0
                           ? `$${(entryCashReceived - entryPrice).toLocaleString('es-CL')}`
                           : 'Monto insuficiente'
@@ -415,66 +400,61 @@ export function ClientRegistration({
             </div>
           </div>
 
-          <DialogFooter className="sm:justify-end">
-            <Button
+          <div className="px-6 py-4 bg-zinc-200 border-t border-zinc-300 flex justify-end gap-3">
+            <button
               type="button"
-              variant="secondary"
+              className="px-4 py-2 rounded-lg border border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 font-semibold text-sm cursor-pointer select-none"
               onClick={() => setIsEntryModalOpen(false)}
             >
               Cancelar
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              className="bg-primary hover:bg-primary/90"
+              className="px-4 py-2 rounded-lg bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-wide cursor-pointer select-none"
               onClick={confirmEntryPayment}
               disabled={isProcessingCard}
             >
-              {isProcessingCard ? 'Esperando POS...' : 'Confirmar Pago y Generar Ticket'}
-            </Button>
-          </DialogFooter>
+              {isProcessingCard ? 'Esperando POS...' : 'Confirmar Pago'}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delivery Confirmation Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="sm:max-w-md bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden">
+          <div className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between">
+            <h3 className="text-lg font-bold tracking-wide flex items-center gap-2">
               {extraAmount > 0 ? (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                  Recargo por Exceso de Tiempo
+                  <AlertTriangle className="h-5 w-5 text-rose-500 animate-pulse" />
+                  RECARGO POR EXCESO DE TIEMPO
                 </>
               ) : (
                 <>
-                  <Key className="h-5 w-5 text-primary" />
-                  Confirmar Entrega
+                  <Key className="h-5 w-5 text-[#00c5ff]" />
+                  CONFIRMAR ENTREGA
                 </>
               )}
-            </DialogTitle>
-            <DialogDescription>
-              {extraAmount > 0 
-                ? 'Este equipaje superó el límite de 24 horas y tiene un cargo extra proporcional.'
-                : 'Revise los detalles antes de entregar la maleta al cliente.'}
-            </DialogDescription>
-          </DialogHeader>
+            </h3>
+          </div>
           
-          <div className="flex flex-col gap-4 py-4">
+          <div className="px-6 py-4 flex flex-col gap-4">
             {pendingRecord && (() => {
               const pLocker = lockers.find(l => l.id === pendingRecord.lockerId)
               return (
-                <div className="bg-secondary/20 p-4 rounded-lg space-y-2 text-sm mb-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Código:</span>
-                    <span className="font-mono">{pendingRecord.code}</span>
+                <div className="bg-white border border-zinc-300 p-4 rounded-lg space-y-2 text-sm">
+                  <div className="flex justify-between font-semibold text-zinc-700">
+                    <span>Código:</span>
+                    <span className="font-mono text-zinc-900">{pendingRecord.code}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Casillero:</span>
-                    <span>{pLocker ? `${pLocker.row},${pLocker.col}` : pendingRecord.lockerId}</span>
+                  <div className="flex justify-between font-semibold text-zinc-700">
+                    <span>Casillero:</span>
+                    <span className="text-zinc-900">{pLocker ? `${pLocker.row},${pLocker.col}` : pendingRecord.lockerId}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tamaño:</span>
-                    <span>{pendingRecord.size}</span>
+                  <div className="flex justify-between font-semibold text-zinc-700">
+                    <span>Tamaño:</span>
+                    <span className="text-zinc-900">{pendingRecord.size}</span>
                   </div>
                 </div>
               )
@@ -482,104 +462,102 @@ export function ClientRegistration({
 
             {extraAmount > 0 ? (
               <>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Horas adicionales:</span>
-                  <span className="font-medium">{extraHours.toFixed(2)} hrs</span>
+                <div className="flex justify-between items-center text-sm px-1 font-semibold text-zinc-700">
+                  <span>Horas adicionales:</span>
+                  <span className="font-bold text-zinc-900">{extraHours.toFixed(2)} hrs</span>
                 </div>
-                <div className="flex justify-between items-center bg-muted p-4 rounded-lg">
-                  <span className="font-semibold text-lg">Total extra a cobrar:</span>
-                  <span className="font-bold text-2xl text-destructive">${extraAmount.toLocaleString()}</span>
+                <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
+                  <span className="font-bold text-zinc-800 text-lg">Total extra a cobrar:</span>
+                  <span className="font-black text-2xl text-rose-600">${extraAmount.toLocaleString('es-CL')}</span>
                 </div>
               </>
             ) : (
-              <div className="flex flex-col justify-center items-center p-4 border border-dashed border-border rounded-lg bg-secondary/10">
-                <span className="text-muted-foreground font-medium text-sm">Sin recargos adicionales</span>
+              <div className="flex flex-col justify-center items-center p-4 border border-zinc-300 rounded-lg bg-white select-none">
+                <span className="text-zinc-500 font-bold text-sm">Sin recargos adicionales</span>
               </div>
             )}
 
             {extraAmount > 0 && (
-              <div className="space-y-2 border-t border-border pt-4">
-                <Label className="text-sm font-semibold text-muted-foreground">Medio de Pago</Label>
+              <div className="space-y-2 pt-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700">Medio de Pago</Label>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button
+                  <button
                     type="button"
-                    variant={paymentMethod === 'Efectivo' ? 'default' : 'outline'}
-                    className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
                       paymentMethod === 'Efectivo' 
-                        ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                        : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                        ? 'bg-[#0a354c] text-white shadow-md' 
+                        : 'bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800'
                     }`}
                     onClick={() => setPaymentMethod('Efectivo')}
                   >
                     <Coins className="h-5 w-5" />
                     Efectivo
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    variant={paymentMethod === 'Tarjeta' ? 'default' : 'outline'}
-                    className={`flex items-center justify-center gap-2 h-12 text-sm font-medium transition-all ${
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
                       paymentMethod === 'Tarjeta' 
-                        ? 'bg-primary text-primary-foreground border-transparent hover:bg-primary/90 shadow-md scale-[1.02]' 
-                        : 'bg-card border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground'
+                        ? 'bg-[#1588b3] text-white shadow-md' 
+                        : 'bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800'
                     }`}
                     onClick={() => setPaymentMethod('Tarjeta')}
                   >
                     <CreditCard className="h-5 w-5" />
                     Tarjeta
-                  </Button>
+                  </button>
                 </div>
 
-              {paymentMethod === 'Efectivo' && extraAmount > 0 && (
-                <div className="space-y-2 mt-3 p-3 bg-secondary/10 border border-border rounded-lg animate-in fade-in slide-in-from-top-1">
-                  <Label htmlFor="cashReceived" className="text-xs font-semibold text-muted-foreground">Efectivo Recibido</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-muted-foreground text-sm font-medium">$</span>
-                    <Input
-                      id="cashReceived"
-                      type="text"
-                      value={cashReceived === 0 ? '' : cashReceived.toLocaleString('es-CL')}
-                      onChange={(e) => {
-                        const val = Number(e.target.value.replace(/\D/g, ''));
-                        setCashReceived(val);
-                      }}
-                      placeholder="Monto entregado por el cliente"
-                      className="pl-7 bg-card h-9 text-sm"
-                    />
-                  </div>
-                  {cashReceived > 0 && (
-                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-border text-xs">
-                      <span className="font-medium text-muted-foreground">Vuelto a entregar:</span>
-                      <span className={`font-bold text-sm ${cashReceived - extraAmount >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {cashReceived - extraAmount >= 0
-                          ? `$${(cashReceived - extraAmount).toLocaleString('es-CL')}`
-                          : 'Monto insuficiente'
-                        }
-                      </span>
+                {paymentMethod === 'Efectivo' && extraAmount > 0 && (
+                  <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
+                    <Label htmlFor="cashReceived" className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Efectivo Recibido</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">$</span>
+                      <input
+                        id="cashReceived"
+                        type="text"
+                        value={cashReceived === 0 ? '' : cashReceived.toLocaleString('es-CL')}
+                        onChange={(e) => {
+                          const val = Number(e.target.value.replace(/\D/g, ''));
+                          setCashReceived(val);
+                        }}
+                        placeholder="Monto entregado por el cliente"
+                        className="pl-7 bg-white border border-zinc-300 rounded-md w-full h-9 text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                      />
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    {cashReceived > 0 && (
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-zinc-300 text-xs font-semibold">
+                        <span className="text-zinc-500">Vuelto a entregar:</span>
+                        <span className={`text-sm font-bold ${cashReceived - extraAmount >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {cashReceived - extraAmount >= 0
+                            ? `$${(cashReceived - extraAmount).toLocaleString('es-CL')}`
+                            : 'Monto insuficiente'
+                          }
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          <DialogFooter className="sm:justify-end">
-            <Button
+          <div className="px-6 py-4 bg-zinc-200 border-t border-zinc-300 flex justify-end gap-3">
+            <button
               type="button"
-              variant="secondary"
+              className="px-4 py-2 rounded-lg border border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 font-semibold text-sm cursor-pointer select-none"
               onClick={() => setIsModalOpen(false)}
             >
               Cancelar
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              className="bg-primary hover:bg-primary/90"
+              className="px-4 py-2 rounded-lg bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-wide cursor-pointer select-none"
               onClick={() => pendingRecord && confirmDelivery(pendingRecord.code, extraAmount, paymentMethod)}
               disabled={isProcessingCard}
             >
-              {isProcessingCard ? 'Esperando POS...' : (extraAmount > 0 ? 'Confirmar Pago y Entregar' : 'Entregar Maleta')}
-            </Button>
-          </DialogFooter>
+              {isProcessingCard ? 'Esperando POS...' : (extraAmount > 0 ? 'Confirmar Pago' : 'Entregar Maleta')}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 

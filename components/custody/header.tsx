@@ -108,17 +108,26 @@ export function Header({ showHistory = false, showBack = false, showCash = false
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-accent rounded-lg">
-            <Box className="h-6 w-6 text-accent-foreground" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Custodia</h1>
-            <p className="text-sm text-muted-foreground">Sistema de Control de Casilleros</p>
+      <header className="flex items-center justify-between px-6 py-4 bg-white border-b-2 border-zinc-300">
+        {/* Left: Logo 'nodo' */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center">
+            <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
+              <span className="text-[#0a354c] leading-none">n</span>
+              <span className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle" style={{ borderWidth: '3.5px' }} />
+              <span className="text-[#0a354c] leading-none">d</span>
+              <span className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle" style={{ borderWidth: '3.5px' }} />
+            </span>
           </div>
         </div>
         
+        {/* Center: Title & Subtitle */}
+        <div className="text-center flex-1">
+          <h1 className="text-2xl font-bold tracking-wider text-[#242424] leading-tight font-sans">CUSTODIA</h1>
+          <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Sistema de Control de Casilleros</p>
+        </div>
+
+        {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {isNative && (
             <Button 
@@ -128,57 +137,47 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 setShowPrinterDialog(true)
                 printerService.getPrinterStatus().then(setPrinterStatus)
               }}
-              className={`mr-2 ${printerStatus.connected ? 'border-emerald-500 text-emerald-500 hover:text-emerald-400' : 'border-amber-500 text-amber-500 hover:text-amber-400'}`}
+              className={`rounded-full h-7 px-3 text-xs font-medium border-zinc-400 bg-white ${
+                printerStatus.connected 
+                  ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50' 
+                  : 'text-amber-600 hover:bg-amber-50'
+              }`}
               title="Configurar Impresora"
             >
-              <Printer className="h-4 w-4 mr-2" />
-              {printerStatus.connected ? 'Impresora Conectada' : 'Configurar Impresora'}
+              <Printer className="h-3 w-3 mr-1" />
+              {printerStatus.connected ? 'Impresora OK' : 'Impresora'}
             </Button>
           )}
 
           {showCash && (
-            <Button asChild variant="default" className="bg-primary hover:bg-primary/90">
-              <Link href="/caja">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Caja
-              </Link>
+            <Button asChild variant="outline" className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none">
+              <Link href="/caja">Caja</Link>
             </Button>
           )}
           {showHistory && (
-            <Button asChild variant="default" className="bg-primary hover:bg-primary/90">
-              <Link href="/historial">
-                <History className="h-4 w-4 mr-2" />
-                Ver Historial
-              </Link>
+            <Button asChild variant="outline" className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none">
+              <Link href="/historial">Ver Historial</Link>
             </Button>
           )}
           {showBack && (
-            <Button asChild variant="secondary">
-              <Link href="/">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
-              </Link>
+            <Button asChild variant="outline" className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none">
+              <Link href="/">Volver</Link>
             </Button>
           )}
-        </div>
 
-        <div className="flex items-center gap-4 ml-4 pl-4 border-l border-border">
           {currentUser && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground capitalize">
-                  {currentUser.username}
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-zinc-300">
+              <span className="text-[11px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-full capitalize">
+                {currentUser.username}
+              </span>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={logout}
-                className="text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/20"
+                className="h-7 w-7 text-zinc-500 hover:text-destructive hover:bg-destructive/10 rounded-full"
                 title="Cerrar sesión"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}
@@ -225,7 +224,7 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label>Dispositivos Bluetooth Vinculados</Label>
-                    <Button variant="outline" size="xs" onClick={scanDevices} className="h-7 text-xs">Escanear</Button>
+                    <Button variant="outline" size="sm" onClick={scanDevices} className="h-7 text-xs">Escanear</Button>
                   </div>
                   {btDevices.length === 0 ? (
                     <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded text-center">
@@ -252,7 +251,7 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label>Puertos USB Detectados</Label>
-                    <Button variant="outline" size="xs" onClick={scanDevices} className="h-7 text-xs">Escanear</Button>
+                    <Button variant="outline" size="sm" onClick={scanDevices} className="h-7 text-xs">Escanear</Button>
                   </div>
                   {usbDevices.length === 0 ? (
                     <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded text-center">

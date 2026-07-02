@@ -72,7 +72,12 @@ export default function HistorialPage() {
   }, [])
 
   const filteredRecords = useMemo(() => {
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
     return records.filter((record) => {
+      // Limit history to the last 30 days
+      const matchesDate = new Date(record.entryTime).getTime() >= thirtyDaysAgo
+      if (!matchesDate) return false
+
       const matchesDocument = searchDocument
         ? record.clientDocument.toLowerCase().includes(searchDocument.toLowerCase()) ||
           record.code.toLowerCase().includes(searchDocument.toLowerCase())
@@ -118,196 +123,207 @@ export default function HistorialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header showBack />
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
+      <div className="w-full max-w-[960px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-6">
+        <Header showBack />
 
-      <main className="container mx-auto px-6 py-8">
-        <div className="bg-card rounded-xl p-6 border border-border">
-          <div className="flex items-center gap-2 mb-6">
-            <History className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-card-foreground">Historial de Casilleros</h2>
-          </div>
-
-          {/* Filters */}
-          <div className="grid sm:grid-cols-4 gap-4 mb-6">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Search className="h-4 w-4" />
-                Buscar por Documento
-              </Label>
-              <Input
-                value={searchDocument}
-                onChange={(e) => setSearchDocument(e.target.value)}
-                placeholder="RUT / DNI / Pasaporte"
-                className="bg-input"
-              />
+        <main className="flex-1 flex flex-col gap-6 p-6">
+          <div>
+            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2">
+              <History className="h-4 w-4" />
+              <span>Historial de Casilleros (Últimos 30 Días)</span>
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Filter className="h-4 w-4" />
-                Estado
-              </Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="bg-input">
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="Activo">Activo</SelectItem>
-                  <SelectItem value="Entregado">Entregado</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Filters */}
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
+                    <Search className="h-3 w-3" />
+                    Buscar por Documento
+                  </Label>
+                  <Input
+                    value={searchDocument}
+                    onChange={(e) => setSearchDocument(e.target.value)}
+                    placeholder="RUT / DNI / Pasaporte"
+                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
+                    <Filter className="h-3 w-3" />
+                    Estado
+                  </Label>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-bold focus-visible:ring-[#242424] w-full">
+                      <SelectValue placeholder="Todos los estados" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-zinc-900 font-semibold">
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="Activo">Activo</SelectItem>
+                      <SelectItem value="Entregado">Entregado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
+                    <Ruler className="h-3 w-3" />
+                    Tamaño
+                  </Label>
+                  <Select value={filterSize} onValueChange={setFilterSize}>
+                    <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-bold focus-visible:ring-[#242424] w-full">
+                      <SelectValue placeholder="Todas las tallas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-zinc-900 font-semibold">
+                      <SelectItem value="all">Todas las tallas</SelectItem>
+                      {lockerSizes.map((size) => (
+                        <SelectItem key={size.value} value={size.value}>
+                          {size.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleSearch} 
+                  className="w-full sm:w-auto px-6 bg-[#242424] hover:bg-zinc-800 text-white font-bold h-9 text-xs uppercase"
+                >
+                  <Search className="h-3.5 w-3.5 mr-2" />
+                  Buscar
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Ruler className="h-4 w-4" />
-                Tamano
-              </Label>
-              <Select value={filterSize} onValueChange={setFilterSize}>
-                <SelectTrigger className="bg-input">
-                  <SelectValue placeholder="Todas las tallas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las tallas</SelectItem>
-                  {lockerSizes.map((size) => (
-                    <SelectItem key={size.value} value={size.value}>
-                      {size.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm text-transparent">Buscar</Label>
-              <Button onClick={handleSearch} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Search className="h-4 w-4 mr-2" />
-                Buscar
-              </Button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">CÓDIGO / RUT</TableHead>
-                  <TableHead className="text-muted-foreground"># CASILLERO</TableHead>
-                  <TableHead className="text-muted-foreground">RUT/DNI</TableHead>
-                  <TableHead className="text-muted-foreground">ENTRADA</TableHead>
-                  <TableHead className="text-muted-foreground">SALIDA</TableHead>
-                  <TableHead className="text-muted-foreground">TAMANO</TableHead>
-                  <TableHead className="text-muted-foreground">PAGO</TableHead>
-                  <TableHead className="text-muted-foreground">ESTADO</TableHead>
-                  <TableHead className="text-muted-foreground">$ VALOR</TableHead>
-                  <TableHead className="text-muted-foreground text-center">ACCIÓN</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                      No se encontraron registros
-                    </TableCell>
+            {/* Table */}
+            <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+              <Table>
+                <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                  <TableRow className="hover:bg-transparent border-none">
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">CÓDIGO / RUT</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10"># CASILLERO</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">RUT/DNI</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">ENTRADA</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">SALIDA</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">TAMAÑO</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">PAGO</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">ESTADO</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">$ VALOR</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-center">ACCIÓN</TableHead>
                   </TableRow>
-                ) : (
-                  paginatedRecords.map((record) => {
-                    // Obtener la transaccion de pago si es que ya existe
-                    const txs = cashTransactions?.filter(t => t.recordId === record.id) || []
-                    let paymentStr = '-'
-                    if (txs.length > 0) {
-                      const methods = new Set<string>()
-                      txs.forEach(t => {
-                        if (t.description.includes('Efectivo')) methods.add('Efectivo')
-                        if (t.description.includes('Tarjeta')) methods.add('Tarjeta')
-                      })
-                      if (methods.size > 0) {
-                        paymentStr = Array.from(methods).join(' / ')
-                      }
-                    }
-
-                    return (
-                    <TableRow key={record.id} className="border-border">
-                      <TableCell className="font-mono text-sm text-foreground">
-                        {record.code}
-                      </TableCell>
-                      <TableCell className="text-foreground">{getLockerDisplay(record.lockerId)}</TableCell>
-                      <TableCell className="text-foreground">{record.clientDocument}</TableCell>
-                      <TableCell className="text-foreground">
-                        {formatDateTime(record.entryTime)}
-                      </TableCell>
-                      <TableCell className="text-foreground">
-                        {record.exitTime ? formatDateTime(record.exitTime) : '-'}
-                      </TableCell>
-                      <TableCell className="text-foreground">{getSizeLabel(record.size)}</TableCell>
-                      <TableCell>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          paymentStr.includes('Efectivo') ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' :
-                          paymentStr.includes('Tarjeta') ? 'bg-blue-500/10 text-blue-600 dark:text-blue-500' :
-                          'bg-secondary text-muted-foreground'
-                        }`}>
-                          {paymentStr}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            record.status === 'Activo'
-                              ? 'text-primary font-medium'
-                              : 'text-muted-foreground'
-                          }
-                        >
-                          {record.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-foreground">
-                        ${record.price.toLocaleString('es-CL')}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => triggerReprint(record, paymentStr.includes('Tarjeta') ? 'Tarjeta' : 'Efectivo')}
-                          title="Reimprimir Ticket"
-                        >
-                          <Printer className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {paginatedRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-8 text-zinc-500 font-semibold">
+                        No se encontraron registros
                       </TableCell>
                     </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-            <div>
-              Mostrando {Math.min(filteredRecords.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)} a {Math.min(filteredRecords.length, currentPage * ITEMS_PER_PAGE)} de {filteredRecords.length} registros
+                  ) : (
+                    paginatedRecords.map((record) => {
+                      // Obtener la transaccion de pago si es que ya existe
+                      const txs = cashTransactions?.filter(t => t.recordId === record.id) || []
+                      let paymentStr = '-'
+                      if (txs.length > 0) {
+                        const methods = new Set<string>()
+                        txs.forEach(t => {
+                          if (t.description.includes('Efectivo')) methods.add('Efectivo')
+                          if (t.description.includes('Tarjeta')) methods.add('Tarjeta')
+                        })
+                        if (methods.size > 0) {
+                          paymentStr = Array.from(methods).join(' / ')
+                        }
+                      }
+
+                      return (
+                        <TableRow key={record.id} className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50">
+                          <TableCell className="font-mono font-bold text-xs py-3 text-[#242424]">
+                            {record.code}
+                          </TableCell>
+                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">{getLockerDisplay(record.lockerId)}</TableCell>
+                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">{record.clientDocument}</TableCell>
+                          <TableCell className="text-zinc-800 text-xs py-3">
+                            {formatDateTime(record.entryTime)}
+                          </TableCell>
+                          <TableCell className="text-zinc-800 text-xs py-3">
+                            {record.exitTime ? formatDateTime(record.exitTime) : '-'}
+                          </TableCell>
+                          <TableCell className="text-zinc-800 font-bold text-xs py-3">{getSizeLabel(record.size)}</TableCell>
+                          <TableCell className="py-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                              paymentStr.includes('Efectivo') ? 'bg-amber-500/10 text-amber-600' :
+                              paymentStr.includes('Tarjeta') ? 'bg-blue-500/10 text-blue-600' :
+                              'bg-zinc-100 text-zinc-500'
+                            }`}>
+                              {paymentStr}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span
+                              className={`text-xs font-bold uppercase ${
+                                record.status === 'Activo'
+                                  ? 'text-[#0a354c]'
+                                  : 'text-zinc-500'
+                              }`}
+                            >
+                              {record.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-zinc-800 font-black text-xs py-3">
+                            ${record.price.toLocaleString('es-CL')}
+                          </TableCell>
+                          <TableCell className="text-center py-3">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => triggerReprint(record, paymentStr.includes('Tarjeta') ? 'Tarjeta' : 'Efectivo')}
+                              className="h-7 w-7 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 rounded-full border border-zinc-200"
+                              title="Reimprimir Ticket"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
+                <div>
+                  Mostrando {Math.min(filteredRecords.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)} a {Math.min(filteredRecords.length, currentPage * ITEMS_PER_PAGE)} de {filteredRecords.length} registros
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages || totalPages === 0}
+                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages || totalPages === 0}
-              >
-                Siguiente
-              </Button>
-            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Hidden ticket for printing */}
       <Ticket record={recordToPrint} paymentMethod={paymentMethodToPrint} ref={ticketRef} />

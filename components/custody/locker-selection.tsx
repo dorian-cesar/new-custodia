@@ -1,15 +1,6 @@
 'use client'
 
-import { Grid3X3, Luggage, CreditCard, Briefcase, Backpack, Package, Archive } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Briefcase, Backpack, Luggage } from 'lucide-react'
 import { LockerGrid } from './locker-grid'
 import { type Locker, type LockerSize } from '@/lib/types'
 import { useCustodyStore } from '@/lib/custody-store'
@@ -35,89 +26,98 @@ export function LockerSelection({
 }: LockerSelectionProps) {
   const lockerSizes = useCustodyStore((state) => state.lockerSizes)
 
+  // Ensure S, M, L are always shown in that exact order, mapping to sorted database sizes if available
+  const sortedDbSizes = [...lockerSizes].sort((a, b) => a.price - b.price)
+  const sizeOrder: LockerSize[] = ['S', 'M', 'L']
+  const sizesToShow = sizeOrder.map((val, index) => {
+    const dbSize = sortedDbSizes[index]
+    return {
+      uiLabel: val,
+      value: dbSize ? dbSize.value : val,
+      label: dbSize ? dbSize.label : (val === 'S' ? 'S Bolso Pequeno' : val === 'M' ? 'M Maleta Mediana' : 'L Maleta Grande'),
+      price: dbSize ? dbSize.price : (val === 'S' ? 2500 : val === 'M' ? 3500 : 5000)
+    }
+  })
+
   return (
-    <div className="bg-card rounded-xl p-6 border border-border">
-      <div className="flex items-center gap-2 mb-6">
-        <Grid3X3 className="h-5 w-5 text-muted-foreground" />
-        <h2 className="text-lg font-semibold text-card-foreground">Seleccion de Casillero</h2>
-      </div>
-
-      <div className="space-y-6 mb-6">
-        <div className="space-y-3">
-          <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Luggage className="h-4 w-4" />
-            Tamano del equipaje
-          </Label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {lockerSizes.map((size) => {
-              let Icon = Luggage
-              let iconSize = "h-5 w-5"
-              let textSize = "text-sm"
-              
-              if (size.value === 'S') {
-                Icon = Briefcase
-                iconSize = "h-5 w-5"
-                textSize = "text-sm"
-              } else if (size.value === 'M') {
-                Icon = Backpack
-                iconSize = "h-6 w-6"
-                textSize = "text-base"
-              } else if (size.value === 'L') {
-                Icon = Package
-                iconSize = "h-7 w-7"
-                textSize = "text-lg"
-              } else if (size.value === 'XL' || size.value === 'XXL') {
-                Icon = Archive
-                iconSize = "h-8 w-8"
-                textSize = "text-lg"
-              }
-
-              const isSelected = selectedSize === size.value
-
-              return (
-                <button
-                  key={size.value}
-                  onClick={() => onSelectSize(size.value as LockerSize)}
-                  className={`
-                    relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
-                    ${isSelected 
-                      ? 'border-white bg-primary text-primary-foreground shadow-lg scale-[1.04]' 
-                      : 'border-transparent bg-primary/70 hover:bg-primary text-primary-foreground/90 hover:scale-[1.02]'
-                    }
-                  `}
-                >
-                  <Icon className={`${iconSize} mb-2 text-primary-foreground`} />
-                  <span className={`font-semibold text-primary-foreground ${textSize} text-center`}>
-                    {size.label.split('-')[0].trim()}
-                  </span>
-                  <span className={`mt-1 font-bold text-primary-foreground text-sm`}>
-                    ${size.price.toLocaleString()}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+    <div className="bg-[#d7d7d8] px-4 flex flex-col gap-4">
+      {/* TAMAÑO DEL EQUIPAJE Section */}
+      <div>
+        <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-3">
+          TAMAÑO DEL EQUIPAJE
         </div>
+        <div className="grid grid-cols-3 gap-3">
+          {sizesToShow.map((size) => {
+            let Icon = Luggage
+            
+            if (size.uiLabel === 'S') {
+              Icon = Briefcase
+            } else if (size.uiLabel === 'M') {
+              Icon = Backpack
+            } else if (size.uiLabel === 'L') {
+              Icon = Luggage
+            }
 
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CreditCard className="h-4 w-4" />
-            RUT / DNI / Pasaporte
-          </Label>
-          <Input
-            value={clientDocument}
-            onChange={(e) => onChangeDocument(e.target.value)}
-            placeholder="12345678k"
-            className="bg-input max-w-md"
-          />
+            const isSelected = selectedSize === size.value
+
+            return (
+              <button
+                key={size.value}
+                type="button"
+                onClick={() => onSelectSize(size.value as LockerSize)}
+                className={`
+                  relative flex flex-col items-center justify-between p-4 rounded-xl border border-zinc-300 h-36 transition-all duration-250 cursor-pointer select-none
+                  ${isSelected 
+                    ? 'bg-[#00c5ff] border-[#00b4eb] scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)]' 
+                    : 'bg-[#cef3ff] hover:bg-[#bceeff] border-zinc-200 hover:scale-[1.01]'
+                  }
+                `}
+              >
+                {/* Size Label in top right */}
+                <span className="absolute top-2 right-4 text-2xl font-black text-zinc-900 leading-none">
+                  {size.uiLabel}
+                </span>
+                
+                {/* Centered Icon */}
+                <div className="flex-1 flex items-center justify-center mt-3">
+                  <Icon className="w-12 h-12 text-zinc-900 stroke-[1.5]" />
+                </div>
+                
+                {/* Price at bottom */}
+                <span className="text-lg font-black text-zinc-900 mt-1">
+                  ${size.price.toLocaleString('es-CL')}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <LockerGrid
-        lockers={lockers}
-        selectedLockerId={selectedLockerId}
-        onSelectLocker={onSelectLocker}
-      />
+      {/* REGISTRO DEL CLIENTE Section */}
+      <div>
+        <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-3">
+          REGISTRO DEL CLIENTE
+        </div>
+        <input
+          type="text"
+          value={clientDocument}
+          onChange={(e) => onChangeDocument(e.target.value)}
+          placeholder="12.345.678-k"
+          className="w-full bg-white border border-zinc-300 rounded-md px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff] font-semibold"
+        />
+      </div>
+
+      {/* CASILLEROS Section */}
+      <div>
+        <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-3">
+          CASILLEROS
+        </div>
+        <LockerGrid
+          lockers={lockers}
+          selectedLockerId={selectedLockerId}
+          onSelectLocker={onSelectLocker}
+        />
+      </div>
     </div>
   )
 }
