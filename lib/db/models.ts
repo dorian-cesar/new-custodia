@@ -131,14 +131,56 @@ export class UserModel extends Model {
 UserModel.init(
   {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    username: { type: DataTypes.STRING, allowNull: false, unique: true },
+    username: { type: DataTypes.STRING, allowNull: false },
     passwordHash: { type: DataTypes.STRING, allowNull: false },
     role: { type: DataTypes.STRING, allowNull: false },
   },
-  { sequelize, modelName: 'User', tableName: 'users', timestamps: false }
+  { 
+    sequelize, 
+    modelName: 'User', 
+    tableName: 'users', 
+    timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['username'],
+        name: 'username_unique_idx'
+      }
+    ]
+  }
 );
 
 export const syncDatabase = async () => {
+  // Drop duplicate username indexes in MySQL if they exist to prevent "Too many keys specified; max 64 keys allowed"
+  if (sequelize.getDialect() === 'mysql') {
+    try {
+      const [results] = await sequelize.query(`
+        SELECT DISTINCT INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'users' 
+          AND INDEX_NAME != 'PRIMARY'
+      `);
+      
+      const indexNames = (results as any[]).map(r => r.INDEX_NAME || r.index_name).filter(Boolean);
+      // We drop any index starting with 'username' (except 'username_unique_idx') to clean up the duplicates
+      const toDrop = indexNames.filter(name => 
+        name.toLowerCase().startsWith('username') && name !== 'username_unique_idx'
+      );
+      
+      for (const indexName of toDrop) {
+        try {
+          await sequelize.query(`ALTER TABLE users DROP INDEX \`${indexName}\``);
+          console.log(`Dropped index ${indexName} from users table`);
+        } catch (err) {
+          console.error(`Failed to drop index ${indexName}:`, err);
+        }
+      }
+    } catch (err) {
+      console.error('Error during index cleanup:', err);
+    }
+  }
+
   await sequelize.sync({ alter: true });
   
   // Upsert or reset the default test accounts so they are always guaranteed to work locally
