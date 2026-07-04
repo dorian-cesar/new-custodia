@@ -25,10 +25,35 @@ export const printerService = {
     return typeof window !== 'undefined' && Capacitor.isNativePlatform()
   },
 
+  async checkAndRequestBluetoothPermission(): Promise<boolean> {
+    const plugin = getPrinterPlugin()
+    if (!plugin) return true
+    try {
+      if (typeof plugin.checkPermissions === 'function') {
+        const check = await plugin.checkPermissions()
+        if (check.bluetooth === 'granted') {
+          return true
+        }
+        if (typeof plugin.requestPermissions === 'function') {
+          const req = await plugin.requestPermissions()
+          return req.bluetooth === 'granted'
+        }
+      }
+      return false
+    } catch (err) {
+      console.warn('Fallo al verificar/solicitar permisos de Bluetooth:', err)
+      return true // Continuar por si acaso el plugin maneja internamente la llamada
+    }
+  },
+
   async getBluetoothDevices(): Promise<BluetoothDevice[]> {
     const plugin = getPrinterPlugin()
     if (!plugin) return []
     try {
+      const hasPermission = await this.checkAndRequestBluetoothPermission()
+      if (!hasPermission) {
+        throw new Error('Permisos de Bluetooth no concedidos')
+      }
       const res = await plugin.getBluetoothDevices()
       return res.devices || []
     } catch (err) {
@@ -52,6 +77,14 @@ export const printerService = {
   async connectPrinter(address: string, mode: number): Promise<any> {
     const plugin = getPrinterPlugin()
     if (!plugin) throw new Error('Capacitor native platform not available')
+    
+    if (mode === 0) { // Bluetooth
+      const hasPermission = await this.checkAndRequestBluetoothPermission()
+      if (!hasPermission) {
+        throw new Error('Permisos de Bluetooth no concedidos para conectar')
+      }
+    }
+    
     return await plugin.connectPrinter({ address, mode })
   },
 
