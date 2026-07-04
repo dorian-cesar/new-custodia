@@ -29,7 +29,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { useCustodyStore } from '@/lib/custody-store'
-import { getUsers, createUser, updateUser, deleteUser, updatePrice, createPrice, deletePrice, getInitialState } from '@/app/actions/db-actions'
+import { getUsers, createUser, updateUser, deleteUser, updatePrice, createPrice, deletePrice, getInitialState, forceCloseCashRegister } from '@/app/actions/db-actions'
 import { formatDateTime } from '@/lib/types'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
@@ -68,6 +68,12 @@ export default function AdminPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Force Close state
+  const [showForceCloseDialog, setShowForceCloseDialog] = useState(false)
+  const [registerIdToForceClose, setRegisterIdToForceClose] = useState<number | null>(null)
+  const [cashierUsernameToForceClose, setCashierUsernameToForceClose] = useState('')
+  const [isForceClosing, setIsForceClosing] = useState(false)
 
   // Price edit dialog state
   // Dashboard state
@@ -228,6 +234,35 @@ export default function AdminPage() {
   }
 
   const handleLogout = () => { logout(); router.push('/') }
+
+  const openForceCloseDialog = (registerId: number, username: string) => {
+    setRegisterIdToForceClose(registerId)
+    setCashierUsernameToForceClose(username)
+    setShowForceCloseDialog(true)
+  }
+
+  const handleForceClose = async () => {
+    if (registerIdToForceClose === null) return
+    setIsForceClosing(true)
+    try {
+      const result = await forceCloseCashRegister(registerIdToForceClose)
+      if (result.success) {
+        setShowForceCloseDialog(false)
+        setRegisterIdToForceClose(null)
+        setCashierUsernameToForceClose('')
+        // Refresh local store state
+        const res = await getInitialState()
+        if (res.success && res.data) hydrateState(res.data)
+      } else {
+        alert(result.error || 'Error al forzar el cierre del turno')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error inesperado al forzar el cierre')
+    } finally {
+      setIsForceClosing(false)
+    }
+  }
 
   // ── Price Handlers ──
   const openEditPriceDialog = (sizeObj: { value: string, label: string, price: number }) => {
@@ -491,7 +526,24 @@ export default function AdminPage() {
                       users.map((user) => (
                         <TableRow key={user.id} className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50">
                           <TableCell className="text-zinc-800 font-mono text-xs py-3">{user.id}</TableCell>
-                          <TableCell className="text-zinc-800 font-bold text-xs py-3">{user.username}</TableCell>
+                          <TableCell className="text-zinc-800 font-bold text-xs py-3">
+                            <div className="flex items-center gap-2">
+                              <span>{user.username}</span>
+                              {(() => {
+                                const openReg = cashRegisters.find(r => r.status === 'open' && r.openedBy === user.username);
+                                return openReg ? (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => openForceCloseDialog(openReg.id, user.username)}
+                                    className="h-5 px-1.5 text-[8px] uppercase font-extrabold bg-red-600 hover:bg-red-750 text-white rounded"
+                                  >
+                                    Forzar Cierre
+                                  </Button>
+                                ) : null;
+                              })()}
+                            </div>
+                          </TableCell>
                           <TableCell className="py-3">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                               user.role === 'supervisor'
@@ -660,13 +712,25 @@ export default function AdminPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-center py-3">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                              register.status === 'open' 
-                                ? 'bg-emerald-100 text-emerald-700' 
-                                : 'bg-zinc-100 text-zinc-500'
-                            }`}>
-                              {register.status === 'open' ? 'Abierta' : 'Cerrada'}
-                            </span>
+                            <div className="flex flex-col items-center gap-1.5">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                register.status === 'open' 
+                                  ? 'bg-emerald-100 text-emerald-700' 
+                                  : 'bg-zinc-100 text-zinc-500'
+                              }`}>
+                                {register.status === 'open' ? 'Abierta' : 'Cerrada'}
+                              </span>
+                              {register.status === 'open' && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={() => openForceCloseDialog(register.id, register.openedBy || 'desconocido')}
+                                  className="h-auto p-0 text-[8px] uppercase font-bold text-red-600 hover:text-red-800 underline"
+                                >
+                                  Forzar Cierre
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-zinc-500 font-medium text-xs max-w-[150px] truncate py-3" title={register.notes}>
                             {register.notes || '-'}
@@ -865,6 +929,38 @@ export default function AdminPage() {
               disabled={isDeleting}
             >
               {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Force Close Confirmation ── */}
+      <AlertDialog open={showForceCloseDialog} onOpenChange={setShowForceCloseDialog}>
+        <AlertDialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm">
+          <AlertDialogHeader className="bg-[#242424] text-white p-4">
+            <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <LogOut className="h-4 w-4 text-red-500" />
+              <span>Forzar Cierre de Turno</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-300 text-xs mt-1">
+              ¿Está seguro que desea forzar el cierre del turno del cajero <strong className="text-white">{cashierUsernameToForceClose}</strong>?
+              <br/><br/>
+              Se calculará el monto de efectivo esperado según las transacciones registradas hasta este momento y el turno quedará cerrado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <AlertDialogCancel 
+              disabled={isForceClosing}
+              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs uppercase"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForceClose}
+              className="bg-red-650 hover:bg-red-750 text-white font-bold h-9 text-xs uppercase"
+              disabled={isForceClosing}
+            >
+              {isForceClosing ? 'Cerrando...' : 'Forzar Cierre'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

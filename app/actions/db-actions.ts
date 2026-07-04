@@ -346,3 +346,30 @@ export async function sendBoleta(nombre: string, precio: number, token: string) 
     return { success: false, error: "Error de conexión con el servidor de facturación" };
   }
 }
+
+export async function forceCloseCashRegister(registerId: number) {
+  await syncDatabase();
+  try {
+    const register = await CashRegisterModel.findByPk(registerId);
+    if (!register) return { success: false, error: 'Turno no encontrado' };
+
+    const txs = await CashTransactionModel.findAll({ where: { registerId } });
+    const cashSales = txs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((sum, t) => sum + t.amount, 0);
+    const cashExpenses = txs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const expectedAmount = register.openingAmount + cashSales - cashExpenses;
+
+    const data: Partial<CashRegister> = {
+      status: 'closed',
+      closedAt: new Date().toISOString(),
+      closingAmount: expectedAmount,
+      totalSales: cashSales - cashExpenses,
+      totalTransactions: txs.length,
+      notes: register.notes ? `${register.notes}\n[Cierre forzado por supervisor]` : '[Cierre forzado por supervisor]'
+    };
+
+    await CashRegisterModel.update(data as any, { where: { id: registerId } });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
