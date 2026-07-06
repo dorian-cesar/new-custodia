@@ -333,7 +333,10 @@ export function ClientRegistration({
               </div>
             </div>
 
-            <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
+            <div 
+              onClick={() => setEntryCashReceived(entryPrice)}
+              className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg cursor-pointer hover:bg-zinc-50 transition-colors select-none"
+            >
               <span className="font-bold text-zinc-800 text-lg">Total a cobrar:</span>
               <span className="font-black text-2xl text-[#0a354c]">${entryPrice.toLocaleString('es-CL')}</span>
             </div>
@@ -466,7 +469,10 @@ export function ClientRegistration({
                   <span>Horas adicionales:</span>
                   <span className="font-bold text-zinc-900">{extraHours.toFixed(2)} hrs</span>
                 </div>
-                <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
+                <div 
+                  onClick={() => setCashReceived(extraAmount)}
+                  className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg cursor-pointer hover:bg-zinc-50 transition-colors select-none"
+                >
                   <span className="font-bold text-zinc-800 text-lg">Total extra a cobrar:</span>
                   <span className="font-black text-2xl text-rose-600">${extraAmount.toLocaleString('es-CL')}</span>
                 </div>
