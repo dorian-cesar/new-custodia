@@ -22,6 +22,15 @@ import bcrypt from 'bcryptjs';
 const initDbAndFetch = async () => {
   await syncDatabase();
   
+  // Migrate from old 6x8 locker format if detected
+  const firstLocker = await LockerModel.findOne();
+  if (firstLocker && ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(firstLocker.col)) {
+    console.log('Old locker format detected. Resetting database tables for new coordinate logic.');
+    await CustodyRecordModel.destroy({ where: {} });
+    await CashTransactionModel.destroy({ where: {} });
+    await LockerModel.destroy({ where: {} });
+  }
+
   const lockerCount = await LockerModel.count();
   if (lockerCount === 0) {
     const defaultLockers = generateLockers();

@@ -48,7 +48,7 @@ export default function HistorialPage() {
       if (printerService.isNative()) {
         const sizeLabel = lockerSizes.find((s) => s.value === recordToPrint.size)?.label || recordToPrint.size
         const locker = lockers.find((l) => l.id === recordToPrint.lockerId)
-        const lockerDisplay = locker ? `${locker.row},${locker.col}` : recordToPrint.lockerId.toString()
+        const lockerDisplay = locker ? `${locker.col}${locker.row}` : recordToPrint.lockerId.toString()
         printerService.printEntryTicket(recordToPrint, sizeLabel, lockerDisplay, paymentMethodToPrint)
         setRecordToPrint(null)
       } else {
@@ -107,7 +107,7 @@ export default function HistorialPage() {
 
   const getLockerDisplay = (lockerId: number) => {
     const locker = lockers.find(l => l.id === lockerId)
-    return locker ? `${locker.row},${locker.col}` : lockerId
+    return locker ? `${locker.col}${locker.row}` : lockerId
   }
 
   const handleSearch = () => {

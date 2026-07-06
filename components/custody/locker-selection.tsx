@@ -116,6 +116,7 @@ export function LockerSelection({
           lockers={lockers}
           selectedLockerId={selectedLockerId}
           onSelectLocker={onSelectLocker}
+          selectedSize={selectedSize}
         />
       </div>
     </div>

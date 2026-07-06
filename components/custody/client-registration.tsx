@@ -85,7 +85,7 @@ export function ClientRegistration({
   const lockers = useCustodyStore((state) => state.lockers)
   const lockerSizes = useCustodyStore((state) => state.lockerSizes)
   const selectedLocker = lockers.find(l => l.id === selectedLockerId)
-  const displayLockerName = selectedLocker ? `${selectedLocker.row},${selectedLocker.col}` : ''
+  const displayLockerName = selectedLocker ? `${selectedLocker.col}${selectedLocker.row}` : ''
   const selectedSizeInfo = lockerSizes.find(s => s.value === selectedSize)
   const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0
 
@@ -100,7 +100,7 @@ export function ClientRegistration({
       if (printerService.isNative()) {
         const sizeLabel = lockerSizes.find((s) => s.value === currentRecord.size)?.label || currentRecord.size
         const locker = lockers.find((l) => l.id === currentRecord.lockerId)
-        const lockerDisplay = locker ? `${locker.row},${locker.col}` : currentRecord.lockerId.toString()
+        const lockerDisplay = locker ? `${locker.col}${locker.row}` : currentRecord.lockerId.toString()
         printerService.printEntryTicket(currentRecord, sizeLabel, lockerDisplay, entryPaymentMethod)
         setLastPrintedId(currentRecord.id)
       } else {
@@ -224,7 +224,7 @@ export function ClientRegistration({
         if (printerService.isNative()) {
           const sizeLabel = lockerSizes.find((s) => s.value === pendingRecord.size)?.label || pendingRecord.size
           const locker = lockers.find((l) => l.id === pendingRecord.lockerId)
-          const lockerDisplay = locker ? `${locker.row},${locker.col}` : pendingRecord.lockerId.toString()
+          const lockerDisplay = locker ? `${locker.col}${locker.row}` : pendingRecord.lockerId.toString()
           await printerService.printDeliveryTicket(
             pendingRecord,
             sizeLabel,
@@ -450,7 +450,7 @@ export function ClientRegistration({
                   </div>
                   <div className="flex justify-between font-semibold text-zinc-700">
                     <span>Casillero:</span>
-                    <span className="text-zinc-900">{pLocker ? `${pLocker.row},${pLocker.col}` : pendingRecord.lockerId}</span>
+                    <span className="text-zinc-900">{pLocker ? `${pLocker.col}${pLocker.row}` : pendingRecord.lockerId}</span>
                   </div>
                   <div className="flex justify-between font-semibold text-zinc-700">
                     <span>Tamaño:</span>
@@ -590,7 +590,7 @@ export function ClientRegistration({
                   return (
                     <tr key={r.id} className="border-b border-border/50">
                       <td className="px-4 py-3 font-mono">{r.code}</td>
-                      <td className="px-4 py-3">{locker ? `${locker.row},${locker.col}` : r.lockerId}</td>
+                      <td className="px-4 py-3">{locker ? `${locker.col}${locker.row}` : r.lockerId}</td>
                       <td className="px-4 py-3">{r.size}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                         {new Date(r.entryTime).toLocaleString('es-CL')}

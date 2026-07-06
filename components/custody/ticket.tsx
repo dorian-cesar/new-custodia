@@ -38,7 +38,7 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, payment
 
   const sizeLabel = lockerSizes.find((s) => s.value === record.size)?.label || record.size
   const locker = lockers.find((l) => l.id === record.lockerId)
-  const lockerDisplay = locker ? `${locker.row},${locker.col}` : record.lockerId
+  const lockerDisplay = locker ? `${locker.col}${locker.row}` : record.lockerId
 
   return (
     <div style={{ display: 'none' }}>
