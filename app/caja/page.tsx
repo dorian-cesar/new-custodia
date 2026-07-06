@@ -120,17 +120,7 @@ export default function CajaPage() {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    if (showCloseDialog && stats) {
-      setClosingAmount(stats.balance.toString())
-    }
-  }, [showCloseDialog, stats])
 
-  useEffect(() => {
-    if (showGiroDialog && stats) {
-      setGiroAmount(stats.balance.toString())
-    }
-  }, [showGiroDialog, stats])
 
   useEffect(() => {
     if (withdrawalData) {
@@ -247,7 +237,7 @@ export default function CajaPage() {
       const withdrawals = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
 
       const data = {
-        cajero: currentCashRegister.openedBy,
+        cajero: currentCashRegister.openedBy || 'desconocido',
         openedAt: currentCashRegister.openedAt,
         closedAt: new Date().toISOString(),
         openingAmount: currentCashRegister.openingAmount,
@@ -284,6 +274,11 @@ export default function CajaPage() {
     const amount = parseFloat(giroAmount)
     if (isNaN(amount) || amount <= 0) {
       setError('Ingrese un monto válido para el retiro')
+      return
+    }
+
+    if (amount > stats.balance) {
+      setError('El monto a retirar no puede superar el saldo total de la caja')
       return
     }
 
@@ -354,7 +349,10 @@ export default function CajaPage() {
               {isCashOpen ? (
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => setShowGiroDialog(true)}
+                    onClick={() => {
+                      setGiroAmount(stats.balance.toString())
+                      setShowGiroDialog(true)
+                    }}
                     variant="outline"
                     className="h-7 text-[10px] uppercase font-bold border-amber-500/50 text-amber-600 bg-white hover:bg-amber-50"
                   >
@@ -362,7 +360,10 @@ export default function CajaPage() {
                     Retiro de Caja
                   </Button>
                   <Button
-                    onClick={() => setShowCloseDialog(true)}
+                    onClick={() => {
+                      setClosingAmount(stats.balance.toString())
+                      setShowCloseDialog(true)
+                    }}
                     variant="destructive"
                     className="h-7 text-[10px] uppercase font-bold bg-red-600 hover:bg-red-700 text-white"
                   >
