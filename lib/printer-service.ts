@@ -123,7 +123,7 @@ export const printerService = {
 
     lines.push(
       '--------------------------------',
-      `Pagado (${paymentMethod}): $${record.price.toLocaleString('es-CL')}`,
+      `Pagado (${paymentMethod}): Gs. ${record.price.toLocaleString('es-CL')}`,
       'Guarde este ticket para retiro'
     )
 
@@ -176,13 +176,13 @@ export const printerService = {
 
     lines.push(
       '--------------------------------',
-      `Base Pagada: $${record.price.toLocaleString('es-CL')}`
+      `Base Pagada: Gs. ${record.price.toLocaleString('es-CL')}`
     )
 
     if (extraAmount > 0) {
       lines.push(
         `Hrs Extra: ${extraHours.toFixed(2)}`,
-        `Recargo: $${extraAmount.toLocaleString('es-CL')}`
+        `Recargo: Gs. ${extraAmount.toLocaleString('es-CL')}`
       )
     }
 

@@ -85,7 +85,7 @@ export function LockerSelection({
                 
                 {/* Price at bottom */}
                 <span className="text-lg font-black text-zinc-900 mt-1">
-                  ${size.price.toLocaleString('es-CL')}
+                  Gs. {size.price.toLocaleString('es-CL')}
                 </span>
               </button>
             )

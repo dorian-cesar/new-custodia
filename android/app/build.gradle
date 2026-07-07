@@ -4,7 +4,7 @@ android {
     namespace = "com.custodia.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.custodia.app"
+        applicationId "com.custodia.py"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 4

@@ -423,7 +423,7 @@ export default function AdminPage() {
                 <h3 className="text-xs font-extrabold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-[#00c5ff]" /> Ingresos Hoy
                 </h3>
-                <p className="text-2xl font-black text-zinc-800 relative z-10">${ingresosHoy.toLocaleString('es-CL')}</p>
+                <p className="text-2xl font-black text-zinc-800 relative z-10">Gs. {ingresosHoy.toLocaleString('es-CL')}</p>
               </div>
               <div className="bg-white border border-zinc-300 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 text-[#0a354c]/10 group-hover:scale-110 transition-transform duration-300">
@@ -432,7 +432,7 @@ export default function AdminPage() {
                 <h3 className="text-xs font-extrabold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-[#0a354c]" /> Últimos 7 Días
                 </h3>
-                <p className="text-2xl font-black text-[#0a354c] relative z-10">${ingresosSemana.toLocaleString('es-CL')}</p>
+                <p className="text-2xl font-black text-[#0a354c] relative z-10">Gs. {ingresosSemana.toLocaleString('es-CL')}</p>
               </div>
               <div className="bg-white border border-zinc-300 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 text-[#1588b3]/10 group-hover:scale-110 transition-transform duration-300">
@@ -441,7 +441,7 @@ export default function AdminPage() {
                 <h3 className="text-xs font-extrabold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-[#1588b3]" /> Últimos 30 Días
                 </h3>
-                <p className="text-2xl font-black text-[#1588b3] relative z-10">${ingresosMes.toLocaleString('es-CL')}</p>
+                <p className="text-2xl font-black text-[#1588b3] relative z-10">Gs. {ingresosMes.toLocaleString('es-CL')}</p>
               </div>
             </div>
           </div>
@@ -563,7 +563,7 @@ export default function AdminPage() {
                   {lockerSizes.map((sizeObj) => (
                     <TableRow key={sizeObj.value} className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50">
                       <TableCell className="text-zinc-800 font-bold text-xs py-3">{sizeObj.label}</TableCell>
-                      <TableCell className="text-zinc-800 font-black text-xs py-3">${sizeObj.price.toLocaleString('es-CL')}</TableCell>
+                      <TableCell className="text-zinc-800 font-black text-xs py-3">Gs. {sizeObj.price.toLocaleString('es-CL')}</TableCell>
                       <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-2">
                           <Button 
@@ -642,18 +642,18 @@ export default function AdminPage() {
                           <TableCell className="text-zinc-800 font-semibold text-[10px] py-3">
                             {register.closedAt ? formatDateTime(register.closedAt) : <span className="text-emerald-600 font-bold uppercase text-[9px]">Activo ahora</span>}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-medium text-xs text-right py-3">${register.openingAmount.toLocaleString()}</TableCell>
-                          <TableCell className="text-amber-600 font-semibold text-xs text-right py-3">${ingresosEfectivo.toLocaleString()}</TableCell>
-                          <TableCell className="text-blue-600 font-semibold text-xs text-right py-3">${ingresosTarjeta.toLocaleString()}</TableCell>
-                          <TableCell className="text-zinc-800 font-extrabold text-xs text-right py-3">${(ingresosEfectivo + ingresosTarjeta).toLocaleString()}</TableCell>
-                          <TableCell className="text-red-650 font-medium text-xs text-right py-3">${gastosEfectivo.toLocaleString()}</TableCell>
+                          <TableCell className="text-zinc-800 font-medium text-xs text-right py-3">Gs. {register.openingAmount.toLocaleString()}</TableCell>
+                          <TableCell className="text-amber-600 font-semibold text-xs text-right py-3">Gs. {ingresosEfectivo.toLocaleString()}</TableCell>
+                          <TableCell className="text-blue-600 font-semibold text-xs text-right py-3">Gs. {ingresosTarjeta.toLocaleString()}</TableCell>
+                          <TableCell className="text-zinc-800 font-extrabold text-xs text-right py-3">Gs. {(ingresosEfectivo + ingresosTarjeta).toLocaleString()}</TableCell>
+                          <TableCell className="text-red-650 font-medium text-xs text-right py-3">Gs. {gastosEfectivo.toLocaleString()}</TableCell>
                           <TableCell className="text-zinc-800 font-black text-xs text-right py-3">
-                            {register.closingAmount !== null ? `$${register.closingAmount.toLocaleString()}` : '-'}
+                            {register.closingAmount !== null ? `Gs. ${register.closingAmount.toLocaleString()}` : '-'}
                           </TableCell>
                           <TableCell className="text-right py-3">
                             {diferenciaCaja !== null ? (
                               <span className={`text-[10px] font-black ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +Gs. ${diferenciaCaja.toLocaleString()}` : `Faltante: -Gs. ${Math.abs(diferenciaCaja).toLocaleString()}`}
                               </span>
                             ) : (
                               <span className="text-zinc-500 font-semibold">-</span>
@@ -893,7 +893,7 @@ export default function AdminPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Precio ($)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Precio (Gs.)</Label>
               <Input 
                 type="number" 
                 value={editPrice} 
@@ -958,7 +958,7 @@ export default function AdminPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Precio ($)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Precio (Gs.)</Label>
               <Input 
                 type="number" 
                 value={newSizePrice} 

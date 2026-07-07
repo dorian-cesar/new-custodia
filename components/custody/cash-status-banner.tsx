@@ -23,13 +23,13 @@ export function CashStatusBanner({ isOpen, balance, totalSales, transactions }: 
           )}
         </div>
         <div className="text-zinc-400 font-medium">
-          Ventas Totales: <span className="font-bold text-zinc-600">${totalSales.toLocaleString('es-CL')}</span>
+          Ventas Totales: <span className="font-bold text-zinc-600">Gs. {totalSales.toLocaleString('es-CL')}</span>
         </div>
         <div className="text-zinc-400 font-medium">
           Transacciones: <span className="font-bold text-zinc-600">{transactions}</span>
         </div>
         <div className="text-zinc-900">
-          Saldo:{balance.toLocaleString('es-CL')}
+          Saldo: Gs. {balance.toLocaleString('es-CL')}
         </div>
       </div>
     </div>

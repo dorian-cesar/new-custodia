@@ -212,7 +212,7 @@ export default function HistorialPage() {
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">TAMAÑO</TableHead>
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">PAGO</TableHead>
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">ESTADO</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">$ VALOR</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">Gs. VALOR</TableHead>
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-center">ACCIÓN</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -274,7 +274,7 @@ export default function HistorialPage() {
                             </span>
                           </TableCell>
                           <TableCell className="text-zinc-800 font-black text-xs py-3">
-                            ${record.price.toLocaleString('es-CL')}
+                            Gs. {record.price.toLocaleString('es-CL')}
                           </TableCell>
                           <TableCell className="text-center py-3">
                             <Button 

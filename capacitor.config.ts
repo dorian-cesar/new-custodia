@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.custodia.app',
-  appName: 'Custodia',
+  appId: 'com.custodia.py',
+  appName: 'custodia-py',
   webDir: 'out',
   server: {
-    url: 'https://new-custodia.netlify.app/',
+    url: 'https://custodia-py.netlify.app',
     cleartext: true
   }
 };

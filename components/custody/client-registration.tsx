@@ -155,13 +155,11 @@ export function ClientRegistration({
     
     if (diffHours > 24) {
       extraH = diffHours - 24
-      const rawAmount = (record.price / 24) * extraH
-      // Ley de redondeo en Chile (redondeo a la decena más cercana)
-      amount = Math.round(rawAmount / 10) * 10
+      // Recargo fijo de Gs. 5.000 por cada bloque o fracción adicional de 24 horas
+      amount = Math.ceil(extraH / 24) * 5000
     }
 
     setExtraHours(extraH > 0 ? extraH : 0)
-    setExtraAmount(amount > 0 ? amount : 0)
     setExtraAmount(amount > 0 ? amount : 0)
     setPaymentMethod('Efectivo')
     setPendingRecord(record)
@@ -335,7 +333,7 @@ export function ClientRegistration({
 
             <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
               <span className="font-bold text-zinc-800 text-lg">Total a cobrar:</span>
-              <span className="font-black text-2xl text-[#0a354c]">${entryPrice.toLocaleString('es-CL')}</span>
+              <span className="font-black text-2xl text-[#0a354c]">Gs. {entryPrice.toLocaleString('es-CL')}</span>
             </div>
 
             <div className="space-y-2 pt-2">
@@ -371,7 +369,7 @@ export function ClientRegistration({
                 <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
                   <Label htmlFor="entryCashReceived" className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Efectivo Recibido</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">$</span>
+                    <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">Gs.</span>
                     <input
                       id="entryCashReceived"
                       type="text"
@@ -389,7 +387,7 @@ export function ClientRegistration({
                       <span className="text-zinc-500">Vuelto a entregar:</span>
                       <span className={`text-sm font-bold ${entryCashReceived - entryPrice >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {entryCashReceived - entryPrice >= 0
-                          ? `$${(entryCashReceived - entryPrice).toLocaleString('es-CL')}`
+                          ? `Gs. ${(entryCashReceived - entryPrice).toLocaleString('es-CL')}`
                           : 'Monto insuficiente'
                         }
                       </span>
@@ -468,7 +466,7 @@ export function ClientRegistration({
                 </div>
                 <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
                   <span className="font-bold text-zinc-800 text-lg">Total extra a cobrar:</span>
-                  <span className="font-black text-2xl text-rose-600">${extraAmount.toLocaleString('es-CL')}</span>
+                  <span className="font-black text-2xl text-rose-600">Gs. {extraAmount.toLocaleString('es-CL')}</span>
                 </div>
               </>
             ) : (
@@ -511,7 +509,7 @@ export function ClientRegistration({
                   <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
                     <Label htmlFor="cashReceived" className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Efectivo Recibido</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">$</span>
+                      <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">Gs.</span>
                       <input
                         id="cashReceived"
                         type="text"
@@ -529,7 +527,7 @@ export function ClientRegistration({
                         <span className="text-zinc-500">Vuelto a entregar:</span>
                         <span className={`text-sm font-bold ${cashReceived - extraAmount >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {cashReceived - extraAmount >= 0
-                            ? `$${(cashReceived - extraAmount).toLocaleString('es-CL')}`
+                            ? `Gs. ${(cashReceived - extraAmount).toLocaleString('es-CL')}`
                             : 'Monto insuficiente'
                           }
                         </span>

@@ -268,7 +268,7 @@ export default function CajaPage() {
                     {currentCashRegister && formatDateTime(currentCashRegister.openedAt)}
                   </p>
                   <p className="text-[11px] text-zinc-500 font-bold mt-1">
-                    Monto inicial: ${currentCashRegister?.openingAmount.toLocaleString()}
+                    Monto inicial: Gs. {currentCashRegister?.openingAmount.toLocaleString()}
                   </p>
                 </div>
 
@@ -277,7 +277,7 @@ export default function CajaPage() {
                     <TrendingUp className="h-4 w-4 text-[#0a354c]" />
                     <span className="text-xs font-semibold uppercase tracking-wider">Ventas</span>
                   </div>
-                  <p className="text-2xl font-black text-[#0a354c]">${stats.totalSales.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-[#0a354c]">Gs. {stats.totalSales.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
@@ -293,7 +293,7 @@ export default function CajaPage() {
                     <DollarSign className="h-4 w-4 text-[#1588b3]" />
                     <span className="text-xs font-semibold uppercase tracking-wider">Saldo Actual</span>
                   </div>
-                  <p className="text-2xl font-black text-[#1588b3]">${stats.balance.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-[#1588b3]">Gs. {stats.balance.toLocaleString()}</p>
                 </div>
               </div>
             ) : (
@@ -367,7 +367,7 @@ export default function CajaPage() {
                               tx.type === 'income' ? 'text-[#0a354c]' : 'text-red-600'
                             }`}
                           >
-                            {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
+                            {tx.type === 'income' ? '+' : '-'}Gs. {tx.amount.toLocaleString()}
                           </TableCell>
                         </TableRow>
                       )
@@ -453,29 +453,29 @@ export default function CajaPage() {
                             {register.closedAt ? formatDateTime(register.closedAt) : '-'}
                           </TableCell>
                           <TableCell className="text-zinc-850 font-bold text-xs py-3 text-right">
-                            ${register.openingAmount.toLocaleString()}
+                            Gs. {register.openingAmount.toLocaleString()}
                           </TableCell>
                           <TableCell className="py-3 text-right">
                             <div className="flex flex-col items-end gap-0.5">
-                              <span className="text-amber-600 font-extrabold text-[10px]">EF: ${ingresosEfectivo.toLocaleString()}</span>
-                              <span className="text-blue-600 font-extrabold text-[10px]">TJ: ${ingresosTarjeta.toLocaleString()}</span>
+                              <span className="text-amber-600 font-extrabold text-[10px]">EF: Gs. {ingresosEfectivo.toLocaleString()}</span>
+                              <span className="text-blue-600 font-extrabold text-[10px]">TJ: Gs. {ingresosTarjeta.toLocaleString()}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-red-600 text-right font-extrabold text-xs py-3">
-                            ${gastosEfectivo.toLocaleString()}
+                            Gs. {gastosEfectivo.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-zinc-850 text-right font-extrabold text-xs py-3">
-                            ${saldoEsperadoEfectivo.toLocaleString()}
+                            Gs. {saldoEsperadoEfectivo.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-zinc-850 text-right font-black text-xs py-3">
                             {register.closingAmount !== null
-                              ? `$${register.closingAmount.toLocaleString()}`
+                              ? `Gs. ${register.closingAmount.toLocaleString()}`
                               : '-'}
                           </TableCell>
                           <TableCell className="text-right py-3">
                             {diferenciaCaja !== null ? (
                               <span className={`text-[10px] font-black ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +Gs. ${diferenciaCaja.toLocaleString()}` : `Faltante: -Gs. ${Math.abs(diferenciaCaja).toLocaleString()}`}
                               </span>
                             ) : (
                               <span className="text-zinc-500 font-semibold">-</span>
@@ -542,7 +542,7 @@ export default function CajaPage() {
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Inicial ($)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Inicial (Gs.)</Label>
               <Input
                 type="text"
                 value={openingAmount ? Number(openingAmount).toLocaleString('es-CL') : ''}
@@ -596,32 +596,32 @@ export default function CajaPage() {
             <div className="grid grid-cols-2 gap-2 text-zinc-800">
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Monto Inicial</span>
-                <span className="text-xs font-black">${currentCashRegister?.openingAmount.toLocaleString()}</span>
+                <span className="text-xs font-black">Gs. {currentCashRegister?.openingAmount.toLocaleString()}</span>
               </div>
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Total Ventas</span>
-                <span className="text-xs font-black text-[#0a354c]">${stats.totalSales.toLocaleString()}</span>
+                <span className="text-xs font-black text-[#0a354c]">Gs. {stats.totalSales.toLocaleString()}</span>
               </div>
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">En Efectivo</span>
-                <span className="text-xs font-black">${ingresosEfectivo.toLocaleString()}</span>
+                <span className="text-xs font-black">Gs. {ingresosEfectivo.toLocaleString()}</span>
               </div>
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Por Tarjeta</span>
-                <span className="text-xs font-black text-zinc-500">${ingresosTarjeta.toLocaleString()}</span>
+                <span className="text-xs font-black text-zinc-500">Gs. {ingresosTarjeta.toLocaleString()}</span>
               </div>
               <div className="col-span-2 bg-[#cef3ff] border border-zinc-300 rounded-lg p-2.5 flex justify-between items-center mt-1 shadow-sm">
                 <span className="text-[10px] font-black text-zinc-700 uppercase tracking-wider">Efectivo Físico Esperado</span>
-                <span className="text-base font-black text-[#0a354c]">${saldoEsperadoEfectivo.toLocaleString()}</span>
+                <span className="text-base font-black text-[#0a354c]">Gs. {saldoEsperadoEfectivo.toLocaleString()}</span>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-end">
-                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Físico Contado ($)</Label>
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Físico Contado (Gs.)</Label>
                 {diferenciaCaja !== null && (
                   <span className={`text-[10px] font-black uppercase ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                    {diferenciaCaja === 0 ? 'Caja Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                    {diferenciaCaja === 0 ? 'Caja Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +Gs. ${diferenciaCaja.toLocaleString()}` : `Faltante: -Gs. ${Math.abs(diferenciaCaja).toLocaleString()}`}
                   </span>
                 )}
               </div>
@@ -709,7 +709,7 @@ export default function CajaPage() {
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto a Retirar ($)</Label>
+              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto a Retirar (Gs.)</Label>
               <Input
                 type="text"
                 value={giroAmount ? Number(giroAmount).toLocaleString('es-CL') : ''}
@@ -798,11 +798,11 @@ export default function CajaPage() {
               <div className="bg-white border border-zinc-300 rounded-lg p-4 space-y-3 shadow-sm">
                 <div className="flex justify-between items-center text-xs font-semibold">
                   <span className="text-zinc-500">Monto Esperado (Efectivo)</span>
-                  <span className="font-extrabold">${closeSummary.expected.toLocaleString()}</span>
+                  <span className="font-extrabold">Gs. {closeSummary.expected.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold">
                   <span className="text-zinc-500">Cierre de Caja (Declarado)</span>
-                  <span className="font-extrabold">${closeSummary.declared.toLocaleString()}</span>
+                  <span className="font-extrabold">Gs. {closeSummary.declared.toLocaleString()}</span>
                 </div>
                 <div className="h-px bg-zinc-200 my-1" />
                 <div className="flex justify-between items-center text-sm">
@@ -811,8 +811,8 @@ export default function CajaPage() {
                     {closeSummary.difference === 0 
                       ? 'Cuadrada ✓' 
                       : closeSummary.difference > 0 
-                        ? `Sobrante: +$${closeSummary.difference.toLocaleString()}` 
-                        : `Faltante: -$${Math.abs(closeSummary.difference).toLocaleString()}`
+                        ? `Sobrante: +Gs. ${closeSummary.difference.toLocaleString()}` 
+                        : `Faltante: -Gs. ${Math.abs(closeSummary.difference).toLocaleString()}`
                     }
                   </span>
                 </div>
