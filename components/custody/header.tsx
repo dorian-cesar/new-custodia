@@ -67,10 +67,10 @@ export function Header({ showHistory = false, showBack = false, showCash = false
         });
         
         try {
-          const { shutdownSystem } = await import('@/app/actions/db-actions')
-          const res = await shutdownSystem()
-          if (!res.success) {
-            Swal.fire('Error', 'No se pudo apagar el equipo: ' + res.error, 'error')
+          const response = await fetch('/api/apagar', { method: 'POST' })
+          const res = await response.json()
+          if (!response.ok || !res.success) {
+            Swal.fire('Error', 'No se pudo apagar el equipo: ' + (res.error || 'Error desconocido'), 'error')
           }
         } catch (err: any) {
           Swal.fire('Error', 'Ocurrió un error: ' + err.message, 'error')
