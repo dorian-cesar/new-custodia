@@ -85,7 +85,7 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, payment
 
         <div style={{ textAlign: 'right', marginBottom: '15px' }}>
           <p style={{ margin: '3px 0', fontSize: '14px' }}>
-            <strong>Pagado ({paymentMethod || 'Efectivo'}): Gs. {record.price.toLocaleString('es-CL')}</strong>
+            <strong>Pagado ({paymentMethod || 'Efectivo'}): $ {record.price.toLocaleString('es-CL')}</strong>
           </p>
         </div>
 
