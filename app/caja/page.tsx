@@ -1,6 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useReactToPrint } from 'react-to-print'
+import { WithdrawalTicket } from '@/components/custody/withdrawal-ticket'
+import { ClosureTicket } from '@/components/custody/closure-ticket'
+import { printerService } from '@/lib/printer-service'
 import {
   DollarSign,
   Lock,
@@ -50,6 +54,40 @@ export default function CajaPage() {
   } = useCustodyStore()
 
   const [mounted, setMounted] = useState(false)
+  const [withdrawalData, setWithdrawalData] = useState<{
+    amount: number
+    cajero: string
+    supervisor: string
+    reason: string
+    timestamp: string
+  } | null>(null)
+
+  const withdrawalTicketRef = useRef<HTMLDivElement>(null)
+  const handlePrintWithdrawal = useReactToPrint({
+    contentRef: withdrawalTicketRef,
+    documentTitle: 'Comprobante_Retiro',
+  })
+
+  const [closureData, setClosureData] = useState<{
+    cajero: string
+    openedAt: string
+    closedAt: string
+    openingAmount: number
+    salesCash: number
+    salesCard: number
+    withdrawals: number
+    expectedAmount: number
+    declaredAmount: number
+    difference: number
+    notes?: string
+  } | null>(null)
+
+  const closureTicketRef = useRef<HTMLDivElement>(null)
+  const handlePrintClosure = useReactToPrint({
+    contentRef: closureTicketRef,
+    documentTitle: 'Comprobante_Cierre_Caja',
+  })
+
   const [openingAmount, setOpeningAmount] = useState('')
   const [closingAmount, setClosingAmount] = useState('')
   const [notes, setNotes] = useState('')
@@ -75,12 +113,47 @@ export default function CajaPage() {
   const totalRegisterPages = Math.ceil(sortedRegisters.length / REGISTERS_PER_PAGE)
   const paginatedRegisters = sortedRegisters.slice((currentPageRegisters - 1) * REGISTERS_PER_PAGE, currentPageRegisters * REGISTERS_PER_PAGE)
 
+  const isCashOpen = currentCashRegister?.status === 'open'
+  const stats = getCurrentRegisterStats()
+
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const isCashOpen = currentCashRegister?.status === 'open'
-  const stats = getCurrentRegisterStats()
+
+
+  useEffect(() => {
+    if (withdrawalData) {
+      if (!printerService.isNative()) {
+        handlePrintWithdrawal()
+      }
+    }
+  }, [withdrawalData])
+
+  const [lastPrintedClosureTime, setLastPrintedClosureTime] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (closureData && closureData.closedAt !== lastPrintedClosureTime) {
+      const executeClose = async () => {
+        if (!printerService.isNative()) {
+          // Small delay to ensure the DOM elements are fully loaded
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          handlePrintClosure()
+        }
+        await closeCashRegister(closureData.declaredAmount, closureData.notes || '')
+        setClosingAmount('')
+        setNotes('')
+        setSupervisorUsername('')
+        setSupervisorPassword('')
+        setShowConfirmCloseDialog(false)
+        setCloseSummary(null)
+        logout()
+      }
+      
+      executeClose()
+      setLastPrintedClosureTime(closureData.closedAt)
+    }
+  }, [closureData, lastPrintedClosureTime, handlePrintClosure, closeCashRegister, logout])
 
   // Pagination for transactions
   const [currentTxPage, setCurrentTxPage] = useState(1)
@@ -155,22 +228,43 @@ export default function CajaPage() {
   }
 
   const confirmAndExecuteClose = async () => {
-    if (!closeSummary) return
+    if (!closeSummary || !currentCashRegister) return
     setIsVerifying(true)
     try {
-      await closeCashRegister(closeSummary.declared, notes)
-      setClosingAmount('')
-      setNotes('')
-      setSupervisorUsername('')
-      setSupervisorPassword('')
-      setShowConfirmCloseDialog(false)
-      setCloseSummary(null)
+      const regTxs = cashTransactions.filter(t => t.registerId === currentCashRegister.id)
+      const salesCard = Math.round(regTxs.filter(t => t.type === 'income' && t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+      const salesCash = Math.round(regTxs.filter(t => t.type === 'income' && !t.description.includes('Tarjeta')).reduce((s, t) => s + t.amount, 0) / 10) * 10
+      const withdrawals = Math.round(regTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) / 10) * 10
+
+      const data = {
+        cajero: currentCashRegister.openedBy || 'desconocido',
+        openedAt: currentCashRegister.openedAt,
+        closedAt: new Date().toISOString(),
+        openingAmount: currentCashRegister.openingAmount,
+        salesCash,
+        salesCard,
+        withdrawals,
+        expectedAmount: closeSummary.expected,
+        declaredAmount: closeSummary.declared,
+        difference: closeSummary.difference,
+        notes: notes
+      }
       
-      // Auto logout according to requirements
-      logout()
+      setClosureData(data)
+
+      if (printerService.isNative()) {
+        await printerService.printClosureTicket(data)
+        await closeCashRegister(closeSummary.declared, notes)
+        setClosingAmount('')
+        setNotes('')
+        setSupervisorUsername('')
+        setSupervisorPassword('')
+        setShowConfirmCloseDialog(false)
+        setCloseSummary(null)
+        logout()
+      }
     } catch (err) {
       setError('Error al cerrar la caja')
-    } finally {
       setIsVerifying(false)
     }
   }
@@ -180,6 +274,11 @@ export default function CajaPage() {
     const amount = parseFloat(giroAmount)
     if (isNaN(amount) || amount <= 0) {
       setError('Ingrese un monto válido para el retiro')
+      return
+    }
+
+    if (amount > stats.balance) {
+      setError('El monto a retirar no puede superar el saldo total de la caja')
       return
     }
 
@@ -201,6 +300,26 @@ export default function CajaPage() {
 
       await addTransaction('expense', amount, `Retiro de Caja: ${giroReason.trim()}`)
       
+      const timestamp = new Date().toISOString()
+      const data = {
+        amount,
+        cajero: currentCashRegister?.openedBy || 'desconocido',
+        supervisor: supervisorUsername,
+        reason: giroReason.trim(),
+        timestamp
+      }
+      setWithdrawalData(data)
+
+      if (printerService.isNative()) {
+        await printerService.printWithdrawalTicket(
+          amount,
+          data.cajero,
+          data.supervisor,
+          data.reason,
+          timestamp
+        )
+      }
+
       setGiroAmount('')
       setGiroReason('')
       setSupervisorUsername('')
@@ -215,11 +334,11 @@ export default function CajaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
-      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
-        <Header showBack showShutdown />
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
+      <div className="w-full max-w-[960px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-6">
+        <Header showBack />
 
-        <main className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto min-h-0">
+        <main className="flex-1 flex flex-col gap-6 p-6">
           {/* Current Cash Register Status */}
           <div>
             <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center justify-between">
@@ -230,7 +349,10 @@ export default function CajaPage() {
               {isCashOpen ? (
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => setShowGiroDialog(true)}
+                    onClick={() => {
+                      setGiroAmount(stats.balance.toString())
+                      setShowGiroDialog(true)
+                    }}
                     variant="outline"
                     className="h-7 text-[10px] uppercase font-bold border-amber-500/50 text-amber-600 bg-white hover:bg-amber-50"
                   >
@@ -238,7 +360,10 @@ export default function CajaPage() {
                     Retiro de Caja
                   </Button>
                   <Button
-                    onClick={() => setShowCloseDialog(true)}
+                    onClick={() => {
+                      setClosingAmount(stats.balance.toString())
+                      setShowCloseDialog(true)
+                    }}
                     variant="destructive"
                     className="h-7 text-[10px] uppercase font-bold bg-red-600 hover:bg-red-700 text-white"
                   >
@@ -268,7 +393,7 @@ export default function CajaPage() {
                     {currentCashRegister && formatDateTime(currentCashRegister.openedAt)}
                   </p>
                   <p className="text-[11px] text-zinc-500 font-bold mt-1">
-                    Monto inicial: $ {currentCashRegister?.openingAmount.toLocaleString()}
+                    Monto inicial: ${currentCashRegister?.openingAmount.toLocaleString()}
                   </p>
                 </div>
 
@@ -277,7 +402,7 @@ export default function CajaPage() {
                     <TrendingUp className="h-4 w-4 text-[#0a354c]" />
                     <span className="text-xs font-semibold uppercase tracking-wider">Ventas</span>
                   </div>
-                  <p className="text-2xl font-black text-[#0a354c]">$ {stats.totalSales.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-[#0a354c]">${stats.totalSales.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
@@ -293,7 +418,7 @@ export default function CajaPage() {
                     <DollarSign className="h-4 w-4 text-[#1588b3]" />
                     <span className="text-xs font-semibold uppercase tracking-wider">Saldo Actual</span>
                   </div>
-                  <p className="text-2xl font-black text-[#1588b3]">$ {stats.balance.toLocaleString()}</p>
+                  <p className="text-2xl font-black text-[#1588b3]">${stats.balance.toLocaleString()}</p>
                 </div>
               </div>
             ) : (
@@ -367,7 +492,7 @@ export default function CajaPage() {
                               tx.type === 'income' ? 'text-[#0a354c]' : 'text-red-600'
                             }`}
                           >
-                            {tx.type === 'income' ? '+' : '-'}$ {tx.amount.toLocaleString()}
+                            {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
                           </TableCell>
                         </TableRow>
                       )
@@ -453,29 +578,29 @@ export default function CajaPage() {
                             {register.closedAt ? formatDateTime(register.closedAt) : '-'}
                           </TableCell>
                           <TableCell className="text-zinc-850 font-bold text-xs py-3 text-right">
-                            $ {register.openingAmount.toLocaleString()}
+                            ${register.openingAmount.toLocaleString()}
                           </TableCell>
                           <TableCell className="py-3 text-right">
                             <div className="flex flex-col items-end gap-0.5">
-                              <span className="text-amber-600 font-extrabold text-[10px]">EF: $ {ingresosEfectivo.toLocaleString()}</span>
-                              <span className="text-blue-600 font-extrabold text-[10px]">TJ: $ {ingresosTarjeta.toLocaleString()}</span>
+                              <span className="text-amber-600 font-extrabold text-[10px]">EF: ${ingresosEfectivo.toLocaleString()}</span>
+                              <span className="text-blue-600 font-extrabold text-[10px]">TJ: ${ingresosTarjeta.toLocaleString()}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-red-600 text-right font-extrabold text-xs py-3">
-                            $ {gastosEfectivo.toLocaleString()}
+                            ${gastosEfectivo.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-zinc-850 text-right font-extrabold text-xs py-3">
-                            $ {saldoEsperadoEfectivo.toLocaleString()}
+                            ${saldoEsperadoEfectivo.toLocaleString()}
                           </TableCell>
                           <TableCell className="text-zinc-850 text-right font-black text-xs py-3">
                             {register.closingAmount !== null
-                              ? `$ ${register.closingAmount.toLocaleString()}`
+                              ? `$${register.closingAmount.toLocaleString()}`
                               : '-'}
                           </TableCell>
                           <TableCell className="text-right py-3">
                             {diferenciaCaja !== null ? (
                               <span className={`text-[10px] font-black ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$ ${diferenciaCaja.toLocaleString()}` : `Faltante: -$ ${Math.abs(diferenciaCaja).toLocaleString()}`}
+                                {diferenciaCaja === 0 ? 'Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
                               </span>
                             ) : (
                               <span className="text-zinc-500 font-semibold">-</span>
@@ -596,23 +721,23 @@ export default function CajaPage() {
             <div className="grid grid-cols-2 gap-2 text-zinc-800">
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Monto Inicial</span>
-                <span className="text-xs font-black">$ {currentCashRegister?.openingAmount.toLocaleString()}</span>
+                <span className="text-xs font-black">${currentCashRegister?.openingAmount.toLocaleString()}</span>
               </div>
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Total Ventas</span>
-                <span className="text-xs font-black text-[#0a354c]">$ {stats.totalSales.toLocaleString()}</span>
+                <span className="text-xs font-black text-[#0a354c]">${stats.totalSales.toLocaleString()}</span>
               </div>
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">En Efectivo</span>
-                <span className="text-xs font-black">$ {ingresosEfectivo.toLocaleString()}</span>
+                <span className="text-xs font-black">${ingresosEfectivo.toLocaleString()}</span>
               </div>
               <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
                 <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Por Tarjeta</span>
-                <span className="text-xs font-black text-zinc-500">$ {ingresosTarjeta.toLocaleString()}</span>
+                <span className="text-xs font-black text-zinc-500">${ingresosTarjeta.toLocaleString()}</span>
               </div>
               <div className="col-span-2 bg-[#cef3ff] border border-zinc-300 rounded-lg p-2.5 flex justify-between items-center mt-1 shadow-sm">
                 <span className="text-[10px] font-black text-zinc-700 uppercase tracking-wider">Efectivo Físico Esperado</span>
-                <span className="text-base font-black text-[#0a354c]">$ {saldoEsperadoEfectivo.toLocaleString()}</span>
+                <span className="text-base font-black text-[#0a354c]">${saldoEsperadoEfectivo.toLocaleString()}</span>
               </div>
             </div>
 
@@ -621,7 +746,7 @@ export default function CajaPage() {
                 <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">Monto Físico Contado ($)</Label>
                 {diferenciaCaja !== null && (
                   <span className={`text-[10px] font-black uppercase ${diferenciaCaja === 0 ? 'text-emerald-600' : diferenciaCaja > 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                    {diferenciaCaja === 0 ? 'Caja Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$ ${diferenciaCaja.toLocaleString()}` : `Faltante: -$ ${Math.abs(diferenciaCaja).toLocaleString()}`}
+                    {diferenciaCaja === 0 ? 'Caja Cuadrada' : diferenciaCaja > 0 ? `Sobrante: +$${diferenciaCaja.toLocaleString()}` : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
                   </span>
                 )}
               </div>
@@ -798,11 +923,11 @@ export default function CajaPage() {
               <div className="bg-white border border-zinc-300 rounded-lg p-4 space-y-3 shadow-sm">
                 <div className="flex justify-between items-center text-xs font-semibold">
                   <span className="text-zinc-500">Monto Esperado (Efectivo)</span>
-                  <span className="font-extrabold">$ {closeSummary.expected.toLocaleString()}</span>
+                  <span className="font-extrabold">${closeSummary.expected.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold">
                   <span className="text-zinc-500">Cierre de Caja (Declarado)</span>
-                  <span className="font-extrabold">$ {closeSummary.declared.toLocaleString()}</span>
+                  <span className="font-extrabold">${closeSummary.declared.toLocaleString()}</span>
                 </div>
                 <div className="h-px bg-zinc-200 my-1" />
                 <div className="flex justify-between items-center text-sm">
@@ -811,8 +936,8 @@ export default function CajaPage() {
                     {closeSummary.difference === 0 
                       ? 'Cuadrada ✓' 
                       : closeSummary.difference > 0 
-                        ? `Sobrante: +$ ${closeSummary.difference.toLocaleString()}` 
-                        : `Faltante: -$ ${Math.abs(closeSummary.difference).toLocaleString()}`
+                        ? `Sobrante: +$${closeSummary.difference.toLocaleString()}` 
+                        : `Faltante: -$${Math.abs(closeSummary.difference).toLocaleString()}`
                     }
                   </span>
                 </div>
@@ -842,6 +967,8 @@ export default function CajaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <WithdrawalTicket ref={withdrawalTicketRef} data={withdrawalData} />
+      <ClosureTicket ref={closureTicketRef} data={closureData} />
     </div>
   )
 }
