@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 
 export async function POST() {
   return new Promise<NextResponse>((resolve) => {
-    exec('shutdown /s /t 0', (error, stdout, stderr) => {
+    exec('C:\\Windows\\System32\\shutdown.exe /s /t 0', (error, stdout, stderr) => {
       if (error) {
         console.error('Error executing shutdown command:', error);
         resolve(
