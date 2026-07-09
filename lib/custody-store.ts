@@ -145,7 +145,7 @@ export const useCustodyStore = create<CustodyState>()(
       const token = currentUser?.token || ''
       let folio: number | null = null
 
-      if (token) {
+      if (paymentMethod === 'Efectivo' && token) {
         try {
           const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price, token)
           if (boletaRes.success && boletaRes.data) {

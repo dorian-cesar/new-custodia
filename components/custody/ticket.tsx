@@ -69,6 +69,9 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ record, payment
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold' }}>
                 FOLIO N° {record.folio}
               </p>
+              <p style={{ margin: '2px 0 0 0', fontSize: '11px', fontWeight: 'bold' }}>
+                VALIDO COMO BOLETA
+              </p>
               <div style={{ borderBottom: '1px dashed black', margin: '5px 0' }}></div>
             </div>
           )}
