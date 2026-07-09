@@ -1,31 +1,36 @@
-'use server';
+"use server";
 
-import { 
-  LockerModel, 
-  CustodyRecordModel, 
-  CashRegisterModel, 
+import {
+  LockerModel,
+  CustodyRecordModel,
+  CashRegisterModel,
   CashTransactionModel,
   UserModel,
   PriceModel,
-  syncDatabase
-} from '@/lib/db/models';
-import { generateLockers } from '@/lib/types';
-import type { 
-  Locker, 
-  CustodyRecord, 
-  CashRegister, 
-  CashTransaction 
-} from '@/lib/types';
-import bcrypt from 'bcryptjs';
+  syncDatabase,
+} from "@/lib/db/models";
+import { generateLockers } from "@/lib/types";
+import type {
+  Locker,
+  CustodyRecord,
+  CashRegister,
+  CashTransaction,
+} from "@/lib/types";
+import bcrypt from "bcryptjs";
 
 // Ensure DB is synced before any operations
 const initDbAndFetch = async () => {
   await syncDatabase();
-  
+
   // Migrate from old 6x8 locker format if detected
   const firstLocker = await LockerModel.findOne();
-  if (firstLocker && ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(firstLocker.col)) {
-    console.log('Old locker format detected. Resetting database tables for new coordinate logic.');
+  if (
+    firstLocker &&
+    ["A", "B", "C", "D", "E", "F", "G", "H"].includes(firstLocker.col)
+  ) {
+    console.log(
+      "Old locker format detected. Resetting database tables for new coordinate logic.",
+    );
     await CustodyRecordModel.destroy({ where: {} });
     await CashTransactionModel.destroy({ where: {} });
     await LockerModel.destroy({ where: {} });
@@ -41,21 +46,21 @@ const initDbAndFetch = async () => {
   const rawRecords = await CustodyRecordModel.findAll();
   const rawRegisters = await CashRegisterModel.findAll();
   const rawTransactions = await CashTransactionModel.findAll();
-  const rawPrices = await PriceModel.findAll({ order: [['price', 'ASC']] });
+  const rawPrices = await PriceModel.findAll({ order: [["price", "ASC"]] });
 
   // Convert from Sequelize instances to plain JS objects with correct typings
   return {
-    lockers: rawLockers.map(l => l.get({ plain: true })) as Locker[],
-    records: rawRecords.map(r => r.get({ plain: true })) as CustodyRecord[],
-    cashRegisters: rawRegisters.map(r => ({
+    lockers: rawLockers.map((l) => l.get({ plain: true })) as Locker[],
+    records: rawRecords.map((r) => r.get({ plain: true })) as CustodyRecord[],
+    cashRegisters: rawRegisters.map((r) => ({
       ...r.get({ plain: true }),
-      status: r.status as 'open' | 'closed'
+      status: r.status as "open" | "closed",
     })) as CashRegister[],
-    cashTransactions: rawTransactions.map(t => ({
+    cashTransactions: rawTransactions.map((t) => ({
       ...t.get({ plain: true }),
-      type: t.type as 'income' | 'expense'
+      type: t.type as "income" | "expense",
     })) as CashTransaction[],
-    lockerSizes: rawPrices.map(p => {
+    lockerSizes: rawPrices.map((p) => {
       const pData = p.get({ plain: true });
       return { value: pData.size, label: pData.label, price: pData.price };
     }) as any[],
@@ -66,47 +71,64 @@ export async function getInitialState() {
   try {
     return { success: true, data: await initDbAndFetch() };
   } catch (error: any) {
-    console.error('Error fetching initial DB state:', error);
+    console.error("Error fetching initial DB state:", error);
     return { success: false, error: error.message };
   }
 }
 
 export async function dbOccupyLocker(lockerId: number, recordId: number) {
-  await LockerModel.update({ isOccupied: true, currentRecordId: recordId }, { where: { id: lockerId } });
+  await LockerModel.update(
+    { isOccupied: true, currentRecordId: recordId },
+    { where: { id: lockerId } },
+  );
 }
 
 export async function dbReleaseLocker(lockerId: number) {
-  await LockerModel.update({ isOccupied: false, currentRecordId: null }, { where: { id: lockerId } });
+  await LockerModel.update(
+    { isOccupied: false, currentRecordId: null },
+    { where: { id: lockerId } },
+  );
 }
 
-export async function dbCreateRecord(recordData: Omit<CustodyRecord, 'id'>) {
+export async function dbCreateRecord(recordData: Omit<CustodyRecord, "id">) {
   const result = await CustodyRecordModel.create(recordData as any);
   const newRecord = result.get({ plain: true }) as CustodyRecord;
   await dbOccupyLocker(newRecord.lockerId, newRecord.id);
   return newRecord;
 }
 
-export async function dbDeliverRecord(recordId: number, lockerId: number, extraFolio: number | null = null) {
+export async function dbDeliverRecord(
+  recordId: number,
+  lockerId: number,
+  extraFolio: number | null = null,
+) {
   await CustodyRecordModel.update(
-    { status: 'Entregado', exitTime: new Date().toISOString(), extraFolio },
-    { where: { id: recordId } }
+    { status: "Entregado", exitTime: new Date().toISOString(), extraFolio },
+    { where: { id: recordId } },
   );
   await dbReleaseLocker(lockerId);
   return true;
 }
 
-export async function dbOpenCashRegister(registerData: Omit<CashRegister, 'id'>) {
+export async function dbOpenCashRegister(
+  registerData: Omit<CashRegister, "id">,
+) {
   const result = await CashRegisterModel.create(registerData as any);
   return result.get({ plain: true }) as CashRegister;
 }
 
-export async function dbCloseCashRegister(registerId: number, data: Partial<CashRegister>) {
+export async function dbCloseCashRegister(
+  registerId: number,
+  data: Partial<CashRegister>,
+) {
   await CashRegisterModel.update(data as any, { where: { id: registerId } });
   const result = await CashRegisterModel.findByPk(registerId);
   return result?.get({ plain: true }) as CashRegister;
 }
 
-export async function dbAddTransaction(transactionData: Omit<CashTransaction, 'id'>) {
+export async function dbAddTransaction(
+  transactionData: Omit<CashTransaction, "id">,
+) {
   const result = await CashTransactionModel.create(transactionData as any);
   return result.get({ plain: true }) as CashTransaction;
 }
@@ -115,32 +137,43 @@ export async function loginCajero(username: string, passwordHash: string) {
   await syncDatabase();
 
   const user = await UserModel.findOne({ where: { username } });
-  if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
-    return { success: false, error: 'Usuario o contraseña incorrectos' };
+  if (
+    !user ||
+    !(await bcrypt.compare(passwordHash, (user as any).passwordHash))
+  ) {
+    return { success: false, error: "Usuario o contraseña incorrectos" };
   }
 
-  if (user.role !== 'cajero') {
-    return { success: false, error: 'Solo los cajeros pueden iniciar sesión' };
+  if (user.role !== "cajero") {
+    return { success: false, error: "Solo los cajeros pueden iniciar sesión" };
   }
 
-  const openRegister = await CashRegisterModel.findOne({ where: { status: 'open' } });
+  const openRegister = await CashRegisterModel.findOne({
+    where: { status: "open" },
+  });
   if (openRegister) {
     const plainRegister = openRegister.get({ plain: true }) as any;
     if (plainRegister.openedBy && plainRegister.openedBy !== user.username) {
-      return { success: false, error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.` };
+      return {
+        success: false,
+        error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.`,
+      };
     }
   }
 
   // Fetch API token behind the scenes using fixed credentials
-  let apiToken = '';
+  let apiToken = "";
   try {
-    const response = await fetch("https://backend-banios.dev-wit.com/api/auth/loginUser", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://new-backend-banos.dev-wit.com/api/auth/loginUser",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
       },
-      body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
-    });
+    );
     const data = await response.json();
     if (response.ok && data.token) {
       apiToken = data.token;
@@ -149,14 +182,14 @@ export async function loginCajero(username: string, passwordHash: string) {
     console.error("Failed to fetch API token behind the scenes:", error);
   }
 
-  return { 
-    success: true, 
+  return {
+    success: true,
     user: {
       id: user.id,
       username: user.username,
-      role: 'cajero',
-      token: apiToken
-    }
+      role: "cajero",
+      token: apiToken,
+    },
   };
 }
 
@@ -164,12 +197,15 @@ export async function verifySupervisor(username: string, passwordHash: string) {
   await syncDatabase();
 
   const user = await UserModel.findOne({ where: { username } });
-  if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
-    return { success: false, error: 'Credenciales de supervisor incorrectas' };
+  if (
+    !user ||
+    !(await bcrypt.compare(passwordHash, (user as any).passwordHash))
+  ) {
+    return { success: false, error: "Credenciales de supervisor incorrectas" };
   }
 
-  if (user.role !== 'supervisor') {
-    return { success: false, error: 'El usuario no tiene rol de supervisor' };
+  if (user.role !== "supervisor") {
+    return { success: false, error: "El usuario no tiene rol de supervisor" };
   }
 
   return { success: true };
@@ -180,28 +216,43 @@ export async function loginUser(username: string, passwordHash: string) {
   await syncDatabase();
 
   const user = await UserModel.findOne({ where: { username } });
-  if (!user || !(await bcrypt.compare(passwordHash, (user as any).passwordHash))) {
-    return { success: false, error: 'Usuario o contraseña incorrectos' };
+  if (
+    !user ||
+    !(await bcrypt.compare(passwordHash, (user as any).passwordHash))
+  ) {
+    return { success: false, error: "Usuario o contraseña incorrectos" };
   }
 
-  const openRegister = await CashRegisterModel.findOne({ where: { status: 'open' } });
+  const openRegister = await CashRegisterModel.findOne({
+    where: { status: "open" },
+  });
   if (openRegister) {
     const plainRegister = openRegister.get({ plain: true }) as any;
-    if (plainRegister.openedBy && plainRegister.openedBy !== user.username && user.role !== 'supervisor') {
-      return { success: false, error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.` };
+    if (
+      plainRegister.openedBy &&
+      plainRegister.openedBy !== user.username &&
+      user.role !== "supervisor"
+    ) {
+      return {
+        success: false,
+        error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.`,
+      };
     }
   }
 
   // Fetch API token behind the scenes using fixed credentials
-  let apiToken = '';
+  let apiToken = "";
   try {
-    const response = await fetch("https://backend-banios.dev-wit.com/api/auth/loginUser", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://new-backend-banos.dev-wit.com/api/auth/loginUser",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
       },
-      body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
-    });
+    );
     const data = await response.json();
     if (response.ok && data.token) {
       apiToken = data.token;
@@ -210,60 +261,85 @@ export async function loginUser(username: string, passwordHash: string) {
     console.error("Failed to fetch API token behind the scenes:", error);
   }
 
-  return { 
-    success: true, 
+  return {
+    success: true,
     user: {
       id: user.id,
       username: user.username,
-      role: user.role === 'supervisor' ? 'supervisor' : 'cajero',
-      token: apiToken
-    }
+      role: user.role === "supervisor" ? "supervisor" : "cajero",
+      token: apiToken,
+    },
   };
 }
 
 // ── Admin: CRUD de usuarios ──
 export async function getUsers() {
   await syncDatabase();
-  const users = await UserModel.findAll({ order: [['id', 'ASC']] });
-  return users.map(u => {
+  const users = await UserModel.findAll({ order: [["id", "ASC"]] });
+  return users.map((u) => {
     const plain = u.get({ plain: true }) as any;
-    return { id: plain.id as number, username: plain.username as string, role: plain.role as string };
+    return {
+      id: plain.id as number,
+      username: plain.username as string,
+      role: plain.role as string,
+    };
   });
 }
 
-export async function createUser(username: string, passwordHash: string, role: 'cajero' | 'supervisor') {
+export async function createUser(
+  username: string,
+  passwordHash: string,
+  role: "cajero" | "supervisor",
+) {
   await syncDatabase();
   try {
     const existing = await UserModel.findOne({ where: { username } });
-    if (existing) return { success: false, error: 'El nombre de usuario ya existe' };
+    if (existing)
+      return { success: false, error: "El nombre de usuario ya existe" };
     const hashed = await bcrypt.hash(passwordHash, 10);
-    const user = await UserModel.create({ username, passwordHash: hashed, role } as any);
+    const user = await UserModel.create({
+      username,
+      passwordHash: hashed,
+      role,
+    } as any);
     const plain = user.get({ plain: true }) as any;
-    return { success: true, user: { id: plain.id, username: plain.username, role: plain.role } };
+    return {
+      success: true,
+      user: { id: plain.id, username: plain.username, role: plain.role },
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function updateUser(id: number, data: { username?: string; passwordHash?: string; role?: string }) {
+export async function updateUser(
+  id: number,
+  data: { username?: string; passwordHash?: string; role?: string },
+) {
   await syncDatabase();
   try {
     const existing = await UserModel.findByPk(id);
-    if (!existing) return { success: false, error: 'Usuario no encontrado' };
+    if (!existing) return { success: false, error: "Usuario no encontrado" };
     if (data.username && data.username !== existing.username) {
-      const dup = await UserModel.findOne({ where: { username: data.username } });
-      if (dup) return { success: false, error: 'El nombre de usuario ya existe' };
+      const dup = await UserModel.findOne({
+        where: { username: data.username },
+      });
+      if (dup)
+        return { success: false, error: "El nombre de usuario ya existe" };
     }
-    
+
     const updateData: any = { ...data };
     if (updateData.passwordHash) {
       updateData.passwordHash = await bcrypt.hash(updateData.passwordHash, 10);
     }
-    
+
     await UserModel.update(updateData, { where: { id } });
     const updated = await UserModel.findByPk(id);
     const plain = updated!.get({ plain: true }) as any;
-    return { success: true, user: { id: plain.id, username: plain.username, role: plain.role } };
+    return {
+      success: true,
+      user: { id: plain.id, username: plain.username, role: plain.role },
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -273,7 +349,7 @@ export async function deleteUser(id: number) {
   await syncDatabase();
   try {
     const user = await UserModel.findByPk(id);
-    if (!user) return { success: false, error: 'Usuario no encontrado' };
+    if (!user) return { success: false, error: "Usuario no encontrado" };
     await UserModel.destroy({ where: { id } });
     return { success: true };
   } catch (error: any) {
@@ -284,19 +360,27 @@ export async function deleteUser(id: number) {
 // ── Prices: get and update ──
 export async function getPrices() {
   await syncDatabase();
-  const prices = await PriceModel.findAll({ order: [['price', 'ASC']] });
-  return prices.map(p => p.get({ plain: true })) as { size: string, label: string, price: number }[];
+  const prices = await PriceModel.findAll({ order: [["price", "ASC"]] });
+  return prices.map((p) => p.get({ plain: true })) as {
+    size: string;
+    label: string;
+    price: number;
+  }[];
 }
 
-export async function updatePrice(size: string, newPrice: number, newLabel?: string) {
+export async function updatePrice(
+  size: string,
+  newPrice: number,
+  newLabel?: string,
+) {
   await syncDatabase();
   try {
     const priceRecord = await PriceModel.findOne({ where: { size } });
-    if (!priceRecord) return { success: false, error: 'Tamaño no encontrado' };
-    
+    if (!priceRecord) return { success: false, error: "Tamaño no encontrado" };
+
     const updateData: any = { price: newPrice };
     if (newLabel) updateData.label = newLabel;
-    
+
     await PriceModel.update(updateData, { where: { size } });
     return { success: true };
   } catch (error: any) {
@@ -308,8 +392,8 @@ export async function createPrice(size: string, label: string, price: number) {
   await syncDatabase();
   try {
     const existing = await PriceModel.findOne({ where: { size } });
-    if (existing) return { success: false, error: 'El tamaño (ID) ya existe' };
-    
+    if (existing) return { success: false, error: "El tamaño (ID) ya existe" };
+
     await PriceModel.create({ size, label, price });
     return { success: true };
   } catch (error: any) {
@@ -321,8 +405,8 @@ export async function deletePrice(size: string) {
   await syncDatabase();
   try {
     const record = await PriceModel.findOne({ where: { size } });
-    if (!record) return { success: false, error: 'Tamaño no encontrado' };
-    
+    if (!record) return { success: false, error: "Tamaño no encontrado" };
+
     await PriceModel.destroy({ where: { size } });
     return { success: true };
   } catch (error: any) {
@@ -330,26 +414,37 @@ export async function deletePrice(size: string) {
   }
 }
 
-export async function sendBoleta(nombre: string, precio: number, token: string) {
+export async function sendBoleta(
+  nombre: string,
+  precio: number,
+  token: string,
+) {
   try {
-    const response = await fetch("https://backend-banios.dev-wit.com/api/boletas/enviar", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+    const response = await fetch(
+      "https://new-backend-banos.dev-wit.com/api/boletas/enviar",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nombre, precio }),
       },
-      body: JSON.stringify({ nombre, precio })
-    });
+    );
 
     const data = await response.json();
     if (!response.ok) {
-      return { success: false, error: data.error || data.message || 'Error al emitir la boleta' };
+      return {
+        success: false,
+        error: data.error || data.message || "Error al emitir la boleta",
+      };
     }
     return { success: true, data };
   } catch (error: any) {
     console.error("Error emitting boleta:", error);
-    return { success: false, error: "Error de conexión con el servidor de facturación" };
+    return {
+      success: false,
+      error: "Error de conexión con el servidor de facturación",
+    };
   }
 }
-
-
