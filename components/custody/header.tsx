@@ -249,7 +249,10 @@ export function Header({ showHistory = false, showBack = false, showCash = false
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={logout}
+                onClick={() => {
+                  logout()
+                  window.location.href = '/'
+                }}
                 className="h-7 w-7 text-zinc-500 hover:text-destructive hover:bg-destructive/10 rounded-full"
                 title="Cerrar sesión"
               >

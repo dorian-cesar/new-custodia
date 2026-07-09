@@ -52,6 +52,8 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
           login(result.user as any)
           if (result.user.role === 'supervisor') {
             router.push('/admin')
+          } else {
+            router.push('/')
           }
         } else {
           setError(result.error || 'Error al iniciar sesión')
