@@ -326,12 +326,12 @@ export function ClientRegistration({
       {/* Entry Payment Confirmation Modal */}
       <Dialog open={isEntryModalOpen} onOpenChange={setIsEntryModalOpen}>
         <DialogContent className="sm:max-w-md bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden">
-          <div className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between">
-            <h3 className="text-lg font-bold tracking-wide flex items-center gap-2">
+          <DialogHeader className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between space-y-0">
+            <DialogTitle className="text-lg font-bold tracking-wide flex items-center gap-2 text-white">
               <Coins className="h-5 w-5 text-[#00c5ff]" />
               PAGO DE CUSTODIA
-            </h3>
-          </div>
+            </DialogTitle>
+          </DialogHeader>
           
           <div className="px-6 py-4 flex flex-col gap-4">
             <div className="bg-white border border-zinc-300 p-4 rounded-lg space-y-2 text-sm">
@@ -439,8 +439,8 @@ export function ClientRegistration({
       {/* Delivery Confirmation Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-md bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden">
-          <div className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between">
-            <h3 className="text-lg font-bold tracking-wide flex items-center gap-2">
+          <DialogHeader className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between space-y-0">
+            <DialogTitle className="text-lg font-bold tracking-wide flex items-center gap-2 text-white">
               {extraAmount > 0 ? (
                 <>
                   <AlertTriangle className="h-5 w-5 text-rose-500 animate-pulse" />
@@ -452,8 +452,8 @@ export function ClientRegistration({
                   CONFIRMAR ENTREGA
                 </>
               )}
-            </h3>
-          </div>
+            </DialogTitle>
+          </DialogHeader>
           
           <div className="px-6 py-4 flex flex-col gap-4">
             {pendingRecord && (() => {
