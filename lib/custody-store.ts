@@ -78,8 +78,18 @@ export const useCustodyStore = create<CustodyState>()(
     currentUser: null,
     lockerSizes: LOCKER_SIZES,
 
-    login: (user) => set({ currentUser: user }),
-    logout: () => set({ currentUser: null }),
+    login: (user) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentUser', JSON.stringify(user))
+      }
+      set({ currentUser: user })
+    },
+    logout: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentUser')
+      }
+      set({ currentUser: null })
+    },
 
     hydrateState: (dbState) => {
       set({

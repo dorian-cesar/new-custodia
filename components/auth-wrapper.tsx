@@ -21,7 +21,16 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    const storedUser = localStorage.getItem('currentUser')
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser)
+        login(parsed)
+      } catch (err) {
+        console.error('Error parsing stored user session:', err)
+      }
+    }
+  }, [login])
 
   if (!mounted) {
     return (
