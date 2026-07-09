@@ -32,6 +32,8 @@ interface ClientRegistrationProps {
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
   mode?: 'entrega' | 'retiro'
+  lastPrintedId: number | null
+  setLastPrintedId: (id: number | null) => void
 }
 
 const showToast = (message: string, icon: 'success' | 'error' | 'warning' | 'info' = 'warning') => {
@@ -60,6 +62,8 @@ export function ClientRegistration({
   currentRecord,
   isCashOpen,
   mode = 'entrega',
+  lastPrintedId,
+  setLastPrintedId,
 }: ClientRegistrationProps) {
   const [deliveryCode, setDeliveryCode] = useState('')
   const [deliveryError, setDeliveryError] = useState('')
@@ -87,7 +91,6 @@ export function ClientRegistration({
 
   const ticketRef = useRef<HTMLDivElement>(null)
   const deliveryTicketRef = useRef<HTMLDivElement>(null)
-  const [lastPrintedId, setLastPrintedId] = useState<number | null>(null)
 
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,

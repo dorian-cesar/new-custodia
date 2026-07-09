@@ -28,6 +28,7 @@ export default function CustodyPage() {
   const [selectedSize, setSelectedSize] = useState<LockerSize | null>(null)
   const [clientDocument, setClientDocument] = useState('')
   const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(null)
+  const [lastPrintedId, setLastPrintedId] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
   const [serviceMode, setServiceMode] = useState<'entrega' | 'retiro'>('entrega')
 
@@ -169,6 +170,8 @@ export default function CustodyPage() {
                 currentRecord={currentRecord}
                 isCashOpen={isCashOpen}
                 mode={serviceMode}
+                lastPrintedId={lastPrintedId}
+                setLastPrintedId={setLastPrintedId}
               />
             </LockerSelection>
           ) : (
@@ -181,6 +184,8 @@ export default function CustodyPage() {
               currentRecord={currentRecord}
               isCashOpen={isCashOpen}
               mode={serviceMode}
+              lastPrintedId={lastPrintedId}
+              setLastPrintedId={setLastPrintedId}
             />
           )}
         </div>
