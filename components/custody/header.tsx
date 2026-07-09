@@ -10,6 +10,24 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { printerService } from '@/lib/printer-service'
+import Swal from 'sweetalert2'
+
+const showToast = (message: string, icon: 'success' | 'error' | 'warning' | 'info' = 'warning') => {
+  Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    }
+  }).fire({
+    icon,
+    title: message
+  })
+}
 
 interface HeaderProps {
   showHistory?: boolean
@@ -62,14 +80,14 @@ export function Header({ showHistory = false, showBack = false, showCash = false
         const list = await printerService.getBluetoothDevices()
         setBtDevices(list)
       } catch (err: any) {
-        alert('Error al escanear Bluetooth: ' + err.message)
+        showToast('Error al escanear Bluetooth: ' + err.message, 'error')
       }
     } else if (printerMode === '1') {
       try {
         const list = await printerService.getUsbDevices()
         setUsbDevices(list)
       } catch (err: any) {
-        alert('Error al buscar USB: ' + err.message)
+        showToast('Error al buscar USB: ' + err.message, 'error')
       }
     }
   }
@@ -84,8 +102,9 @@ export function Header({ showHistory = false, showBack = false, showCash = false
       localStorage.setItem('printer_mode', printerMode)
       setPrinterAddress(addressToConnect)
       setPrinterStatus({ connected: true, status: res.status })
+      showToast('Conectado con éxito', 'success')
     } catch (err: any) {
-      alert('Error al conectar: ' + err.message)
+      showToast('Error al conectar: ' + err.message, 'error')
       setPrinterStatus({ connected: false, status: 'Error: ' + err.message })
     } finally {
       setIsConnecting(false)
@@ -96,14 +115,19 @@ export function Header({ showHistory = false, showBack = false, showCash = false
     try {
       await printerService.disconnectPrinter()
       setPrinterStatus({ connected: false, status: 'Sin conectar' })
+      showToast('Impresora desconectada', 'info')
     } catch (err: any) {
-      alert('Error al desconectar: ' + err.message)
+      showToast('Error al desconectar: ' + err.message, 'error')
     }
   }
 
   const handleTestPrint = async () => {
     const ok = await printerService.printTestTicket()
-    if (!ok) alert('No se pudo imprimir el ticket de prueba')
+    if (!ok) {
+      showToast('No se pudo imprimir el ticket de prueba', 'error')
+    } else {
+      showToast('Ticket de prueba impreso', 'success')
+    }
   }
 
   return (

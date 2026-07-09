@@ -123,86 +123,86 @@ export default function HistorialPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
-      <div className="w-full max-w-[960px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-6">
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
+      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
         <Header showBack />
 
-        <main className="flex-1 flex flex-col gap-6 p-6">
-          <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2">
-              <History className="h-4 w-4" />
-              <span>Historial de Casilleros (Últimos 30 Días)</span>
-            </div>
+        <main className="flex-1 flex flex-col gap-4 p-6 min-h-0">
+          <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider rounded-md flex items-center gap-2">
+            <History className="h-4 w-4" />
+            <span>Historial de Casilleros (Últimos 30 Días)</span>
+          </div>
 
-            {/* Filters */}
-            <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
-                    <Search className="h-3 w-3" />
-                    Buscar por Documento
-                  </Label>
-                  <Input
-                    value={searchDocument}
-                    onChange={(e) => setSearchDocument(e.target.value)}
-                    placeholder="RUT / DNI / Pasaporte"
-                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
-                    <Filter className="h-3 w-3" />
-                    Estado
-                  </Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-bold focus-visible:ring-[#242424] w-full">
-                      <SelectValue placeholder="Todos los estados" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white text-zinc-900 font-semibold">
-                      <SelectItem value="all">Todos los estados</SelectItem>
-                      <SelectItem value="Activo">Activo</SelectItem>
-                      <SelectItem value="Entregado">Entregado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
-                    <Ruler className="h-3 w-3" />
-                    Tamaño
-                  </Label>
-                  <Select value={filterSize} onValueChange={setFilterSize}>
-                    <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-bold focus-visible:ring-[#242424] w-full">
-                      <SelectValue placeholder="Todas las tallas" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white text-zinc-900 font-semibold">
-                      <SelectItem value="all">Todas las tallas</SelectItem>
-                      {lockerSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* Filters */}
+          <div className="space-y-4 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
+                  <Search className="h-3 w-3" />
+                  Buscar por Documento
+                </Label>
+                <Input
+                  value={searchDocument}
+                  onChange={(e) => setSearchDocument(e.target.value)}
+                  placeholder="RUT / DNI / Pasaporte"
+                  className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                />
               </div>
 
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleSearch} 
-                  className="w-full sm:w-auto px-6 bg-[#242424] hover:bg-zinc-800 text-white font-bold h-9 text-xs uppercase"
-                >
-                  <Search className="h-3.5 w-3.5 mr-2" />
-                  Buscar
-                </Button>
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
+                  <Filter className="h-3 w-3" />
+                  Estado
+                </Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-bold focus-visible:ring-[#242424] w-full">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white text-zinc-900 font-semibold">
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="Activo">Activo</SelectItem>
+                    <SelectItem value="Entregado">Entregado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5 text-xs text-zinc-700 font-bold uppercase tracking-wide">
+                  <Ruler className="h-3 w-3" />
+                  Tamaño
+                </Label>
+                <Select value={filterSize} onValueChange={setFilterSize}>
+                  <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-bold focus-visible:ring-[#242424] w-full">
+                    <SelectValue placeholder="Todas las tallas" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white text-zinc-900 font-semibold">
+                    <SelectItem value="all">Todas las tallas</SelectItem>
+                    {lockerSizes.map((size) => (
+                      <SelectItem key={size.value} value={size.value}>
+                        {size.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleSearch} 
+                className="w-full sm:w-auto px-6 bg-[#242424] hover:bg-zinc-800 text-white font-bold h-9 text-xs uppercase"
+              >
+                <Search className="h-3.5 w-3.5 mr-2" />
+                Buscar
+              </Button>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="flex-1 flex flex-col min-h-0 border border-zinc-300 rounded-xl shadow-sm bg-white overflow-hidden">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <Table>
-                <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                <TableHeader className="bg-[#242424] hover:bg-[#242424] sticky top-0 z-10">
                   <TableRow className="hover:bg-transparent border-none">
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">CÓDIGO / RUT</TableHead>
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10"># CASILLERO</TableHead>

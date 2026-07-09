@@ -215,11 +215,11 @@ export default function CajaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
-      <div className="w-full max-w-[960px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-6">
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
+      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
         <Header showBack />
 
-        <main className="flex-1 flex flex-col gap-6 p-6">
+        <main className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto min-h-0">
           {/* Current Cash Register Status */}
           <div>
             <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center justify-between">

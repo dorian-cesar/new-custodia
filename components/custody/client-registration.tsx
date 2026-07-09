@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useReactToPrint } from 'react-to-print'
+import Swal from 'sweetalert2'
 import { Ticket } from './ticket'
 import { DeliveryTicket } from './delivery-ticket'
 import { printerService } from '@/lib/printer-service'
@@ -31,6 +32,23 @@ interface ClientRegistrationProps {
   currentRecord: CustodyRecord | null
   isCashOpen: boolean
   mode?: 'entrega' | 'retiro'
+}
+
+const showToast = (message: string, icon: 'success' | 'error' | 'warning' | 'info' = 'warning') => {
+  Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.onmouseenter = Swal.stopTimer;
+      toast.onmouseleave = Swal.resumeTimer;
+    }
+  }).fire({
+    icon,
+    title: message
+  })
 }
 
 export function ClientRegistration({
@@ -117,11 +135,11 @@ export function ClientRegistration({
 
   const handleGenerateBarcode = () => {
     if (!isCashOpen) {
-      alert("Debes abrir la caja antes de poder realizar cobros.");
+      showToast("Debes abrir la caja antes de poder realizar cobros.", "warning");
       return
     }
     if (!selectedLockerId || !selectedSize || !clientDocument?.trim()) {
-      alert("Por favor, selecciona un casillero, el tamaño del equipaje y escribe el RUT del cliente antes de cobrar.");
+      showToast("Por favor, selecciona un casillero, el tamaño del equipaje y escribe el RUT del cliente antes de cobrar.", "warning");
       return
     }
     setEntryPaymentMethod('Efectivo')
@@ -132,11 +150,11 @@ export function ClientRegistration({
   const confirmEntryPayment = async () => {
     if (entryPaymentMethod === 'Efectivo') {
       if (!entryCashReceived) {
-        alert("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.");
+        showToast("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.", "warning");
         return;
       }
       if (entryCashReceived < entryPrice) {
-        alert("El efectivo recibido es menor al monto a cobrar.");
+        showToast("El efectivo recibido es menor al monto a cobrar.", "error");
         return;
       }
     }
@@ -192,11 +210,11 @@ export function ClientRegistration({
   const confirmDelivery = async (code: string, extraCharge: number, method: 'Efectivo' | 'Tarjeta') => {
     if (method === 'Efectivo' && extraCharge > 0) {
       if (!cashReceived) {
-        alert("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.");
+        showToast("Por favor ingrese el monto de efectivo recibido para poder calcular el vuelto.", "warning");
         return;
       }
       if (cashReceived < extraCharge) {
-        alert("El efectivo recibido es menor al recargo a cobrar.");
+        showToast("El efectivo recibido es menor al recargo a cobrar.", "error");
         return;
       }
     }
@@ -250,7 +268,7 @@ export function ClientRegistration({
   }
 
   return (
-    <div className="bg-[#d7d7d8] px-4 pb-4">
+    <div className={mode === 'entrega' ? 'w-full' : 'bg-[#d7d7d8] px-4 pb-4'}>
       <Ticket ref={ticketRef} record={currentRecord} paymentMethod={entryPaymentMethod} />
       <DeliveryTicket ref={deliveryTicketRef} record={pendingRecord} extraHours={extraHours} extraAmount={extraAmount} paymentMethod={paymentMethod} extraFolio={extraFolioState} authCode={exitAuthCode} opNumber={exitOpNumber} />
       
@@ -260,20 +278,20 @@ export function ClientRegistration({
             type="button"
             onClick={handleGenerateBarcode}
             disabled={!isCashOpen}
-            className="w-full max-w-[320px] bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-lg font-bold py-3.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2 text-center"
+            className="w-full max-w-[320px] bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-md font-black py-2.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-1 text-center"
           >
             GENERAR CÓDIGO
           </button>
           {!isCashOpen && (
-            <p className="text-xs font-semibold text-destructive text-center mt-2 animate-pulse">
+            <p className="text-[10px] font-semibold text-destructive text-center mt-1 animate-pulse">
               Debe abrir la caja para registrar custodias
             </p>
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 max-w-md mx-auto w-full mt-2">
           <div>
-            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-3">
+            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
               REGISTRO DEL CLIENTE
             </div>
             <input
@@ -292,12 +310,12 @@ export function ClientRegistration({
               type="button"
               onClick={handleDeliverClick}
               disabled={!isCashOpen}
-              className="w-full max-w-[320px] bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-lg font-bold py-3.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2 text-center"
+              className="w-full bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-md font-black py-2.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-1 text-center"
             >
               BUSCAR Y RETIRAR
             </button>
             {!isCashOpen && (
-              <p className="text-xs font-semibold text-destructive text-center mt-2 animate-pulse">
+              <p className="text-[10px] font-semibold text-destructive text-center mt-1 animate-pulse">
                 Debe abrir la caja para retirar custodias
               </p>
             )}
