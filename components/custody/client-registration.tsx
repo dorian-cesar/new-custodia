@@ -224,12 +224,11 @@ export function ClientRegistration({
       }
     }
 
-    const token = useCustodyStore.getState().currentUser?.token || ''
     let extraFolio: number | null = null
 
-    if (method === 'Efectivo' && extraCharge > 0 && token) {
+    if (method === 'Efectivo' && extraCharge > 0) {
       try {
-        const boletaRes = await sendBoleta("Recargo Custodia", extraCharge, token)
+        const boletaRes = await sendBoleta("Recargo Custodia", extraCharge)
         if (boletaRes.success && boletaRes.data) {
           extraFolio = boletaRes.data.folio
         }

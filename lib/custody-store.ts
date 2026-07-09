@@ -141,13 +141,11 @@ export const useCustodyStore = create<CustodyState>()(
       const sizeOption = get().lockerSizes.find((s) => s.value === size)
       if (!sizeOption) return null
 
-      // Intentar emitir boleta electrónica si tenemos token del usuario
-      const token = currentUser?.token || ''
       let folio: number | null = null
 
-      if (paymentMethod === 'Efectivo' && token) {
+      if (paymentMethod === 'Efectivo') {
         try {
-          const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price, token)
+          const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price)
           if (boletaRes.success && boletaRes.data) {
             folio = boletaRes.data.folio
           }

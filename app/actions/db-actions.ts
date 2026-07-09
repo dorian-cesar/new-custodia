@@ -244,7 +244,7 @@ export async function loginUser(username: string, passwordHash: string) {
   let apiToken = "";
   try {
     const response = await fetch(
-      "https://new-backend-caja-banos.dev-wit.com/api/auth/loginUser",
+      "https://backend-banios.dev-wit.com/api/auth/loginUser",
       {
         method: "POST",
         headers: {
@@ -417,16 +417,14 @@ export async function deletePrice(size: string) {
 export async function sendBoleta(
   nombre: string,
   precio: number,
-  token: string,
 ) {
   try {
     const response = await fetch(
-      "https://new-backend-caja-banos.dev-wit.com/api/boletas/enviar",
+      "https://backend-banios.dev-wit.com/api/boletas/enviar",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ nombre, precio }),
       },
