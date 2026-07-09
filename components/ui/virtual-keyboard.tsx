@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Delete, ArrowDownToLine, Space, Globe } from 'lucide-react'
 
+// Cambia esta variable a true para activar el teclado digital, o a false para desactivarlo
+const ENABLE_VIRTUAL_KEYBOARD = true;
+
 export function VirtualKeyboard() {
   const [activeInput, setActiveInput] = useState<HTMLInputElement | HTMLTextAreaElement | null>(null)
   const [layout, setLayout] = useState<'qwerty' | 'numeric'>('qwerty')
@@ -11,6 +14,8 @@ export function VirtualKeyboard() {
   const keyboardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!ENABLE_VIRTUAL_KEYBOARD) return;
+
     const handleFocus = (e: FocusEvent) => {
       const target = e.target as HTMLInputElement | HTMLTextAreaElement
       if (
@@ -66,7 +71,7 @@ export function VirtualKeyboard() {
     }
   }, [])
 
-  if (!activeInput) return null
+  if (!ENABLE_VIRTUAL_KEYBOARD || !activeInput) return null
 
   const handleKeyPress = (key: string, e: React.MouseEvent) => {
     e.preventDefault()
