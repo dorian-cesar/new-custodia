@@ -124,33 +124,13 @@ export function ClientRegistration({
         const lockerDisplay = locker ? `${locker.col}${locker.row}` : currentRecord.lockerId.toString()
         printerService.printEntryTicket(currentRecord, sizeLabel, lockerDisplay, entryPaymentMethod)
         setLastPrintedId(currentRecord.id)
-        if (currentRecord.folio) {
-          Swal.fire({
-            title: '¡Custodia Registrada!',
-            html: `Código: <b>${currentRecord.code}</b><br><b>Folio Boleta N°: ${currentRecord.folio}</b><br><span style="font-size: 13px; color: green; font-weight: bold;">VALIDO COMO BOLETA</span>`,
-            icon: 'success',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#242424'
-          })
-        } else {
-          showToast('Custodia registrada con éxito', 'success')
-        }
+        showToast('Custodia registrada con éxito', 'success')
       } else {
         // Small delay to allow SVG Barcode inside Ticket to render completely
         const timer = setTimeout(() => {
           handlePrint()
           setLastPrintedId(currentRecord.id)
-          if (currentRecord.folio) {
-            Swal.fire({
-              title: '¡Custodia Registrada!',
-              html: `Código: <b>${currentRecord.code}</b><br><b>Folio Boleta N°: ${currentRecord.folio}</b><br><span style="font-size: 13px; color: green; font-weight: bold;">VALIDO COMO BOLETA</span>`,
-              icon: 'success',
-              confirmButtonText: 'OK',
-              confirmButtonColor: '#242424'
-            })
-          } else {
-            showToast('Custodia registrada con éxito', 'success')
-          }
+          showToast('Custodia registrada con éxito', 'success')
         }, 500)
         return () => clearTimeout(timer)
       }
@@ -259,7 +239,6 @@ export function ClientRegistration({
     }
 
     setExtraFolioState(extraFolio)
-    // Breve retraso para permitir actualización del estado antes de imprimir y entregar
     setTimeout(async () => {
       if (pendingRecord) {
         if (printerService.isNative()) {
@@ -282,17 +261,7 @@ export function ClientRegistration({
 
       const success = await onDeliver(code, extraCharge, method, extraFolio)
       if (success) {
-        if (extraFolio) {
-          Swal.fire({
-            title: '¡Entrega Realizada!',
-            html: `Entrega procesada con éxito.<br><b>Folio Boleta Recargo N°: ${extraFolio}</b><br><span style="font-size: 13px; color: green; font-weight: bold;">VALIDO COMO BOLETA</span>`,
-            icon: 'success',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#242424'
-          })
-        } else {
-          showToast('Entrega procesada con éxito', 'success')
-        }
+        showToast('Entrega procesada con éxito', 'success')
         setDeliveryCode('')
         setPendingRecord(null)
         setIsModalOpen(false)
@@ -300,7 +269,7 @@ export function ClientRegistration({
       } else {
         setDeliveryError('Error procesando la entrega')
       }
-    }, 150)
+    }, 500)
   }
 
   return (
