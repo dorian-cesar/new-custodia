@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { DbInitProvider } from '@/components/DbInitProvider'
 import { AuthWrapper } from '@/components/auth-wrapper'
+import { VirtualKeyboard } from '@/components/ui/virtual-keyboard'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -41,6 +42,7 @@ export default function RootLayout({
         <DbInitProvider>
           <AuthWrapper>
             {children}
+            <VirtualKeyboard />
           </AuthWrapper>
         </DbInitProvider>
       </body>

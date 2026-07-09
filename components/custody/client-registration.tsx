@@ -391,6 +391,7 @@ export function ClientRegistration({
                     <input
                       id="entryCashReceived"
                       type="text"
+                      inputMode="numeric"
                       value={entryCashReceived === 0 ? '' : entryCashReceived.toLocaleString('es-CL')}
                       onChange={(e) => {
                         const val = Number(e.target.value.replace(/\D/g, ''));
@@ -531,6 +532,7 @@ export function ClientRegistration({
                       <input
                         id="cashReceived"
                         type="text"
+                        inputMode="numeric"
                         value={cashReceived === 0 ? '' : cashReceived.toLocaleString('es-CL')}
                         onChange={(e) => {
                           const val = Number(e.target.value.replace(/\D/g, ''));
