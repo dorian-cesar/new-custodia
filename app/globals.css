@@ -116,6 +116,12 @@
 }
 
 @layer base {
+  html, body {
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+  }
   html {
     font-size: 16px; /* Restaurado a 16px para no romper la altura en 768px */
   }
