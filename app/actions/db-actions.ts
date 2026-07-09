@@ -244,7 +244,7 @@ export async function loginUser(username: string, passwordHash: string) {
   let apiToken = "";
   try {
     const response = await fetch(
-      "https://backend-banios.dev-wit.com/api/auth/loginUser",
+      "https://new-backend-banos.dev-wit.com/api/auth/loginUser",
       {
         method: "POST",
         headers: {
@@ -420,7 +420,7 @@ export async function sendBoleta(
 ) {
   try {
     const response = await fetch(
-      "https://backend-banios.dev-wit.com/api/boletas/enviar",
+      "https://new-backend-banos.dev-wit.com/api/boletas/enviar",
       {
         method: "POST",
         headers: {
