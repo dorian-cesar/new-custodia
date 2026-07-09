@@ -351,3 +351,17 @@ export async function sendBoleta(nombre: string, precio: number, token: string) 
     return { success: false, error: "Error de conexión con el servidor de facturación" };
   }
 }
+
+export async function shutdownSystem() {
+  const { exec } = require('child_process');
+  return new Promise<{ success: boolean; error?: string }>((resolve) => {
+    exec('shutdown /s /t 0', (error: any, stdout: any, stderr: any) => {
+      if (error) {
+        console.error('Error shutting down system:', error);
+        resolve({ success: false, error: error.message });
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
+}
