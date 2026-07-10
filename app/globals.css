@@ -157,11 +157,13 @@
 
 /* SweetAlert2 Dialog Overrides for Radix Modals */
 .swal2-container {
-  z-index: 99999 !important;
+  z-index: 999999 !important;
+  pointer-events: auto !important;
 }
 body.swal2-shown {
   pointer-events: auto !important;
 }
-body.swal2-shown [data-slot="dialog-portal"] {
+body.swal2-shown [data-slot="dialog-content"],
+body.swal2-shown [data-slot="dialog-overlay"] {
   pointer-events: none !important;
 }
