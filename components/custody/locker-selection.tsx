@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import { Briefcase, Backpack, Luggage } from 'lucide-react'
-import { LockerGrid } from './locker-grid'
-import { type Locker, type LockerSize } from '@/lib/types'
-import { useCustodyStore } from '@/lib/custody-store'
+import { Briefcase, Backpack, Luggage } from "lucide-react";
+import { LockerGrid } from "./locker-grid";
+import { type Locker, type LockerSize } from "@/lib/types";
+import { useCustodyStore } from "@/lib/custody-store";
 
 interface LockerSelectionProps {
-  lockers: Locker[]
-  selectedLockerId: number | null
-  onSelectLocker: (lockerId: number) => void
-  selectedSize: LockerSize | null
-  onSelectSize: (size: LockerSize) => void
-  clientDocument: string
-  onChangeDocument: (document: string) => void
-  children?: React.ReactNode
+  lockers: Locker[];
+  selectedLockerId: number | null;
+  onSelectLocker: (lockerId: number) => void;
+  selectedSize: LockerSize | null;
+  onSelectSize: (size: LockerSize) => void;
+  clientDocument: string;
+  onChangeDocument: (document: string) => void;
+  children?: React.ReactNode;
 }
 
 export function LockerSelection({
@@ -26,20 +26,32 @@ export function LockerSelection({
   onChangeDocument,
   children,
 }: LockerSelectionProps) {
-  const lockerSizes = useCustodyStore((state) => state.lockerSizes)
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes);
 
   // Ensure S, M, L are always shown in that exact order, mapping to sorted database sizes if available
-  const sortedDbSizes = [...lockerSizes].sort((a, b) => a.price - b.price)
-  const sizeOrder: LockerSize[] = ['S', 'M', 'L']
+  const sortedDbSizes = [...lockerSizes].sort((a, b) => a.price - b.price);
+  const sizeOrder: LockerSize[] = ["S", "M", "L"];
   const sizesToShow = sizeOrder.map((val, index) => {
-    const dbSize = sortedDbSizes[index]
+    const dbSize = sortedDbSizes[index];
     return {
       uiLabel: val,
       value: dbSize ? dbSize.value : val,
-      label: dbSize ? dbSize.label : (val === 'S' ? 'S Bolso Pequeno' : val === 'M' ? 'M Maleta Mediana' : 'L Maleta Grande'),
-      price: dbSize ? dbSize.price : (val === 'S' ? 2500 : val === 'M' ? 3500 : 5000)
-    }
-  })
+      label: dbSize
+        ? dbSize.label
+        : val === "S"
+          ? "S Bolso Pequeno"
+          : val === "M"
+            ? "M Maleta Mediana"
+            : "L Maleta Grande",
+      price: dbSize
+        ? dbSize.price
+        : val === "S"
+          ? 2500
+          : val === "M"
+            ? 3500
+            : 5000,
+    };
+  });
 
   return (
     <div className="bg-[#d7d7d8] px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch lg:h-full lg:min-h-0">
@@ -52,17 +64,17 @@ export function LockerSelection({
           </div>
           <div className="grid grid-cols-3 gap-3">
             {sizesToShow.map((size) => {
-              let Icon = Luggage
-              
-              if (size.uiLabel === 'S') {
-                Icon = Briefcase
-              } else if (size.uiLabel === 'M') {
-                Icon = Backpack
-              } else if (size.uiLabel === 'L') {
-                Icon = Luggage
+              let Icon = Luggage;
+
+              if (size.uiLabel === "S") {
+                Icon = Briefcase;
+              } else if (size.uiLabel === "M") {
+                Icon = Backpack;
+              } else if (size.uiLabel === "L") {
+                Icon = Luggage;
               }
 
-              const isSelected = selectedSize === size.value
+              const isSelected = selectedSize === size.value;
 
               return (
                 <button
@@ -71,9 +83,10 @@ export function LockerSelection({
                   onClick={() => onSelectSize(size.value as LockerSize)}
                   className={`
                     relative flex flex-col items-center justify-between p-4 rounded-xl border border-zinc-300 h-36 transition-all duration-250 cursor-pointer select-none
-                    ${isSelected 
-                      ? 'bg-[#00c5ff] border-[#00b4eb] scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)]' 
-                      : 'bg-[#cef3ff] hover:bg-[#bceeff] border-zinc-200 hover:scale-[1.01]'
+                    ${
+                      isSelected
+                        ? "bg-[#00c5ff] border-[#00b4eb] scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)]"
+                        : "bg-[#cef3ff] hover:bg-[#bceeff] border-zinc-200 hover:scale-[1.01]"
                     }
                   `}
                 >
@@ -81,18 +94,18 @@ export function LockerSelection({
                   <span className="absolute top-2 right-4 text-2xl font-black text-zinc-900 leading-none">
                     {size.uiLabel}
                   </span>
-                  
+
                   {/* Centered Icon */}
                   <div className="flex-1 flex items-center justify-center mt-3">
                     <Icon className="w-12 h-12 text-zinc-900 stroke-[1.5]" />
                   </div>
-                  
+
                   {/* Price at bottom */}
                   <span className="text-lg font-black text-zinc-900 mt-1">
-                    $ {size.price.toLocaleString('es-CL')}
+                    $ {size.price.toLocaleString("es-CL")}
                   </span>
                 </button>
-              )
+              );
             })}
           </div>
         </div>
@@ -135,5 +148,5 @@ export function LockerSelection({
         </div>
       </div>
     </div>
-  )
+  );
 }

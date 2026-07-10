@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { create } from 'zustand'
+import { create } from "zustand";
 import {
   type Locker,
   type CustodyRecord,
@@ -11,7 +11,7 @@ import {
   generateCode,
   LOCKER_SIZES,
   type LockerSizeOption,
-} from './types'
+} from "./types";
 
 import {
   dbOccupyLocker,
@@ -22,350 +22,448 @@ import {
   dbCloseCashRegister,
   dbAddTransaction,
   sendBoleta,
-} from '@/app/actions/db-actions'
+} from "@/app/actions/db-actions";
 
 export interface User {
   id: number;
   username: string;
   email?: string;
-  role: 'cajero' | 'supervisor';
+  role: "cajero" | "supervisor";
   token?: string;
 }
 
-
 interface CustodyState {
-  lockers: Locker[]
-  records: CustodyRecord[]
-  cashRegisters: CashRegister[]
-  cashTransactions: CashTransaction[]
-  currentCashRegister: CashRegister | null
-  currentUser: User | null
-  lockerSizes: LockerSizeOption[]
+  lockers: Locker[];
+  records: CustodyRecord[];
+  cashRegisters: CashRegister[];
+  cashTransactions: CashTransaction[];
+  currentCashRegister: CashRegister | null;
+  currentUser: User | null;
+  lockerSizes: LockerSizeOption[];
 
   // Hydration
-  hydrateState: (state: { lockers: Locker[], records: CustodyRecord[], cashRegisters: CashRegister[], cashTransactions: CashTransaction[], lockerSizes?: LockerSizeOption[] }) => void
-  setLockerSizes: (sizes: LockerSizeOption[]) => void
-  
+  hydrateState: (state: {
+    lockers: Locker[];
+    records: CustodyRecord[];
+    cashRegisters: CashRegister[];
+    cashTransactions: CashTransaction[];
+    lockerSizes?: LockerSizeOption[];
+  }) => void;
+  setLockerSizes: (sizes: LockerSizeOption[]) => void;
+
   // Auth actions
-  login: (user: User) => void
-  logout: () => void
+  login: (user: User) => void;
+  logout: () => void;
 
   // Locker actions
-  occupyLocker: (lockerId: number, recordId: number) => Promise<void>
-  releaseLocker: (lockerId: number) => Promise<void>
+  occupyLocker: (lockerId: number, recordId: number) => Promise<void>;
+  releaseLocker: (lockerId: number) => Promise<void>;
 
   // Record actions
-  getRecordByCode: (code: string) => CustodyRecord | null
-  getActiveRecordsByInput: (input: string) => CustodyRecord[]
-  createRecord: (lockerId: number, clientDocument: string, size: LockerSize, paymentMethod?: string, authCode?: string | null, opNumber?: string | null) => Promise<CustodyRecord | null>
-  deliverRecord: (recordId: number, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null, authCode?: string | null, opNumber?: string | null) => Promise<boolean>
-
+  getRecordByCode: (code: string) => CustodyRecord | null;
+  getActiveRecordsByInput: (input: string) => CustodyRecord[];
+  createRecord: (
+    lockerId: number,
+    clientDocument: string,
+    size: LockerSize,
+    paymentMethod?: string,
+    authCode?: string | null,
+    opNumber?: string | null,
+  ) => Promise<CustodyRecord | null>;
+  deliverRecord: (
+    recordId: number,
+    extraCharge?: number,
+    paymentMethod?: string,
+    extraFolio?: number | null,
+    authCode?: string | null,
+    opNumber?: string | null,
+  ) => Promise<boolean>;
 
   // Cash register actions
-  openCashRegister: (openingAmount: number, notes?: string) => Promise<CashRegister>
-  closeCashRegister: (closingAmount: number, notes?: string) => Promise<CashRegister | null>
-  addTransaction: (type: 'income' | 'expense', amount: number, description: string, recordId?: number) => Promise<void>
-  getCurrentRegisterStats: () => { totalSales: number; totalTransactions: number; balance: number; ingresosEfectivo: number; ingresosTarjeta: number }
+  openCashRegister: (
+    openingAmount: number,
+    notes?: string,
+  ) => Promise<CashRegister>;
+  closeCashRegister: (
+    closingAmount: number,
+    notes?: string,
+  ) => Promise<CashRegister | null>;
+  addTransaction: (
+    type: "income" | "expense",
+    amount: number,
+    description: string,
+    recordId?: number,
+  ) => Promise<void>;
+  getCurrentRegisterStats: () => {
+    totalSales: number;
+    totalTransactions: number;
+    balance: number;
+    ingresosEfectivo: number;
+    ingresosTarjeta: number;
+  };
 }
 
-export const useCustodyStore = create<CustodyState>()(
-  (set, get) => ({
-    lockers: [],
-    records: [],
-    cashRegisters: [],
-    cashTransactions: [],
-    currentCashRegister: null,
-    currentUser: null,
-    lockerSizes: LOCKER_SIZES,
+export const useCustodyStore = create<CustodyState>()((set, get) => ({
+  lockers: [],
+  records: [],
+  cashRegisters: [],
+  cashTransactions: [],
+  currentCashRegister: null,
+  currentUser: null,
+  lockerSizes: LOCKER_SIZES,
 
-    login: (user) => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('currentUser', JSON.stringify(user))
-      }
-      set({ currentUser: user })
-    },
-    logout: () => {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('currentUser')
-      }
-      set({ currentUser: null })
-    },
+  login: (user) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentUser", JSON.stringify(user));
+    }
+    set({ currentUser: user });
+  },
+  logout: () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("currentUser");
+    }
+    set({ currentUser: null });
+  },
 
-    hydrateState: (dbState) => {
-      set({
-        lockers: dbState.lockers,
-        records: dbState.records,
-        cashRegisters: dbState.cashRegisters,
-        cashTransactions: dbState.cashTransactions,
-        lockerSizes: dbState.lockerSizes || get().lockerSizes,
-        currentCashRegister: dbState.cashRegisters.find(r => r.status === 'open') || null
-      })
-    },
+  hydrateState: (dbState) => {
+    set({
+      lockers: dbState.lockers,
+      records: dbState.records,
+      cashRegisters: dbState.cashRegisters,
+      cashTransactions: dbState.cashTransactions,
+      lockerSizes: dbState.lockerSizes || get().lockerSizes,
+      currentCashRegister:
+        dbState.cashRegisters.find((r) => r.status === "open") || null,
+    });
+  },
 
-    setLockerSizes: (sizes) => set({ lockerSizes: sizes }),
+  setLockerSizes: (sizes) => set({ lockerSizes: sizes }),
 
-    occupyLocker: async (lockerId, recordId) => {
-      // Sync to DB
-      await dbOccupyLocker(lockerId, recordId)
-      
-      set((state) => ({
-        lockers: state.lockers.map((l) =>
-          l.id === lockerId ? { ...l, isOccupied: true, currentRecordId: recordId } : l
-        ),
-      }))
-    },
+  occupyLocker: async (lockerId, recordId) => {
+    // Sync to DB
+    await dbOccupyLocker(lockerId, recordId);
 
-    releaseLocker: async (lockerId) => {
-      // Sync to DB
-      await dbReleaseLocker(lockerId)
-      
-      set((state) => ({
-        lockers: state.lockers.map((l) =>
-          l.id === lockerId ? { ...l, isOccupied: false, currentRecordId: null } : l
-        ),
-      }))
-    },
+    set((state) => ({
+      lockers: state.lockers.map((l) =>
+        l.id === lockerId
+          ? { ...l, isOccupied: true, currentRecordId: recordId }
+          : l,
+      ),
+    }));
+  },
 
-    createRecord: async (lockerId, clientDocument, size, paymentMethod = 'Efectivo', authCode = null, opNumber = null) => {
-      const { currentCashRegister, lockers, currentUser } = get()
-      
-      if (!currentCashRegister || currentCashRegister.status !== 'open') {
-        return null
-      }
+  releaseLocker: async (lockerId) => {
+    // Sync to DB
+    await dbReleaseLocker(lockerId);
 
-      const locker = lockers.find((l) => l.id === lockerId)
-      if (!locker || locker.isOccupied) {
-        return null
-      }
+    set((state) => ({
+      lockers: state.lockers.map((l) =>
+        l.id === lockerId
+          ? { ...l, isOccupied: false, currentRecordId: null }
+          : l,
+      ),
+    }));
+  },
 
-      const sizeOption = get().lockerSizes.find((s) => s.value === size)
-      if (!sizeOption) return null
+  createRecord: async (
+    lockerId,
+    clientDocument,
+    size,
+    paymentMethod = "Efectivo",
+    authCode = null,
+    opNumber = null,
+  ) => {
+    const { currentCashRegister, lockers, currentUser } = get();
 
-      let folio: number | null = null
+    if (!currentCashRegister || currentCashRegister.status !== "open") {
+      return null;
+    }
 
-      if (paymentMethod === 'Efectivo') {
-        try {
-          const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price)
-          if (boletaRes.success && boletaRes.data) {
-            folio = boletaRes.data.folio
-          }
-        } catch (err) {
-          console.error('Error al emitir boleta en la entrada:', err)
+    const locker = lockers.find((l) => l.id === lockerId);
+    if (!locker || locker.isOccupied) {
+      return null;
+    }
+
+    const sizeOption = get().lockerSizes.find((s) => s.value === size);
+    if (!sizeOption) return null;
+
+    let folio: number | null = null;
+
+    if (paymentMethod === "Efectivo") {
+      try {
+        const boletaRes = await sendBoleta(sizeOption.label, sizeOption.price);
+        if (boletaRes.success && boletaRes.data) {
+          folio = boletaRes.data.folio;
         }
+      } catch (err) {
+        console.error("Error al emitir boleta en la entrada:", err);
       }
+    }
 
-      const code = generateCode(clientDocument)
-      
-      const recordData: Omit<CustodyRecord, 'id'> = {
-        code,
-        lockerId,
-        clientDocument,
-        entryTime: new Date().toISOString(),
-        exitTime: null,
-        size,
-        status: 'Activo',
-        price: sizeOption.price,
-        folio: folio || undefined,
-      }
+    const code = generateCode(clientDocument);
 
-      // Sync record creation to DB to get ID
-      const newRecord = await dbCreateRecord(recordData)
+    const recordData: Omit<CustodyRecord, "id"> = {
+      code,
+      lockerId,
+      clientDocument,
+      entryTime: new Date().toISOString(),
+      exitTime: null,
+      size,
+      status: "Activo",
+      price: sizeOption.price,
+      folio: folio || undefined,
+    };
 
-      set((state) => ({
-        records: [newRecord, ...state.records],
-      }))
+    // Sync record creation to DB to get ID
+    const newRecord = await dbCreateRecord(recordData);
 
-      await get().occupyLocker(lockerId, newRecord.id)
-      await get().addTransaction('income', sizeOption.price, `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}${folio ? ` - Folio: ${folio}` : ''}`, newRecord.id)
+    set((state) => ({
+      records: [newRecord, ...state.records],
+    }));
 
-      return newRecord
-    },
+    await get().occupyLocker(lockerId, newRecord.id);
+    await get().addTransaction(
+      "income",
+      sizeOption.price,
+      `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}${folio ? ` - Folio: ${folio}` : ""}`,
+      newRecord.id,
+    );
 
-    getRecordByCode: (code) => {
-      const { records } = get()
-      // 1. Buscar por código exacto de barras
-      const byCode = records.find((r) => r.code === code && r.status === 'Activo')
-      if (byCode) return byCode
-      // 2. Buscar por documento del cliente (RUT/DNI/Pasaporte) — FIFO: el más antiguo primero
-      const byDocument = records.filter((r) => r.clientDocument === code && r.status === 'Activo')
-      return byDocument.length > 0 ? byDocument[byDocument.length - 1] : null
-    },
+    return newRecord;
+  },
 
-    getActiveRecordsByInput: (input) => {
-      const { records } = get()
-      // Si es un código exacto de barras o la primera parte del código (ej: 225386)
-      const byCode = records.filter((r) => (r.code === input || r.code.startsWith(`${input}/`)) && r.status === 'Activo')
-      if (byCode.length > 0) return byCode
+  getRecordByCode: (code) => {
+    const { records } = get();
+    // 1. Buscar por código exacto de barras
+    const byCode = records.find(
+      (r) => r.code === code && r.status === "Activo",
+    );
+    if (byCode) return byCode;
+    // 2. Buscar por documento del cliente (RUT/DNI/Pasaporte) — FIFO: el más antiguo primero
+    const byDocument = records.filter(
+      (r) => r.clientDocument === code && r.status === "Activo",
+    );
+    return byDocument.length > 0 ? byDocument[byDocument.length - 1] : null;
+  },
 
-      // Si es por RUT, devolver todos los activos, ordenados por antigüedad
-      const byDocument = records.filter((r) => r.clientDocument === input && r.status === 'Activo')
-      return byDocument.sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime())
-    },
+  getActiveRecordsByInput: (input) => {
+    const { records } = get();
+    // Si es un código exacto de barras o la primera parte del código (ej: 225386)
+    const byCode = records.filter(
+      (r) =>
+        (r.code === input || r.code.startsWith(`${input}/`)) &&
+        r.status === "Activo",
+    );
+    if (byCode.length > 0) return byCode;
 
-    deliverRecord: async (recordId, extraCharge = 0, paymentMethod = 'Efectivo', extraFolio = null) => {
-      const { records, currentCashRegister } = get()
-      const record = records.find((r) => r.id === recordId)
-      
-      if (!record || record.status !== 'Activo') {
-        return false
-      }
+    // Si es por RUT, devolver todos los activos, ordenados por antigüedad
+    const byDocument = records.filter(
+      (r) => r.clientDocument === input && r.status === "Activo",
+    );
+    return byDocument.sort(
+      (a, b) =>
+        new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime(),
+    );
+  },
 
-      if (!currentCashRegister || currentCashRegister.status !== 'open') {
-        return false
-      }
+  deliverRecord: async (
+    recordId,
+    extraCharge = 0,
+    paymentMethod = "Efectivo",
+    extraFolio = null,
+  ) => {
+    const { records, currentCashRegister } = get();
+    const record = records.find((r) => r.id === recordId);
 
-      // Sync delivery to DB
-      await dbDeliverRecord(recordId, record.lockerId, extraFolio)
+    if (!record || record.status !== "Activo") {
+      return false;
+    }
 
-      // Apply extra charge transaction if any
-      if (extraCharge > 0) {
-        await get().addTransaction('income', extraCharge, `Recargo extra Custodia ${record.code} - ${paymentMethod}${extraFolio ? ` - Folio: ${extraFolio}` : ''}`, record.id)
-      }
+    if (!currentCashRegister || currentCashRegister.status !== "open") {
+      return false;
+    }
 
-      set((state) => ({
-        records: state.records.map((r) =>
-          r.id === recordId
-            ? { 
-                ...r, 
-                status: 'Entregado', 
-                exitTime: new Date().toISOString(),
-                extraFolio: extraFolio || undefined,
-              }
-            : r
-        ),
-      }))
+    // Sync delivery to DB
+    await dbDeliverRecord(recordId, record.lockerId, extraFolio);
 
-      await get().releaseLocker(record.lockerId)
-      return true
-    },
+    // Apply extra charge transaction if any
+    if (extraCharge > 0) {
+      await get().addTransaction(
+        "income",
+        extraCharge,
+        `Recargo extra Custodia ${record.code} - ${paymentMethod}${extraFolio ? ` - Folio: ${extraFolio}` : ""}`,
+        record.id,
+      );
+    }
 
-    openCashRegister: async (openingAmount, notes = '') => {
-      const newRegisterData: Omit<CashRegister, 'id'> = {
-        openedAt: new Date().toISOString(),
-        closedAt: null,
-        openingAmount,
-        closingAmount: null,
+    set((state) => ({
+      records: state.records.map((r) =>
+        r.id === recordId
+          ? {
+              ...r,
+              status: "Entregado",
+              exitTime: new Date().toISOString(),
+              extraFolio: extraFolio || undefined,
+            }
+          : r,
+      ),
+    }));
+
+    await get().releaseLocker(record.lockerId);
+    return true;
+  },
+
+  openCashRegister: async (openingAmount, notes = "") => {
+    const newRegisterData: Omit<CashRegister, "id"> = {
+      openedAt: new Date().toISOString(),
+      closedAt: null,
+      openingAmount,
+      closingAmount: null,
+      totalSales: 0,
+      totalTransactions: 0,
+      status: "open",
+      notes,
+      openedBy: get().currentUser?.username || "desconocido",
+    };
+
+    // Sync to DB
+    const newRegister = await dbOpenCashRegister(newRegisterData);
+
+    set((state) => ({
+      cashRegisters: [newRegister, ...state.cashRegisters],
+      currentCashRegister: newRegister,
+    }));
+
+    return newRegister;
+  },
+
+  closeCashRegister: async (closingAmount, notes = "") => {
+    const { currentCashRegister, cashTransactions } = get();
+
+    if (!currentCashRegister || currentCashRegister.status !== "open") {
+      return null;
+    }
+
+    const registerTransactions = cashTransactions.filter(
+      (t) => t.registerId === currentCashRegister.id,
+    );
+
+    const totalSales =
+      Math.round(
+        registerTransactions
+          .filter((t) => t.type === "income")
+          .reduce((sum, t) => sum + t.amount, 0) / 10,
+      ) * 10;
+
+    const totalExpenses =
+      Math.round(
+        registerTransactions
+          .filter((t) => t.type === "expense")
+          .reduce((sum, t) => sum + t.amount, 0) / 10,
+      ) * 10;
+
+    const closedRegisterData = {
+      ...currentCashRegister,
+      closedAt: new Date().toISOString(),
+      closingAmount,
+      totalSales: totalSales - totalExpenses,
+      totalTransactions: registerTransactions.length,
+      status: "closed" as const,
+      notes: currentCashRegister.notes + (notes ? `\nCierre: ${notes}` : ""),
+    };
+
+    // Sync to DB
+    const closedRegister = await dbCloseCashRegister(currentCashRegister.id, {
+      closedAt: closedRegisterData.closedAt,
+      closingAmount: closedRegisterData.closingAmount,
+      totalSales: closedRegisterData.totalSales,
+      totalTransactions: closedRegisterData.totalTransactions,
+      status: closedRegisterData.status,
+      notes: closedRegisterData.notes,
+    });
+
+    if (!closedRegister) return null;
+
+    set((state) => ({
+      cashRegisters: state.cashRegisters.map((r) =>
+        r.id === closedRegister.id ? closedRegister : r,
+      ),
+      currentCashRegister: null,
+    }));
+
+    return closedRegister;
+  },
+
+  addTransaction: async (type, amount, description, recordId) => {
+    const { currentCashRegister } = get();
+
+    if (!currentCashRegister) return;
+
+    const transactionData: Omit<CashTransaction, "id"> = {
+      registerId: currentCashRegister.id,
+      type,
+      amount,
+      description,
+      timestamp: new Date().toISOString(),
+      recordId,
+    };
+
+    // Sync to DB
+    const transaction = await dbAddTransaction(transactionData);
+
+    set((state) => ({
+      cashTransactions: [transaction, ...state.cashTransactions],
+    }));
+  },
+
+  getCurrentRegisterStats: () => {
+    const { currentCashRegister, cashTransactions } = get();
+
+    if (!currentCashRegister) {
+      return {
         totalSales: 0,
         totalTransactions: 0,
-        status: 'open',
-        notes,
-        openedBy: get().currentUser?.username || 'desconocido',
-      }
+        balance: 0,
+        ingresosEfectivo: 0,
+        ingresosTarjeta: 0,
+      };
+    }
 
-      // Sync to DB
-      const newRegister = await dbOpenCashRegister(newRegisterData)
+    const registerTransactions = cashTransactions.filter(
+      (t) => t.registerId === currentCashRegister.id,
+    );
 
-      set((state) => ({
-        cashRegisters: [newRegister, ...state.cashRegisters],
-        currentCashRegister: newRegister,
-      }))
+    const incomeEfectivo =
+      Math.round(
+        registerTransactions
+          .filter(
+            (t) => t.type === "income" && !t.description.includes("Tarjeta"),
+          )
+          .reduce((sum, t) => sum + t.amount, 0) / 10,
+      ) * 10;
 
-      return newRegister
-    },
+    const incomeTarjeta =
+      Math.round(
+        registerTransactions
+          .filter(
+            (t) => t.type === "income" && t.description.includes("Tarjeta"),
+          )
+          .reduce((sum, t) => sum + t.amount, 0) / 10,
+      ) * 10;
 
-    closeCashRegister: async (closingAmount, notes = '') => {
-      const { currentCashRegister, cashTransactions } = get()
-      
-      if (!currentCashRegister || currentCashRegister.status !== 'open') {
-        return null
-      }
+    const expenses =
+      Math.round(
+        registerTransactions
+          .filter((t) => t.type === "expense")
+          .reduce((sum, t) => sum + t.amount, 0) / 10,
+      ) * 10;
 
-      const registerTransactions = cashTransactions.filter(
-        (t) => t.registerId === currentCashRegister.id
-      )
-      
-      const totalSales = Math.round(registerTransactions
-        .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
-      
-      const totalExpenses = Math.round(registerTransactions
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
-
-      const closedRegisterData = {
-        ...currentCashRegister,
-        closedAt: new Date().toISOString(),
-        closingAmount,
-        totalSales: totalSales - totalExpenses,
-        totalTransactions: registerTransactions.length,
-        status: 'closed' as const,
-        notes: currentCashRegister.notes + (notes ? `\nCierre: ${notes}` : ''),
-      }
-
-      // Sync to DB
-      const closedRegister = await dbCloseCashRegister(currentCashRegister.id, {
-        closedAt: closedRegisterData.closedAt,
-        closingAmount: closedRegisterData.closingAmount,
-        totalSales: closedRegisterData.totalSales,
-        totalTransactions: closedRegisterData.totalTransactions,
-        status: closedRegisterData.status,
-        notes: closedRegisterData.notes,
-      })
-
-      if (!closedRegister) return null;
-
-      set((state) => ({
-        cashRegisters: state.cashRegisters.map((r) =>
-          r.id === closedRegister.id ? closedRegister : r
-        ),
-        currentCashRegister: null,
-      }))
-
-      return closedRegister
-    },
-
-    addTransaction: async (type, amount, description, recordId) => {
-      const { currentCashRegister } = get()
-      
-      if (!currentCashRegister) return
-
-      const transactionData: Omit<CashTransaction, 'id'> = {
-        registerId: currentCashRegister.id,
-        type,
-        amount,
-        description,
-        timestamp: new Date().toISOString(),
-        recordId,
-      }
-
-      // Sync to DB
-      const transaction = await dbAddTransaction(transactionData)
-
-      set((state) => ({
-        cashTransactions: [transaction, ...state.cashTransactions],
-      }))
-    },
-
-    getCurrentRegisterStats: () => {
-      const { currentCashRegister, cashTransactions } = get()
-      
-      if (!currentCashRegister) {
-        return { totalSales: 0, totalTransactions: 0, balance: 0, ingresosEfectivo: 0, ingresosTarjeta: 0 }
-      }
-
-      const registerTransactions = cashTransactions.filter(
-        (t) => t.registerId === currentCashRegister.id
-      )
-
-      const incomeEfectivo = Math.round(registerTransactions
-        .filter((t) => t.type === 'income' && !t.description.includes('Tarjeta'))
-        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
-
-      const incomeTarjeta = Math.round(registerTransactions
-        .filter((t) => t.type === 'income' && t.description.includes('Tarjeta'))
-        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
-
-      const expenses = Math.round(registerTransactions
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0) / 10) * 10
-
-      return {
-        totalSales: incomeEfectivo + incomeTarjeta,
-        ingresosEfectivo: incomeEfectivo,
-        ingresosTarjeta: incomeTarjeta,
-        totalTransactions: registerTransactions.length,
-        balance: currentCashRegister.openingAmount + incomeEfectivo - expenses,
-      }
-    },
-  })
-)
+    return {
+      totalSales: incomeEfectivo + incomeTarjeta,
+      ingresosEfectivo: incomeEfectivo,
+      ingresosTarjeta: incomeTarjeta,
+      totalTransactions: registerTransactions.length,
+      balance: currentCashRegister.openingAmount + incomeEfectivo - expenses,
+    };
+  },
+}));

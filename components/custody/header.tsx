@@ -1,175 +1,221 @@
-'use client'
+"use client";
 
-import { Box, History, ArrowLeft, DollarSign, User as UserIcon, LogOut, Printer } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useCustodyStore } from '@/lib/custody-store'
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { printerService } from '@/lib/printer-service'
-import Swal from 'sweetalert2'
+import {
+  Box,
+  History,
+  ArrowLeft,
+  DollarSign,
+  User as UserIcon,
+  LogOut,
+  Printer,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCustodyStore } from "@/lib/custody-store";
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { printerService } from "@/lib/printer-service";
+import Swal from "sweetalert2";
 
-const showToast = (message: string, icon: 'success' | 'error' | 'warning' | 'info' = 'warning') => {
+const showToast = (
+  message: string,
+  icon: "success" | "error" | "warning" | "info" = "warning",
+) => {
   Swal.mixin({
     toast: true,
-    position: 'top-end',
+    position: "top-end",
     showConfirmButton: false,
     timer: 3500,
     timerProgressBar: true,
     didOpen: (toast) => {
       toast.onmouseenter = Swal.stopTimer;
       toast.onmouseleave = Swal.resumeTimer;
-    }
+    },
   }).fire({
     icon,
-    title: message
-  })
-}
+    title: message,
+  });
+};
 
 interface HeaderProps {
-  showHistory?: boolean
-  showBack?: boolean
-  showCash?: boolean
-  showShutdown?: boolean
+  showHistory?: boolean;
+  showBack?: boolean;
+  showCash?: boolean;
+  showShutdown?: boolean;
 }
 
-export function Header({ showHistory = false, showBack = false, showCash = false, showShutdown = false }: HeaderProps) {
-  const { currentUser, logout } = useCustodyStore()
+export function Header({
+  showHistory = false,
+  showBack = false,
+  showCash = false,
+  showShutdown = false,
+}: HeaderProps) {
+  const { currentUser, logout } = useCustodyStore();
 
   const handleShutdown = () => {
     Swal.fire({
-      title: '¿Apagar el equipo?',
-      text: 'Esta acción apagará la máquina Windows por completo.',
-      icon: 'warning',
+      title: "¿Apagar el equipo?",
+      text: "Esta acción apagará la máquina Windows por completo.",
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#71717a',
-      confirmButtonText: 'OK',
-      cancelButtonText: 'Cancelar',
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#71717a",
+      confirmButtonText: "OK",
+      cancelButtonText: "Cancelar",
       customClass: {
-        confirmButton: 'px-4 py-2 font-bold text-white rounded-md bg-red-600 hover:bg-red-700',
-        cancelButton: 'px-4 py-2 font-bold text-white rounded-md bg-zinc-500 hover:bg-zinc-600'
-      }
+        confirmButton:
+          "px-4 py-2 font-bold text-white rounded-md bg-red-600 hover:bg-red-700",
+        cancelButton:
+          "px-4 py-2 font-bold text-white rounded-md bg-zinc-500 hover:bg-zinc-600",
+      },
     }).then(async (result) => {
       if (result.isConfirmed) {
         Swal.fire({
-          title: 'Apagando...',
-          text: 'El equipo se está apagando, por favor espere.',
-          icon: 'info',
+          title: "Apagando...",
+          text: "El equipo se está apagando, por favor espere.",
+          icon: "info",
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
-            Swal.showLoading()
-          }
+            Swal.showLoading();
+          },
         });
-        
+
         try {
-          const response = await fetch('/api/apagar', { method: 'POST' })
-          const res = await response.json()
+          const response = await fetch("/api/apagar", { method: "POST" });
+          const res = await response.json();
           if (!response.ok || !res.success) {
-            Swal.fire('Error', 'No se pudo apagar el equipo: ' + (res.error || 'Error desconocido'), 'error')
+            Swal.fire(
+              "Error",
+              "No se pudo apagar el equipo: " +
+                (res.error || "Error desconocido"),
+              "error",
+            );
           }
         } catch (err: any) {
-          Swal.fire('Error', 'Ocurrió un error: ' + err.message, 'error')
+          Swal.fire("Error", "Ocurrió un error: " + err.message, "error");
         }
       }
-    })
-  }
+    });
+  };
 
   // Printer settings state
-  const [isNative, setIsNative] = useState(false)
-  const [showPrinterDialog, setShowPrinterDialog] = useState(false)
-  const [printerStatus, setPrinterStatus] = useState<any>({ connected: false, status: 'Cargando...' })
-  const [printerMode, setPrinterMode] = useState<string>('0') // '0': BT, '1': USB, '2': NET
-  const [printerAddress, setPrinterAddress] = useState<string>('')
-  const [btDevices, setBtDevices] = useState<any[]>([])
-  const [usbDevices, setUsbDevices] = useState<string[]>([])
-  const [isConnecting, setIsConnecting] = useState(false)
+  const [isNative, setIsNative] = useState(false);
+  const [showPrinterDialog, setShowPrinterDialog] = useState(false);
+  const [printerStatus, setPrinterStatus] = useState<any>({
+    connected: false,
+    status: "Cargando...",
+  });
+  const [printerMode, setPrinterMode] = useState<string>("0"); // '0': BT, '1': USB, '2': NET
+  const [printerAddress, setPrinterAddress] = useState<string>("");
+  const [btDevices, setBtDevices] = useState<any[]>([]);
+  const [usbDevices, setUsbDevices] = useState<string[]>([]);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-    const nativeVal = printerService.isNative()
-    setIsNative(nativeVal)
+    const nativeVal = printerService.isNative();
+    setIsNative(nativeVal);
     if (nativeVal) {
-      const savedAddress = localStorage.getItem('printer_address') || ''
-      const savedMode = localStorage.getItem('printer_mode') || '0'
-      setPrinterAddress(savedAddress)
-      setPrinterMode(savedMode)
-      
-      printerService.getPrinterStatus().then(status => {
-        setPrinterStatus(status)
+      const savedAddress = localStorage.getItem("printer_address") || "";
+      const savedMode = localStorage.getItem("printer_mode") || "0";
+      setPrinterAddress(savedAddress);
+      setPrinterMode(savedMode);
+
+      printerService.getPrinterStatus().then((status) => {
+        setPrinterStatus(status);
         if (!status.connected && savedAddress) {
-          setIsConnecting(true)
-          printerService.connectPrinter(savedAddress, parseInt(savedMode, 10))
-            .then(res => {
-              setPrinterStatus({ connected: true, status: res.status })
+          setIsConnecting(true);
+          printerService
+            .connectPrinter(savedAddress, parseInt(savedMode, 10))
+            .then((res) => {
+              setPrinterStatus({ connected: true, status: res.status });
             })
-            .catch(err => {
-              setPrinterStatus({ connected: false, status: 'Fallo auto-conexión: ' + err.message })
+            .catch((err) => {
+              setPrinterStatus({
+                connected: false,
+                status: "Fallo auto-conexión: " + err.message,
+              });
             })
-            .finally(() => setIsConnecting(false))
+            .finally(() => setIsConnecting(false));
         }
-      })
+      });
     }
-  }, [])
+  }, []);
 
   const scanDevices = async () => {
-    if (printerMode === '0') {
+    if (printerMode === "0") {
       try {
-        const list = await printerService.getBluetoothDevices()
-        setBtDevices(list)
+        const list = await printerService.getBluetoothDevices();
+        setBtDevices(list);
       } catch (err: any) {
-        showToast('Error al escanear Bluetooth: ' + err.message, 'error')
+        showToast("Error al escanear Bluetooth: " + err.message, "error");
       }
-    } else if (printerMode === '1') {
+    } else if (printerMode === "1") {
       try {
-        const list = await printerService.getUsbDevices()
-        setUsbDevices(list)
+        const list = await printerService.getUsbDevices();
+        setUsbDevices(list);
       } catch (err: any) {
-        showToast('Error al buscar USB: ' + err.message, 'error')
+        showToast("Error al buscar USB: " + err.message, "error");
       }
     }
-  }
+  };
 
   const handleConnect = async (addressToConnect: string = printerAddress) => {
-    if (!addressToConnect) return
-    setIsConnecting(true)
+    if (!addressToConnect) return;
+    setIsConnecting(true);
     try {
-      const modeInt = parseInt(printerMode, 10)
-      const res = await printerService.connectPrinter(addressToConnect, modeInt)
-      localStorage.setItem('printer_address', addressToConnect)
-      localStorage.setItem('printer_mode', printerMode)
-      setPrinterAddress(addressToConnect)
-      setPrinterStatus({ connected: true, status: res.status })
-      showToast('Conectado con éxito', 'success')
+      const modeInt = parseInt(printerMode, 10);
+      const res = await printerService.connectPrinter(
+        addressToConnect,
+        modeInt,
+      );
+      localStorage.setItem("printer_address", addressToConnect);
+      localStorage.setItem("printer_mode", printerMode);
+      setPrinterAddress(addressToConnect);
+      setPrinterStatus({ connected: true, status: res.status });
+      showToast("Conectado con éxito", "success");
     } catch (err: any) {
-      showToast('Error al conectar: ' + err.message, 'error')
-      setPrinterStatus({ connected: false, status: 'Error: ' + err.message })
+      showToast("Error al conectar: " + err.message, "error");
+      setPrinterStatus({ connected: false, status: "Error: " + err.message });
     } finally {
-      setIsConnecting(false)
+      setIsConnecting(false);
     }
-  }
+  };
 
   const handleDisconnect = async () => {
     try {
-      await printerService.disconnectPrinter()
-      setPrinterStatus({ connected: false, status: 'Sin conectar' })
-      showToast('Impresora desconectada', 'info')
+      await printerService.disconnectPrinter();
+      setPrinterStatus({ connected: false, status: "Sin conectar" });
+      showToast("Impresora desconectada", "info");
     } catch (err: any) {
-      showToast('Error al desconectar: ' + err.message, 'error')
+      showToast("Error al desconectar: " + err.message, "error");
     }
-  }
+  };
 
   const handleTestPrint = async () => {
-    const ok = await printerService.printTestTicket()
+    const ok = await printerService.printTestTicket();
     if (!ok) {
-      showToast('No se pudo imprimir el ticket de prueba', 'error')
+      showToast("No se pudo imprimir el ticket de prueba", "error");
     } else {
-      showToast('Ticket de prueba impreso', 'success')
+      showToast("Ticket de prueba impreso", "success");
     }
-  }
+  };
 
   return (
     <>
@@ -179,61 +225,83 @@ export function Header({ showHistory = false, showBack = false, showCash = false
           <div className="flex items-center">
             <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
               <span className="text-[#0a354c] leading-none">n</span>
-              <span className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle" style={{ borderWidth: '3.5px' }} />
+              <span
+                className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
+                style={{ borderWidth: "3.5px" }}
+              />
               <span className="text-[#0a354c] leading-none">d</span>
-              <span className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle" style={{ borderWidth: '3.5px' }} />
+              <span
+                className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
+                style={{ borderWidth: "3.5px" }}
+              />
             </span>
           </div>
         </div>
-        
+
         {/* Center: Title & Subtitle */}
         <div className="text-center flex-1">
-          <h1 className="text-2xl font-bold tracking-wider text-[#242424] leading-tight font-sans">CUSTODIA</h1>
-          <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Sistema de Control de Casilleros</p>
+          <h1 className="text-2xl font-bold tracking-wider text-[#242424] leading-tight font-sans">
+            CUSTODIA
+          </h1>
+          <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+            Sistema de Control de Casilleros
+          </p>
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {isNative && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
-                setShowPrinterDialog(true)
-                printerService.getPrinterStatus().then(setPrinterStatus)
+                setShowPrinterDialog(true);
+                printerService.getPrinterStatus().then(setPrinterStatus);
               }}
               className={`rounded-full h-7 px-3 text-xs font-medium border-zinc-400 bg-white ${
-                printerStatus.connected 
-                  ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50' 
-                  : 'text-amber-600 hover:bg-amber-50'
+                printerStatus.connected
+                  ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                  : "text-amber-600 hover:bg-amber-50"
               }`}
               title="Configurar Impresora"
             >
               <Printer className="h-3 w-3 mr-1" />
-              {printerStatus.connected ? 'Impresora OK' : 'Impresora'}
+              {printerStatus.connected ? "Impresora OK" : "Impresora"}
             </Button>
           )}
 
           {showCash && (
-            <Button asChild variant="outline" className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none">
+            <Button
+              asChild
+              variant="outline"
+              className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none"
+            >
               <Link href="/caja">Caja</Link>
             </Button>
           )}
           {showHistory && (
-            <Button asChild variant="outline" className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none">
+            <Button
+              asChild
+              variant="outline"
+              className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none"
+            >
               <Link href="/historial">Ver Historial</Link>
             </Button>
           )}
           {showBack && (
-            <Button asChild variant="outline" className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none">
+            <Button
+              asChild
+              variant="outline"
+              className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none"
+            >
               <Link href="/">Volver</Link>
             </Button>
           )}
 
           {showShutdown && (
-            <Button 
+            <Button
               type="button"
-              variant="destructive" 
+              variant="destructive"
               onClick={handleShutdown}
               className="bg-red-600 hover:bg-red-700 text-white rounded-full h-7 px-3 text-[10px] font-bold leading-none uppercase select-none cursor-pointer"
             >
@@ -250,8 +318,8 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 variant="ghost"
                 size="icon"
                 onClick={() => {
-                  logout()
-                  window.location.href = '/'
+                  logout();
+                  window.location.href = "/";
                 }}
                 className="h-7 w-7 text-zinc-500 hover:text-destructive hover:bg-destructive/10 rounded-full"
                 title="Cerrar sesión"
@@ -273,21 +341,33 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 Configuración de Impresora
               </DialogTitle>
               <DialogDescription>
-                Conecte su dispositivo a la impresora térmica (Bluetooth, USB o Red).
+                Conecte su dispositivo a la impresora térmica (Bluetooth, USB o
+                Red).
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="flex flex-col gap-2 p-3 bg-secondary/35 rounded-lg border border-border">
-                <div className="text-xs text-muted-foreground">Estado Actual:</div>
-                <div className={`text-sm font-bold ${printerStatus.connected ? 'text-emerald-500' : 'text-amber-500'}`}>
-                  {printerStatus.status || 'Desconectado'}
+                <div className="text-xs text-muted-foreground">
+                  Estado Actual:
+                </div>
+                <div
+                  className={`text-sm font-bold ${printerStatus.connected ? "text-emerald-500" : "text-amber-500"}`}
+                >
+                  {printerStatus.status || "Desconectado"}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="printer-mode">Método de Conexión</Label>
-                <Select value={printerMode} onValueChange={(val) => { setPrinterMode(val); setBtDevices([]); setUsbDevices([]); }}>
+                <Select
+                  value={printerMode}
+                  onValueChange={(val) => {
+                    setPrinterMode(val);
+                    setBtDevices([]);
+                    setUsbDevices([]);
+                  }}
+                >
                   <SelectTrigger id="printer-mode" className="bg-input">
                     <SelectValue />
                   </SelectTrigger>
@@ -299,11 +379,18 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 </Select>
               </div>
 
-              {printerMode === '0' && ( // Bluetooth Scan & Select
+              {printerMode === "0" && ( // Bluetooth Scan & Select
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label>Dispositivos Bluetooth Vinculados</Label>
-                    <Button variant="outline" size="sm" onClick={scanDevices} className="h-7 text-xs">Escanear</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={scanDevices}
+                      className="h-7 text-xs"
+                    >
+                      Escanear
+                    </Button>
                   </div>
                   {btDevices.length === 0 ? (
                     <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded text-center">
@@ -312,13 +399,18 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                   ) : (
                     <div className="max-h-40 overflow-y-auto space-y-1.5 border border-border p-2 rounded">
                       {btDevices.map((dev) => (
-                        <div 
+                        <div
                           key={dev.address}
-                          onClick={() => { setPrinterAddress(dev.address); handleConnect(dev.address); }}
-                          className={`text-xs p-2 rounded cursor-pointer transition-colors flex justify-between items-center ${printerAddress === dev.address ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
+                          onClick={() => {
+                            setPrinterAddress(dev.address);
+                            handleConnect(dev.address);
+                          }}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors flex justify-between items-center ${printerAddress === dev.address ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
                         >
                           <span className="font-semibold">{dev.name}</span>
-                          <span className="opacity-70 font-mono">{dev.address}</span>
+                          <span className="opacity-70 font-mono">
+                            {dev.address}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -326,11 +418,18 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 </div>
               )}
 
-              {printerMode === '1' && ( // USB List
+              {printerMode === "1" && ( // USB List
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label>Puertos USB Detectados</Label>
-                    <Button variant="outline" size="sm" onClick={scanDevices} className="h-7 text-xs">Escanear</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={scanDevices}
+                      className="h-7 text-xs"
+                    >
+                      Escanear
+                    </Button>
                   </div>
                   {usbDevices.length === 0 ? (
                     <div className="text-xs text-muted-foreground p-3 border border-dashed border-border rounded text-center">
@@ -339,10 +438,13 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                   ) : (
                     <div className="max-h-40 overflow-y-auto space-y-1.5 border border-border p-2 rounded">
                       {usbDevices.map((path) => (
-                        <div 
+                        <div
                           key={path}
-                          onClick={() => { setPrinterAddress(path); handleConnect(path); }}
-                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${printerAddress === path ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
+                          onClick={() => {
+                            setPrinterAddress(path);
+                            handleConnect(path);
+                          }}
+                          className={`text-xs p-2 rounded cursor-pointer transition-colors ${printerAddress === path ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
                         >
                           <span className="font-mono">{path}</span>
                         </div>
@@ -352,19 +454,26 @@ export function Header({ showHistory = false, showBack = false, showCash = false
                 </div>
               )}
 
-              {printerMode === '2' && ( // Red IP Input
+              {printerMode === "2" && ( // Red IP Input
                 <div className="space-y-2">
-                  <Label htmlFor="printer-ip">Dirección IP de la Impresora</Label>
+                  <Label htmlFor="printer-ip">
+                    Dirección IP de la Impresora
+                  </Label>
                   <div className="flex gap-2">
-                    <Input 
-                      id="printer-ip" 
-                      type="text" 
-                      value={printerAddress} 
+                    <Input
+                      id="printer-ip"
+                      type="text"
+                      value={printerAddress}
                       onChange={(e) => setPrinterAddress(e.target.value)}
-                      placeholder="ej. 192.168.1.100" 
+                      placeholder="ej. 192.168.1.100"
                       className="bg-input"
                     />
-                    <Button onClick={() => handleConnect()} disabled={isConnecting}>Conectar</Button>
+                    <Button
+                      onClick={() => handleConnect()}
+                      disabled={isConnecting}
+                    >
+                      Conectar
+                    </Button>
                   </div>
                 </div>
               )}
@@ -380,22 +489,37 @@ export function Header({ showHistory = false, showBack = false, showCash = false
               </div>
               <div className="flex gap-2">
                 {printerStatus.connected ? (
-                  <Button variant="destructive" size="sm" onClick={handleDisconnect}>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDisconnect}
+                  >
                     Desconectar
                   </Button>
                 ) : (
-                  printerMode !== '2' && (
-                    <Button variant="default" size="sm" onClick={() => handleConnect()} disabled={isConnecting || !printerAddress}>
-                      {isConnecting ? 'Conectando...' : 'Conectar'}
+                  printerMode !== "2" && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleConnect()}
+                      disabled={isConnecting || !printerAddress}
+                    >
+                      {isConnecting ? "Conectando..." : "Conectar"}
                     </Button>
                   )
                 )}
-                <Button variant="secondary" size="sm" onClick={() => setShowPrinterDialog(false)}>Cerrar</Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowPrinterDialog(false)}
+                >
+                  Cerrar
+                </Button>
               </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
     </>
-  )
+  );
 }

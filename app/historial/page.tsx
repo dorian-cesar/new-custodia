@@ -1,21 +1,21 @@
-'use client'
+"use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react'
-import { useReactToPrint } from 'react-to-print'
-import { History, Search, Filter, Ruler, Printer } from 'lucide-react'
-import { Header } from '@/components/custody/header'
-import { Ticket } from '@/components/custody/ticket'
-import { Button } from '@/components/ui/button'
-import { printerService } from '@/lib/printer-service'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import { History, Search, Filter, Ruler, Printer } from "lucide-react";
+import { Header } from "@/components/custody/header";
+import { Ticket } from "@/components/custody/ticket";
+import { Button } from "@/components/ui/button";
+import { printerService } from "@/lib/printer-service";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -23,103 +23,125 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { useCustodyStore } from '@/lib/custody-store'
-import { formatDateTime, type LockerSize } from '@/lib/types'
+} from "@/components/ui/table";
+import { useCustodyStore } from "@/lib/custody-store";
+import { formatDateTime, type LockerSize } from "@/lib/types";
 
 export default function HistorialPage() {
-  const { records, lockers, lockerSizes, cashTransactions } = useCustodyStore()
-  const [mounted, setMounted] = useState(false)
-  const [searchDocument, setSearchDocument] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterSize, setFilterSize] = useState<string>('all')
+  const { records, lockers, lockerSizes, cashTransactions } = useCustodyStore();
+  const [mounted, setMounted] = useState(false);
+  const [searchDocument, setSearchDocument] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterSize, setFilterSize] = useState<string>("all");
 
-  const ticketRef = useRef<HTMLDivElement>(null)
-  const [recordToPrint, setRecordToPrint] = useState<any>(null)
-  const [paymentMethodToPrint, setPaymentMethodToPrint] = useState<string>('Efectivo')
+  const ticketRef = useRef<HTMLDivElement>(null);
+  const [recordToPrint, setRecordToPrint] = useState<any>(null);
+  const [paymentMethodToPrint, setPaymentMethodToPrint] =
+    useState<string>("Efectivo");
 
   const handlePrintAction = useReactToPrint({
     contentRef: ticketRef,
-    documentTitle: 'Reimpresion_Ticket',
-  })
+    documentTitle: "Reimpresion_Ticket",
+  });
 
   useEffect(() => {
     if (recordToPrint) {
       if (printerService.isNative()) {
-        const sizeLabel = lockerSizes.find((s) => s.value === recordToPrint.size)?.label || recordToPrint.size
-        const locker = lockers.find((l) => l.id === recordToPrint.lockerId)
-        const lockerDisplay = locker ? `${locker.col}${locker.row}` : recordToPrint.lockerId.toString()
-        printerService.printEntryTicket(recordToPrint, sizeLabel, lockerDisplay, paymentMethodToPrint)
-        setRecordToPrint(null)
+        const sizeLabel =
+          lockerSizes.find((s) => s.value === recordToPrint.size)?.label ||
+          recordToPrint.size;
+        const locker = lockers.find((l) => l.id === recordToPrint.lockerId);
+        const lockerDisplay = locker
+          ? `${locker.col}${locker.row}`
+          : recordToPrint.lockerId.toString();
+        printerService.printEntryTicket(
+          recordToPrint,
+          sizeLabel,
+          lockerDisplay,
+          paymentMethodToPrint,
+        );
+        setRecordToPrint(null);
       } else {
         // Pequeño delay para asegurar que el componente Ticket y el SVG terminen de renderizar
         const timer = setTimeout(() => {
-          handlePrintAction()
-          setRecordToPrint(null)
-        }, 300)
-        return () => clearTimeout(timer)
+          handlePrintAction();
+          setRecordToPrint(null);
+        }, 300);
+        return () => clearTimeout(timer);
       }
     }
-  }, [recordToPrint, handlePrintAction, lockers, lockerSizes, paymentMethodToPrint])
+  }, [
+    recordToPrint,
+    handlePrintAction,
+    lockers,
+    lockerSizes,
+    paymentMethodToPrint,
+  ]);
 
   const triggerReprint = (record: any, paymentMethod: string) => {
-    setPaymentMethodToPrint(paymentMethod)
-    setRecordToPrint(record)
-  }
+    setPaymentMethodToPrint(paymentMethod);
+    setRecordToPrint(record);
+  };
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   const filteredRecords = useMemo(() => {
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     return records.filter((record) => {
       // Limit history to the last 30 days
-      const matchesDate = new Date(record.entryTime).getTime() >= thirtyDaysAgo
-      if (!matchesDate) return false
+      const matchesDate = new Date(record.entryTime).getTime() >= thirtyDaysAgo;
+      if (!matchesDate) return false;
 
       const matchesDocument = searchDocument
-        ? record.clientDocument.toLowerCase().includes(searchDocument.toLowerCase()) ||
+        ? record.clientDocument
+            .toLowerCase()
+            .includes(searchDocument.toLowerCase()) ||
           record.code.toLowerCase().includes(searchDocument.toLowerCase())
-        : true
-      const matchesStatus = filterStatus === 'all' || record.status === filterStatus
-      const matchesSize = filterSize === 'all' || record.size === filterSize
-      return matchesDocument && matchesStatus && matchesSize
-    })
-  }, [records, searchDocument, filterStatus, filterSize])
+        : true;
+      const matchesStatus =
+        filterStatus === "all" || record.status === filterStatus;
+      const matchesSize = filterSize === "all" || record.size === filterSize;
+      return matchesDocument && matchesStatus && matchesSize;
+    });
+  }, [records, searchDocument, filterStatus, filterSize]);
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 15
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchDocument, filterStatus, filterSize])
+    setCurrentPage(1);
+  }, [searchDocument, filterStatus, filterSize]);
 
-  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(filteredRecords.length / ITEMS_PER_PAGE);
   const paginatedRecords = useMemo(() => {
-    return filteredRecords.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-  }, [filteredRecords, currentPage])
+    return filteredRecords.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE,
+    );
+  }, [filteredRecords, currentPage]);
 
   const getSizeLabel = (size: LockerSize) => {
-    return lockerSizes.find((s) => s.value === size)?.label || size
-  }
+    return lockerSizes.find((s) => s.value === size)?.label || size;
+  };
 
   const getLockerDisplay = (lockerId: number) => {
-    const locker = lockers.find(l => l.id === lockerId)
-    return locker ? `${locker.col}${locker.row}` : lockerId
-  }
+    const locker = lockers.find((l) => l.id === lockerId);
+    return locker ? `${locker.col}${locker.row}` : lockerId;
+  };
 
   const handleSearch = () => {
     // Filter is already reactive, this is just for UX
-  }
+  };
 
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-foreground">Cargando...</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -188,8 +210,8 @@ export default function HistorialPage() {
             </div>
 
             <div className="flex justify-end">
-              <Button 
-                onClick={handleSearch} 
+              <Button
+                onClick={handleSearch}
                 className="w-full sm:w-auto px-6 bg-[#242424] hover:bg-zinc-800 text-white font-bold h-9 text-xs uppercase"
               >
                 <Search className="h-3.5 w-3.5 mr-2" />
@@ -204,83 +226,133 @@ export default function HistorialPage() {
               <Table>
                 <TableHeader className="bg-[#242424] hover:bg-[#242424] sticky top-0 z-10">
                   <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">CÓDIGO / RUT</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10"># CASILLERO</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">RUT/DNI</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">ENTRADA</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">SALIDA</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">TAMAÑO</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">PAGO</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">ESTADO</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">$ VALOR</TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-center">ACCIÓN</TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      CÓDIGO / RUT
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      # CASILLERO
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      RUT/DNI
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      ENTRADA
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      SALIDA
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      TAMAÑO
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      PAGO
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      ESTADO
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                      $ VALOR
+                    </TableHead>
+                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-center">
+                      ACCIÓN
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedRecords.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-zinc-500 font-semibold">
+                      <TableCell
+                        colSpan={10}
+                        className="text-center py-8 text-zinc-500 font-semibold"
+                      >
                         No se encontraron registros
                       </TableCell>
                     </TableRow>
                   ) : (
                     paginatedRecords.map((record) => {
                       // Obtener la transaccion de pago si es que ya existe
-                      const txs = cashTransactions?.filter(t => t.recordId === record.id) || []
-                      let paymentStr = '-'
+                      const txs =
+                        cashTransactions?.filter(
+                          (t) => t.recordId === record.id,
+                        ) || [];
+                      let paymentStr = "-";
                       if (txs.length > 0) {
-                        const methods = new Set<string>()
-                        txs.forEach(t => {
-                          if (t.description.includes('Efectivo')) methods.add('Efectivo')
-                          if (t.description.includes('Tarjeta')) methods.add('Tarjeta')
-                        })
+                        const methods = new Set<string>();
+                        txs.forEach((t) => {
+                          if (t.description.includes("Efectivo"))
+                            methods.add("Efectivo");
+                          if (t.description.includes("Tarjeta"))
+                            methods.add("Tarjeta");
+                        });
                         if (methods.size > 0) {
-                          paymentStr = Array.from(methods).join(' / ')
+                          paymentStr = Array.from(methods).join(" / ");
                         }
                       }
 
                       return (
-                        <TableRow key={record.id} className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50">
+                        <TableRow
+                          key={record.id}
+                          className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50"
+                        >
                           <TableCell className="font-mono font-bold text-xs py-3 text-[#242424]">
                             {record.code}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">{getLockerDisplay(record.lockerId)}</TableCell>
-                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">{record.clientDocument}</TableCell>
+                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">
+                            {getLockerDisplay(record.lockerId)}
+                          </TableCell>
+                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">
+                            {record.clientDocument}
+                          </TableCell>
                           <TableCell className="text-zinc-800 text-xs py-3">
                             {formatDateTime(record.entryTime)}
                           </TableCell>
                           <TableCell className="text-zinc-800 text-xs py-3">
-                            {record.exitTime ? formatDateTime(record.exitTime) : '-'}
+                            {record.exitTime
+                              ? formatDateTime(record.exitTime)
+                              : "-"}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-bold text-xs py-3">{getSizeLabel(record.size)}</TableCell>
+                          <TableCell className="text-zinc-800 font-bold text-xs py-3">
+                            {getSizeLabel(record.size)}
+                          </TableCell>
                           <TableCell className="py-3">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                              paymentStr.includes('Efectivo') ? 'bg-amber-500/10 text-amber-600' :
-                              paymentStr.includes('Tarjeta') ? 'bg-blue-500/10 text-blue-600' :
-                              'bg-zinc-100 text-zinc-500'
-                            }`}>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                paymentStr.includes("Efectivo")
+                                  ? "bg-amber-500/10 text-amber-600"
+                                  : paymentStr.includes("Tarjeta")
+                                    ? "bg-blue-500/10 text-blue-600"
+                                    : "bg-zinc-100 text-zinc-500"
+                              }`}
+                            >
                               {paymentStr}
                             </span>
                           </TableCell>
                           <TableCell className="py-3">
                             <span
                               className={`text-xs font-bold uppercase ${
-                                record.status === 'Activo'
-                                  ? 'text-[#0a354c]'
-                                  : 'text-zinc-500'
+                                record.status === "Activo"
+                                  ? "text-[#0a354c]"
+                                  : "text-zinc-500"
                               }`}
                             >
                               {record.status}
                             </span>
                           </TableCell>
                           <TableCell className="text-zinc-800 font-black text-xs py-3">
-                            $ {record.price.toLocaleString('es-CL')}
+                            $ {record.price.toLocaleString("es-CL")}
                           </TableCell>
                           <TableCell className="text-center py-3">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => triggerReprint(record, paymentStr.includes('Tarjeta') ? 'Tarjeta' : 'Efectivo')}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                triggerReprint(
+                                  record,
+                                  paymentStr.includes("Tarjeta")
+                                    ? "Tarjeta"
+                                    : "Efectivo",
+                                )
+                              }
                               className="h-7 w-7 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 rounded-full border border-zinc-200"
                               title="Reimprimir Ticket"
                             >
@@ -288,7 +360,7 @@ export default function HistorialPage() {
                             </Button>
                           </TableCell>
                         </TableRow>
-                      )
+                      );
                     })
                   )}
                 </TableBody>
@@ -297,13 +369,23 @@ export default function HistorialPage() {
               {/* Pagination */}
               <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
                 <div>
-                  Mostrando {Math.min(filteredRecords.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)} a {Math.min(filteredRecords.length, currentPage * ITEMS_PER_PAGE)} de {filteredRecords.length} registros
+                  Mostrando{" "}
+                  {Math.min(
+                    filteredRecords.length,
+                    (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                  )}{" "}
+                  a{" "}
+                  {Math.min(
+                    filteredRecords.length,
+                    currentPage * ITEMS_PER_PAGE,
+                  )}{" "}
+                  de {filteredRecords.length} registros
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
                   >
@@ -312,7 +394,9 @@ export default function HistorialPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage >= totalPages || totalPages === 0}
                     className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
                   >
@@ -326,7 +410,11 @@ export default function HistorialPage() {
       </div>
 
       {/* Hidden ticket for printing */}
-      <Ticket record={recordToPrint} paymentMethod={paymentMethodToPrint} ref={ticketRef} />
+      <Ticket
+        record={recordToPrint}
+        paymentMethod={paymentMethodToPrint}
+        ref={ticketRef}
+      />
     </div>
-  )
+  );
 }

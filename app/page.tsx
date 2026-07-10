@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Header } from '@/components/custody/header'
-import { LockerSelection } from '@/components/custody/locker-selection'
-import { ClientRegistration } from '@/components/custody/client-registration'
-import { CashStatusBanner } from '@/components/custody/cash-status-banner'
-import { OverdueAlert } from '@/components/custody/overdue-alert'
-import { useCustodyStore } from '@/lib/custody-store'
-import { type LockerSize, type CustodyRecord } from '@/lib/types'
-import { AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Header } from "@/components/custody/header";
+import { LockerSelection } from "@/components/custody/locker-selection";
+import { ClientRegistration } from "@/components/custody/client-registration";
+import { CashStatusBanner } from "@/components/custody/cash-status-banner";
+import { OverdueAlert } from "@/components/custody/overdue-alert";
+import { useCustodyStore } from "@/lib/custody-store";
+import { type LockerSize, type CustodyRecord } from "@/lib/types";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function CustodyPage() {
-  const router = useRouter()
+  const router = useRouter();
   const {
     lockers,
     records,
@@ -22,70 +22,92 @@ export default function CustodyPage() {
     createRecord,
     deliverRecord,
     getCurrentRegisterStats,
-  } = useCustodyStore()
+  } = useCustodyStore();
 
-  const [selectedLockerId, setSelectedLockerId] = useState<number | null>(null)
-  const [selectedSize, setSelectedSize] = useState<LockerSize | null>(null)
-  const [clientDocument, setClientDocument] = useState('')
-  const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(null)
-  const [lastPrintedId, setLastPrintedId] = useState<number | null>(null)
-  const [mounted, setMounted] = useState(false)
-  const [serviceMode, setServiceMode] = useState<'entrega' | 'retiro'>('entrega')
+  const [selectedLockerId, setSelectedLockerId] = useState<number | null>(null);
+  const [selectedSize, setSelectedSize] = useState<LockerSize | null>(null);
+  const [clientDocument, setClientDocument] = useState("");
+  const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(
+    null,
+  );
+  const [lastPrintedId, setLastPrintedId] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [serviceMode, setServiceMode] = useState<"entrega" | "retiro">(
+    "entrega",
+  );
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   // Redirect supervisors to admin panel
   useEffect(() => {
-    if (mounted && currentUser?.role === 'supervisor') {
-      router.replace('/admin')
+    if (mounted && currentUser?.role === "supervisor") {
+      router.replace("/admin");
     }
-  }, [mounted, currentUser, router])
+  }, [mounted, currentUser, router]);
 
-  const isCashOpen = currentCashRegister?.status === 'open'
-  const stats = getCurrentRegisterStats()
+  const isCashOpen = currentCashRegister?.status === "open";
+  const stats = getCurrentRegisterStats();
 
-  const handleGenerateBarcode = async (paymentMethod: string): Promise<CustodyRecord | null> => {
+  const handleGenerateBarcode = async (
+    paymentMethod: string,
+  ): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
-      return null
+      return null;
     }
 
-    const record = await createRecord(selectedLockerId, clientDocument.trim(), selectedSize, paymentMethod)
+    const record = await createRecord(
+      selectedLockerId,
+      clientDocument.trim(),
+      selectedSize,
+      paymentMethod,
+    );
     if (record) {
-      setCurrentRecord(record)
-      setSelectedLockerId(null)
-      setSelectedSize(null)
-      setClientDocument('')
+      setCurrentRecord(record);
+      setSelectedLockerId(null);
+      setSelectedSize(null);
+      setClientDocument("");
     }
-    return record
-  }
+    return record;
+  };
 
-  const handleDeliver = async (code: string, extraCharge?: number, paymentMethod?: string, extraFolio?: number | null): Promise<boolean> => {
-    const record = records.find((r) => r.code === code && r.status === 'Activo')
-    if (!record) return false
-    return await deliverRecord(record.id, extraCharge, paymentMethod, extraFolio)
-  }
+  const handleDeliver = async (
+    code: string,
+    extraCharge?: number,
+    paymentMethod?: string,
+    extraFolio?: number | null,
+  ): Promise<boolean> => {
+    const record = records.find(
+      (r) => r.code === code && r.status === "Activo",
+    );
+    if (!record) return false;
+    return await deliverRecord(
+      record.id,
+      extraCharge,
+      paymentMethod,
+      extraFolio,
+    );
+  };
 
   if (!mounted) {
     return (
       <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
         <div className="text-zinc-600 font-semibold">Cargando...</div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
-
       {/* Main Cashier Card */}
       <div className="w-full max-w-[720px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
         {/* Header inside Card */}
         <Header showHistory showCash />
-        
+
         {/* Cash Status Bar */}
-        <CashStatusBanner 
-          isOpen={isCashOpen} 
+        <CashStatusBanner
+          isOpen={isCashOpen}
           balance={stats.balance}
           totalSales={stats.totalSales}
           transactions={stats.totalTransactions}
@@ -94,7 +116,13 @@ export default function CustodyPage() {
         {/* Content Area */}
         <div className="flex-1 flex flex-col gap-2.5 py-2.5 overflow-y-auto min-h-0">
           {/* Alerts inside Card */}
-          {(stats.balance >= 300000 || records.some(r => r.status === 'Activo' && (Date.now() - new Date(r.entryTime).getTime()) > 24 * 60 * 60 * 1000)) && (
+          {(stats.balance >= 300000 ||
+            records.some(
+              (r) =>
+                r.status === "Activo" &&
+                Date.now() - new Date(r.entryTime).getTime() >
+                  24 * 60 * 60 * 1000,
+            )) && (
             <div className="w-full px-4 space-y-2.5">
               {stats.balance >= 300000 && (
                 <div className="bg-amber-500/10 border-l-4 border-amber-500 p-3 rounded-r-lg flex items-center justify-between">
@@ -107,11 +135,17 @@ export default function CustodyPage() {
                         Límite de Caja Alcanzado
                       </h3>
                       <p className="text-[10px] text-amber-700/90 mt-0.5">
-                        La caja ha alcanzado los $300.000. Por favor, realice un retiro.
+                        La caja ha alcanzado los $300.000. Por favor, realice un
+                        retiro.
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="h-7 text-[10px] border-amber-500/20 text-amber-700 hover:bg-amber-500/10" onClick={() => router.push('/caja')}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[10px] border-amber-500/20 text-amber-700 hover:bg-amber-500/10"
+                    onClick={() => router.push("/caja")}
+                  >
                     Ir a Caja
                   </Button>
                 </div>
@@ -125,24 +159,24 @@ export default function CustodyPage() {
               SERVICIO
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <button 
+              <button
                 type="button"
-                onClick={() => setServiceMode('entrega')} 
+                onClick={() => setServiceMode("entrega")}
                 className={`py-3 text-lg font-black rounded-xl border border-zinc-400 transition-all duration-200 cursor-pointer ${
-                  serviceMode === 'entrega' 
-                    ? 'bg-[#0a354c] text-white shadow-md' 
-                    : 'bg-[#0a354c]/60 text-white/70 hover:bg-[#0a354c]/85 hover:scale-[1.01]'
+                  serviceMode === "entrega"
+                    ? "bg-[#0a354c] text-white shadow-md"
+                    : "bg-[#0a354c]/60 text-white/70 hover:bg-[#0a354c]/85 hover:scale-[1.01]"
                 }`}
               >
                 ENTREGA
               </button>
-              <button 
+              <button
                 type="button"
-                onClick={() => setServiceMode('retiro')} 
+                onClick={() => setServiceMode("retiro")}
                 className={`py-3 text-lg font-black rounded-xl border border-zinc-400 transition-all duration-200 cursor-pointer ${
-                  serviceMode === 'retiro' 
-                    ? 'bg-[#1588b3] text-white shadow-md' 
-                    : 'bg-[#1588b3]/60 text-white/70 hover:bg-[#1588b3]/85 hover:scale-[1.01]'
+                  serviceMode === "retiro"
+                    ? "bg-[#1588b3] text-white shadow-md"
+                    : "bg-[#1588b3]/60 text-white/70 hover:bg-[#1588b3]/85 hover:scale-[1.01]"
                 }`}
               >
                 RETIRO
@@ -151,7 +185,7 @@ export default function CustodyPage() {
           </div>
 
           {/* Form based on serviceMode */}
-          {serviceMode === 'entrega' ? (
+          {serviceMode === "entrega" ? (
             <LockerSelection
               lockers={lockers}
               selectedLockerId={selectedLockerId}
@@ -191,5 +225,5 @@ export default function CustodyPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

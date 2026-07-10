@@ -414,10 +414,7 @@ export async function deletePrice(size: string) {
   }
 }
 
-export async function sendBoleta(
-  nombre: string,
-  precio: number,
-) {
+export async function sendBoleta(nombre: string, precio: number) {
   try {
     const response = await fetch(
       "https://new-backend-banos.dev-wit.com/api/boletas/enviar",

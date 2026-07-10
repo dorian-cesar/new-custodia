@@ -1,17 +1,22 @@
-'use client'
+"use client";
 
-import { DollarSign, AlertTriangle, TrendingUp, Receipt } from 'lucide-react'
-import Link from 'next/link'
-import { cn } from '@/lib/utils'
+import { DollarSign, AlertTriangle, TrendingUp, Receipt } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface CashStatusBannerProps {
-  isOpen: boolean
-  balance: number
-  totalSales: number
-  transactions: number
+  isOpen: boolean;
+  balance: number;
+  totalSales: number;
+  transactions: number;
 }
 
-export function CashStatusBanner({ isOpen, balance, totalSales, transactions }: CashStatusBannerProps) {
+export function CashStatusBanner({
+  isOpen,
+  balance,
+  totalSales,
+  transactions,
+}: CashStatusBannerProps) {
   return (
     <div className="bg-white px-6 py-2.5 border-b border-zinc-300">
       <div className="flex items-center justify-between text-xs font-bold text-zinc-800 select-none">
@@ -23,15 +28,19 @@ export function CashStatusBanner({ isOpen, balance, totalSales, transactions }: 
           )}
         </div>
         <div className="text-zinc-400 font-medium">
-          Ventas Totales: <span className="font-bold text-zinc-600">$ {totalSales.toLocaleString('es-CL')}</span>
+          Ventas Totales:{" "}
+          <span className="font-bold text-zinc-600">
+            $ {totalSales.toLocaleString("es-CL")}
+          </span>
         </div>
         <div className="text-zinc-400 font-medium">
-          Transacciones: <span className="font-bold text-zinc-600">{transactions}</span>
+          Transacciones:{" "}
+          <span className="font-bold text-zinc-600">{transactions}</span>
         </div>
         <div className="text-zinc-900">
-          Saldo: $ {balance.toLocaleString('es-CL')}
+          Saldo: $ {balance.toLocaleString("es-CL")}
         </div>
       </div>
     </div>
-  )
+  );
 }
