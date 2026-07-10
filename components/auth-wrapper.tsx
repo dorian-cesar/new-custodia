@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCustodyStore } from "@/lib/custody-store";
 import { loginUser } from "@/app/actions/db-actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, User as UserIcon } from "lucide-react";
+import { Lock, User as UserIcon, Power } from "lucide-react";
+import Swal from "sweetalert2";
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { currentUser, login } = useCustodyStore();
@@ -41,6 +40,64 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
   }
 
   if (!currentUser) {
+    const handleShutdown = () => {
+      Swal.fire({
+        title: "¿Apagar el equipo?",
+        text: "Esta acción apagará la máquina Windows por completo.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#71717a",
+        confirmButtonText: "OK",
+        cancelButtonText: "Cancelar",
+        customClass: {
+          confirmButton:
+            "px-4 py-2 font-bold text-white rounded-md bg-red-600 hover:bg-red-700",
+          cancelButton:
+            "px-4 py-2 font-bold text-white rounded-md bg-zinc-500 hover:bg-zinc-600",
+        },
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: "Apagando...",
+            text: "El equipo se está apagando, por favor espere.",
+            icon: "info",
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+          });
+
+          try {
+            // Intentar apagar primero usando el puerto local 3001 (ejecutado directamente en el cliente/tótem)
+            const localResponse = await fetch("http://localhost:3001/apagar", {
+              method: "POST",
+              mode: "cors",
+            }).catch(() => null);
+
+            if (localResponse && localResponse.ok) {
+              return; // Comando ejecutado localmente de forma exitosa
+            }
+
+            // Si no está corriendo el agente local, reintentar a través del backend original
+            const response = await fetch("/api/apagar", { method: "POST" });
+            const res = await response.json();
+            if (!response.ok || !res.success) {
+              Swal.fire(
+                "Error",
+                "No se pudo apagar el equipo: " +
+                  (res.error || "Error desconocido"),
+                "error",
+              );
+            }
+          } catch (err: any) {
+            Swal.fire("Error", "Ocurrió un error: " + err.message, "error");
+          }
+        }
+      });
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
@@ -66,7 +123,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     };
 
     return (
-      <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4 font-sans select-none">
+      <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4 font-sans select-none relative">
         <div className="bg-[#d7d7d8] w-full max-w-md rounded-lg border border-zinc-400 shadow-xl overflow-hidden flex flex-col pb-6">
           {/* Header (Logo & Subtitle) */}
           <div className="bg-white py-6 border-b-2 border-zinc-300 text-center flex flex-col items-center gap-1.5">
@@ -157,6 +214,17 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
             </form>
           </div>
         </div>
+
+        {/* Botón de apagar en la esquina inferior izquierda (Comentado por ahora)
+        <button
+          type="button"
+          onClick={handleShutdown}
+          className="absolute bottom-4 left-4 p-3 bg-red-800 hover:bg-red-900 active:scale-95 text-white rounded-full shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center border border-zinc-500"
+          title="Apagar equipo"
+        >
+          <Power className="h-6 w-6" />
+        </button>
+        */}
       </div>
     );
   }

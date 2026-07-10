@@ -68,52 +68,7 @@ export function Header({
 }: HeaderProps) {
   const { currentUser, logout } = useCustodyStore();
 
-  const handleShutdown = () => {
-    Swal.fire({
-      title: "¿Apagar el equipo?",
-      text: "Esta acción apagará la máquina Windows por completo.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#71717a",
-      confirmButtonText: "OK",
-      cancelButtonText: "Cancelar",
-      customClass: {
-        confirmButton:
-          "px-4 py-2 font-bold text-white rounded-md bg-red-600 hover:bg-red-700",
-        cancelButton:
-          "px-4 py-2 font-bold text-white rounded-md bg-zinc-500 hover:bg-zinc-600",
-      },
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        Swal.fire({
-          title: "Apagando...",
-          text: "El equipo se está apagando, por favor espere.",
-          icon: "info",
-          allowOutsideClick: false,
-          showConfirmButton: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
 
-        try {
-          const response = await fetch("/api/apagar", { method: "POST" });
-          const res = await response.json();
-          if (!response.ok || !res.success) {
-            Swal.fire(
-              "Error",
-              "No se pudo apagar el equipo: " +
-                (res.error || "Error desconocido"),
-              "error",
-            );
-          }
-        } catch (err: any) {
-          Swal.fire("Error", "Ocurrió un error: " + err.message, "error");
-        }
-      }
-    });
-  };
 
   // Printer settings state
   const [isNative, setIsNative] = useState(false);
@@ -298,16 +253,7 @@ export function Header({
             </Button>
           )}
 
-          {showShutdown && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleShutdown}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-full h-7 px-3 text-[10px] font-bold leading-none uppercase select-none cursor-pointer"
-            >
-              Apagar
-            </Button>
-          )}
+
 
           {currentUser && (
             <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-zinc-300">

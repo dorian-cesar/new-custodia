@@ -389,11 +389,11 @@ export default function CajaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-6 px-4">
-      <div className="w-full max-w-[960px] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-6">
-        <Header showBack showShutdown={!isCashOpen} />
+    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
+      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
+        <Header showBack />
 
-        <main className="flex-1 flex flex-col gap-6 p-6">
+        <main className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto min-h-0">
           {/* Current Cash Register Status */}
           <div>
             <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center justify-between">
@@ -749,7 +749,7 @@ export default function CajaPage() {
                               ? formatDateTime(register.closedAt)
                               : "-"}
                           </TableCell>
-                          <TableCell className="text-zinc-850 font-bold text-xs py-3 text-right">
+                          <TableCell className="text-zinc-800 font-bold text-xs py-3 text-right">
                             ${register.openingAmount.toLocaleString()}
                           </TableCell>
                           <TableCell className="py-3 text-right">
@@ -765,10 +765,10 @@ export default function CajaPage() {
                           <TableCell className="text-red-600 text-right font-extrabold text-xs py-3">
                             ${gastosEfectivo.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-zinc-850 text-right font-extrabold text-xs py-3">
+                          <TableCell className="text-zinc-800 text-right font-extrabold text-xs py-3">
                             ${saldoEsperadoEfectivo.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-zinc-850 text-right font-black text-xs py-3">
+                          <TableCell className="text-zinc-800 text-right font-black text-xs py-3">
                             {register.closingAmount !== null
                               ? `$${register.closingAmount.toLocaleString()}`
                               : "-"}
@@ -886,7 +886,7 @@ export default function CajaPage() {
                   setOpeningAmount(e.target.value.replace(/\D/g, ""))
                 }
                 placeholder="0"
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
               />
             </div>
             <div className="space-y-2">
@@ -1004,7 +1004,7 @@ export default function CajaPage() {
                   setClosingAmount(e.target.value.replace(/\D/g, ""))
                 }
                 placeholder="0"
-                className={`bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] ${diferenciaCaja !== null && diferenciaCaja !== 0 ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] ${diferenciaCaja !== null && diferenciaCaja !== 0 ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
             </div>
 
@@ -1016,7 +1016,7 @@ export default function CajaPage() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Observaciones de cierre..."
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-16 resize-none"
+                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-16 resize-none"
               />
             </div>
 
@@ -1037,7 +1037,7 @@ export default function CajaPage() {
                     value={supervisorUsername}
                     onChange={(e) => setSupervisorUsername(e.target.value)}
                     placeholder="ej. admin"
-                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1049,7 +1049,7 @@ export default function CajaPage() {
                     value={supervisorPassword}
                     onChange={(e) => setSupervisorPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
               </div>
@@ -1104,7 +1104,7 @@ export default function CajaPage() {
                   setGiroAmount(e.target.value.replace(/\D/g, ""))
                 }
                 placeholder="0"
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
               />
             </div>
             <div className="space-y-2">
@@ -1116,7 +1116,7 @@ export default function CajaPage() {
                 value={giroReason}
                 onChange={(e) => setGiroReason(e.target.value)}
                 placeholder="Ej: Límite de caja excedido, pago a proveedor..."
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
               />
             </div>
 
@@ -1137,7 +1137,7 @@ export default function CajaPage() {
                     value={supervisorUsername}
                     onChange={(e) => setSupervisorUsername(e.target.value)}
                     placeholder="ej. admin"
-                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1149,7 +1149,7 @@ export default function CajaPage() {
                     value={supervisorPassword}
                     onChange={(e) => setSupervisorPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
               </div>
