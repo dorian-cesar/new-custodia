@@ -1037,6 +1037,7 @@ export default function CajaPage() {
                     value={supervisorUsername}
                     onChange={(e) => setSupervisorUsername(e.target.value)}
                     placeholder="ej. admin"
+                    autoComplete="off"
                     className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
@@ -1049,6 +1050,7 @@ export default function CajaPage() {
                     value={supervisorPassword}
                     onChange={(e) => setSupervisorPassword(e.target.value)}
                     placeholder="••••••••"
+                    autoComplete="new-password"
                     className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
@@ -1137,6 +1139,7 @@ export default function CajaPage() {
                     value={supervisorUsername}
                     onChange={(e) => setSupervisorUsername(e.target.value)}
                     placeholder="ej. admin"
+                    autoComplete="off"
                     className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>
@@ -1149,6 +1152,7 @@ export default function CajaPage() {
                     value={supervisorPassword}
                     onChange={(e) => setSupervisorPassword(e.target.value)}
                     placeholder="••••••••"
+                    autoComplete="new-password"
                     className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
                   />
                 </div>

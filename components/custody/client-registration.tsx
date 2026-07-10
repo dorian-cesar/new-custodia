@@ -348,8 +348,8 @@ export function ClientRegistration({
 
     if (diffHours > 24) {
       extraH = diffHours - 24;
-      // Recargo fijo de $ 5.000 por cada bloque o fracción adicional de 24 horas
-      amount = Math.ceil(extraH / 24) * 5000;
+      // Recargo por bloque o fracción adicional de 24 horas igual al precio inicial
+      amount = Math.ceil(extraH / 24) * record.price;
     }
 
     setExtraHours(extraH > 0 ? extraH : 0);
