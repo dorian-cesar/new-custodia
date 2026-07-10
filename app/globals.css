@@ -162,3 +162,6 @@
 body.swal2-shown {
   pointer-events: auto !important;
 }
+body.swal2-shown [data-slot="dialog-portal"] {
+  pointer-events: none !important;
+}
