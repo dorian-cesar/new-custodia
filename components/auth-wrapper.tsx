@@ -70,7 +70,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
           });
 
           try {
-            const response = await fetch("https://localhost:3000/apagar", {
+            const response = await fetch("https://localhost:3000/api/apagar", {
               method: "POST",
             });
             const res = await response.json();

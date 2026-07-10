@@ -73,13 +73,12 @@ export function Header({
   useEffect(() => {
     const checkBackendStatus = async () => {
       try {
-        const res = await fetch("https://localhost:3000/monitor");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.server) {
-            setIsBackendOnline(true);
-            return;
-          }
+        const res = await fetch("https://localhost:3000/api/monitor");
+        const data = await res.json().catch(() => null);
+        
+        if (data && data.server && data.pos) {
+          setIsBackendOnline(true);
+          return;
         }
       } catch (err) {
         // silent fail
