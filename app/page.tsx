@@ -6,11 +6,11 @@ import { Header } from "@/components/custody/header";
 import { LockerSelection } from "@/components/custody/locker-selection";
 import { ClientRegistration } from "@/components/custody/client-registration";
 import { CashStatusBanner } from "@/components/custody/cash-status-banner";
-import { OverdueAlert } from "@/components/custody/overdue-alert";
 import { useCustodyStore } from "@/lib/custody-store";
 import { type LockerSize, type CustodyRecord } from "@/lib/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Swal from "sweetalert2";
 
 export default function CustodyPage() {
   const router = useRouter();
@@ -46,6 +46,32 @@ export default function CustodyPage() {
       router.replace("/admin");
     }
   }, [mounted, currentUser, router]);
+
+  // Show toast alert for overdue lockers when page loads/mounts
+  useEffect(() => {
+    if (mounted && records.length > 0) {
+      const now = Date.now();
+      const count = records.filter((r) => {
+        if (r.status !== "Activo") return false;
+        const diffMs = now - new Date(r.entryTime).getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        return diffHours >= 24;
+      }).length;
+
+      if (count > 0) {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 6000,
+          timerProgressBar: true,
+          icon: "warning",
+          title: "Alerta de Equipaje Excedido",
+          text: `Hay ${count} casillero${count > 1 ? "s" : ""} con más de 24 horas de custodia pendiente de cobro por recargo extra.`,
+        });
+      }
+    }
+  }, [mounted, records]);
 
   const isCashOpen = currentCashRegister?.status === "open";
   const stats = getCurrentRegisterStats();
@@ -124,41 +150,32 @@ export default function CustodyPage() {
         {/* Content Area */}
         <div className="flex-1 flex flex-col gap-2.5 py-2.5 overflow-y-auto min-h-0">
           {/* Alerts inside Card */}
-          {(stats.balance >= 300000 ||
-            records.some(
-              (r) =>
-                r.status === "Activo" &&
-                Date.now() - new Date(r.entryTime).getTime() >
-                  24 * 60 * 60 * 1000,
-            )) && (
+          {stats.balance >= 300000 && (
             <div className="w-full px-4 space-y-2.5">
-              {stats.balance >= 300000 && (
-                <div className="bg-amber-500/10 border-l-4 border-amber-500 p-3 rounded-r-lg flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 bg-amber-500/20 rounded-full">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-xs text-amber-700">
-                        Límite de Caja Alcanzado
-                      </h3>
-                      <p className="text-[10px] text-amber-700/90 mt-0.5">
-                        La caja ha alcanzado los $300.000. Por favor, realice un
-                        retiro.
-                      </p>
-                    </div>
+              <div className="bg-amber-500/10 border-l-4 border-amber-500 p-3 rounded-r-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-amber-500/20 rounded-full">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-[10px] border-amber-500/20 text-amber-700 hover:bg-amber-500/10"
-                    onClick={() => router.push("/caja")}
-                  >
-                    Ir a Caja
-                  </Button>
+                  <div>
+                    <h3 className="font-bold text-xs text-amber-700">
+                      Límite de Caja Alcanzado
+                    </h3>
+                    <p className="text-[10px] text-amber-700/90 mt-0.5">
+                      La caja ha alcanzado los $300.000. Por favor, realice un
+                      retiro.
+                    </p>
+                  </div>
                 </div>
-              )}
-              <OverdueAlert />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] border-amber-500/20 text-amber-700 hover:bg-amber-500/10"
+                  onClick={() => router.push("/caja")}
+                >
+                  Ir a Caja
+                </Button>
+              </div>
             </div>
           )}
           {/* SERVICIO Section */}
