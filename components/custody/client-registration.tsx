@@ -543,9 +543,12 @@ export function ClientRegistration({
       if (success) {
         showToast("Entrega procesada con éxito", "success");
         setDeliveryCode("");
-        setPendingRecord(null);
         setIsModalOpen(false);
-        setExtraFolioState(null);
+        // Esperamos 2 segundos antes de limpiar el estado para que react-to-print alcance a clonar el DOM
+        setTimeout(() => {
+          setPendingRecord(null);
+          setExtraFolioState(null);
+        }, 2000);
       } else {
         setDeliveryError("Error procesando la entrega");
       }
