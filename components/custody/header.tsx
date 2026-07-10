@@ -68,7 +68,29 @@ export function Header({
 }: HeaderProps) {
   const { currentUser, logout } = useCustodyStore();
 
+  const [isBackendOnline, setIsBackendOnline] = useState(false);
 
+  useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        const res = await fetch("https://localhost:3000/monitor");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.server) {
+            setIsBackendOnline(true);
+            return;
+          }
+        }
+      } catch (err) {
+        // silent fail
+      }
+      setIsBackendOnline(false);
+    };
+
+    checkBackendStatus();
+    const interval = setInterval(checkBackendStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Printer settings state
   const [isNative, setIsNative] = useState(false);
@@ -253,7 +275,17 @@ export function Header({
             </Button>
           )}
 
-
+          <div
+            className="flex items-center gap-1.5 bg-white border border-zinc-300 rounded-full h-7 px-3 text-[10px] font-medium"
+            title={isBackendOnline ? "Backend Conectado" : "Backend Desconectado"}
+          >
+            <div
+              className={`w-2.5 h-2.5 rounded-full shadow-sm transition-colors duration-300 ${
+                isBackendOnline ? "bg-green-500 shadow-green-500/50" : "bg-red-500 shadow-red-500/50"
+              }`}
+            />
+            <span className="text-zinc-600 hidden sm:inline-block">POS</span>
+          </div>
 
           {currentUser && (
             <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-zinc-300">

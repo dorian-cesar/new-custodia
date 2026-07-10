@@ -101,9 +101,25 @@ export async function dbDeliverRecord(
   recordId: number,
   lockerId: number,
   extraFolio: number | null = null,
+  exitPaymentMethod: string | null = null,
+  exitAuthCode: string | null = null,
+  exitOpNumber: string | null = null,
+  exitCardNumber: string | null = null,
+  exitCardBrand: string | null = null,
+  exitCardType: string | null = null,
 ) {
   await CustodyRecordModel.update(
-    { status: "Entregado", exitTime: new Date().toISOString(), extraFolio },
+    {
+      status: "Entregado",
+      exitTime: new Date().toISOString(),
+      extraFolio,
+      exitPaymentMethod,
+      exitAuthCode,
+      exitOpNumber,
+      exitCardNumber,
+      exitCardBrand,
+      exitCardType,
+    },
     { where: { id: recordId } },
   );
   await dbReleaseLocker(lockerId);

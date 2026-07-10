@@ -48,6 +48,18 @@ export class CustodyRecordModel extends Model {
   declare price: number;
   declare folio: number | null;
   declare extraFolio: number | null;
+  declare entryPaymentMethod: string | null;
+  declare authCode: string | null;
+  declare opNumber: string | null;
+  declare cardNumber: string | null;
+  declare cardBrand: string | null;
+  declare cardType: string | null;
+  declare exitPaymentMethod: string | null;
+  declare exitAuthCode: string | null;
+  declare exitOpNumber: string | null;
+  declare exitCardNumber: string | null;
+  declare exitCardBrand: string | null;
+  declare exitCardType: string | null;
 }
 
 CustodyRecordModel.init(
@@ -63,6 +75,18 @@ CustodyRecordModel.init(
     price: { type: DataTypes.INTEGER, allowNull: false },
     folio: { type: DataTypes.INTEGER, allowNull: true },
     extraFolio: { type: DataTypes.INTEGER, allowNull: true },
+    entryPaymentMethod: { type: DataTypes.STRING, allowNull: true, defaultValue: 'Efectivo' },
+    authCode: { type: DataTypes.STRING, allowNull: true },
+    opNumber: { type: DataTypes.STRING, allowNull: true },
+    cardNumber: { type: DataTypes.STRING, allowNull: true },
+    cardBrand: { type: DataTypes.STRING, allowNull: true },
+    cardType: { type: DataTypes.STRING, allowNull: true },
+    exitPaymentMethod: { type: DataTypes.STRING, allowNull: true },
+    exitAuthCode: { type: DataTypes.STRING, allowNull: true },
+    exitOpNumber: { type: DataTypes.STRING, allowNull: true },
+    exitCardNumber: { type: DataTypes.STRING, allowNull: true },
+    exitCardBrand: { type: DataTypes.STRING, allowNull: true },
+    exitCardType: { type: DataTypes.STRING, allowNull: true },
   },
   { sequelize, modelName: 'CustodyRecord', tableName: 'custody_records', timestamps: false }
 );
@@ -171,5 +195,29 @@ export const syncDatabase = async () => {
     await PriceModel.bulkCreate(
       LOCKER_SIZES.map(s => ({ size: s.value, label: s.label, price: s.price }))
     );
+  }
+
+  // Add new columns to custody_records if they don't exist
+  const newCols = [
+    { name: 'entryPaymentMethod', type: "VARCHAR(255) DEFAULT 'Efectivo'" },
+    { name: 'authCode', type: "VARCHAR(255)" },
+    { name: 'opNumber', type: "VARCHAR(255)" },
+    { name: 'cardNumber', type: "VARCHAR(255)" },
+    { name: 'cardBrand', type: "VARCHAR(255)" },
+    { name: 'cardType', type: "VARCHAR(255)" },
+    { name: 'exitPaymentMethod', type: "VARCHAR(255)" },
+    { name: 'exitAuthCode', type: "VARCHAR(255)" },
+    { name: 'exitOpNumber', type: "VARCHAR(255)" },
+    { name: 'exitCardNumber', type: "VARCHAR(255)" },
+    { name: 'exitCardBrand', type: "VARCHAR(255)" },
+    { name: 'exitCardType', type: "VARCHAR(255)" },
+  ];
+
+  for (const col of newCols) {
+    try {
+      await sequelize.query(`ALTER TABLE custody_records ADD COLUMN ${col.name} ${col.type};`);
+    } catch (err) {
+      // Ignore error if column already exists
+    }
   }
 };

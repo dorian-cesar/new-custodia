@@ -69,6 +69,9 @@ interface CustodyState {
     paymentMethod?: string,
     authCode?: string | null,
     opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
   ) => Promise<CustodyRecord | null>;
   deliverRecord: (
     recordId: number,
@@ -77,6 +80,9 @@ interface CustodyState {
     extraFolio?: number | null,
     authCode?: string | null,
     opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
   ) => Promise<boolean>;
 
   // Cash register actions
@@ -172,6 +178,9 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     paymentMethod = "Efectivo",
     authCode = null,
     opNumber = null,
+    cardNumber = null,
+    cardBrand = null,
+    cardType = null,
   ) => {
     const { currentCashRegister, lockers, currentUser } = get();
 
@@ -212,6 +221,12 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
       status: "Activo",
       price: sizeOption.price,
       folio: folio || undefined,
+      entryPaymentMethod: paymentMethod,
+      authCode,
+      opNumber,
+      cardNumber,
+      cardBrand,
+      cardType,
     };
 
     // Sync record creation to DB to get ID
@@ -273,6 +288,9 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     extraFolio = null,
     authCode = null,
     opNumber = null,
+    cardNumber = null,
+    cardBrand = null,
+    cardType = null,
   ) => {
     const { records, currentCashRegister } = get();
     const record = records.find((r) => r.id === recordId);
@@ -286,7 +304,17 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     }
 
     // Sync delivery to DB
-    await dbDeliverRecord(recordId, record.lockerId, extraFolio);
+    await dbDeliverRecord(
+      recordId,
+      record.lockerId,
+      extraFolio,
+      paymentMethod,
+      authCode,
+      opNumber,
+      cardNumber,
+      cardBrand,
+      cardType,
+    );
 
     // Apply extra charge transaction if any
     if (extraCharge > 0) {
@@ -306,6 +334,12 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
               status: "Entregado",
               exitTime: new Date().toISOString(),
               extraFolio: extraFolio || undefined,
+              exitPaymentMethod: paymentMethod,
+              exitAuthCode: authCode,
+              exitOpNumber: opNumber,
+              exitCardNumber: cardNumber,
+              exitCardBrand: cardBrand,
+              exitCardType: cardType,
             }
           : r,
       ),

@@ -26,6 +26,18 @@ export interface CustodyRecord {
   price: number;
   folio?: number;
   extraFolio?: number;
+  entryPaymentMethod?: string;
+  authCode?: string | null;
+  opNumber?: string | null;
+  cardNumber?: string | null;
+  cardBrand?: string | null;
+  cardType?: string | null;
+  exitPaymentMethod?: string | null;
+  exitAuthCode?: string | null;
+  exitOpNumber?: string | null;
+  exitCardNumber?: string | null;
+  exitCardBrand?: string | null;
+  exitCardType?: string | null;
 }
 
 export interface Locker {

@@ -80,6 +80,9 @@ export default function CustodyPage() {
     paymentMethod: string,
     authCode?: string | null,
     opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
   ): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
       return null;
@@ -92,6 +95,9 @@ export default function CustodyPage() {
       paymentMethod,
       authCode,
       opNumber,
+      cardNumber,
+      cardBrand,
+      cardType,
     );
     if (record) {
       setCurrentRecord(record);
@@ -109,6 +115,9 @@ export default function CustodyPage() {
     extraFolio?: number | null,
     authCode?: string | null,
     opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
   ): Promise<boolean> => {
     const record = records.find(
       (r) => r.code === code && r.status === "Activo",
@@ -121,6 +130,9 @@ export default function CustodyPage() {
       extraFolio,
       authCode,
       opNumber,
+      cardNumber,
+      cardBrand,
+      cardType,
     );
   };
 

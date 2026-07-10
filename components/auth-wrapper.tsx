@@ -70,18 +70,9 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
           });
 
           try {
-            // Intentar apagar primero usando el puerto local 3001 (ejecutado directamente en el cliente/tótem)
-            const localResponse = await fetch("http://localhost:3001/apagar", {
+            const response = await fetch("https://localhost:3000/apagar", {
               method: "POST",
-              mode: "cors",
-            }).catch(() => null);
-
-            if (localResponse && localResponse.ok) {
-              return; // Comando ejecutado localmente de forma exitosa
-            }
-
-            // Si no está corriendo el agente local, reintentar a través del backend original
-            const response = await fetch("/api/apagar", { method: "POST" });
+            });
             const res = await response.json();
             if (!response.ok || !res.success) {
               Swal.fire(
@@ -215,7 +206,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Botón de apagar en la esquina inferior izquierda (Comentado por ahora)
+        {/* Botón de apagar en la esquina inferior izquierda */}
         <button
           type="button"
           onClick={handleShutdown}
@@ -224,7 +215,6 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
         >
           <Power className="h-6 w-6" />
         </button>
-        */}
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { useReactToPrint } from "react-to-print";
 import Swal from "sweetalert2";
 import { Ticket } from "./ticket";
 import { DeliveryTicket } from "./delivery-ticket";
+import { TransbankVoucher } from "./transbank-voucher";
 import { printerService } from "@/lib/printer-service";
 import {
   Barcode as BarcodeIcon,
@@ -38,6 +39,9 @@ interface ClientRegistrationProps {
     paymentMethod: string,
     authCode?: string | null,
     opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
   ) => Promise<CustodyRecord | null>;
   onDeliver: (
     code: string,
@@ -46,6 +50,9 @@ interface ClientRegistrationProps {
     extraFolio?: number | null,
     authCode?: string | null,
     opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
   ) => Promise<boolean>;
   currentRecord: CustodyRecord | null;
   isCashOpen: boolean;
@@ -116,8 +123,20 @@ export function ClientRegistration({
   const [multiRecords, setMultiRecords] = useState<CustodyRecord[]>([]);
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
 
+  const [voucherData, setVoucherData] = useState<{
+    amount: number;
+    ticketNumber: string;
+    authorizationCode: string;
+    operationNumber: string;
+    cardNumber?: string | null;
+    cardBrand?: string | null;
+    cardType?: string | null;
+    timestamp?: string | null;
+  } | null>(null);
+
   const ticketRef = useRef<HTMLDivElement>(null);
   const deliveryTicketRef = useRef<HTMLDivElement>(null);
+  const voucherRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
@@ -128,6 +147,21 @@ export function ClientRegistration({
     contentRef: deliveryTicketRef,
     documentTitle: "Ticket_Retiro",
   });
+
+  const handlePrintVoucher = useReactToPrint({
+    contentRef: voucherRef,
+    documentTitle: "Comprobante_Transbank",
+  });
+
+  useEffect(() => {
+    if (voucherData) {
+      const timer = setTimeout(() => {
+        handlePrintVoucher();
+        setVoucherData(null);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [voucherData, handlePrintVoucher]);
 
   const getActiveRecordsByInput = useCustodyStore(
     (state) => state.getActiveRecordsByInput,
@@ -257,12 +291,27 @@ export function ClientRegistration({
           result.data.approved
         ) {
           setIsEntryModalOpen(false);
+          setVoucherData({
+            amount: entryPrice,
+            ticketNumber: clientDocument || "0",
+            authorizationCode: result.data.authorizationCode,
+            operationNumber: result.data.operationNumber
+              ? String(result.data.operationNumber)
+              : "",
+            cardNumber: result.data.cardNumber,
+            cardBrand: result.data.cardBrand,
+            cardType: result.data.cardType,
+            timestamp: result.data.timestamp,
+          });
           await onGenerateBarcode(
             "Tarjeta",
             result.data.authorizationCode,
             result.data.operationNumber
               ? String(result.data.operationNumber)
               : null,
+            result.data.cardNumber || null,
+            result.data.cardBrand || null,
+            result.data.cardType || null,
           );
         } else {
           const errMsg =
@@ -358,6 +407,9 @@ export function ClientRegistration({
     let extraFolio: number | null = null;
     let authCodeVal: string | null = null;
     let opNumberVal: string | null = null;
+    let cardNumberVal: string | null = null;
+    let cardBrandVal: string | null = null;
+    let cardTypeVal: string | null = null;
 
     if (method === "Tarjeta" && extraCharge > 0) {
       setIsProcessingCard(true);
@@ -399,8 +451,21 @@ export function ClientRegistration({
           opNumberVal = result.data.operationNumber
             ? String(result.data.operationNumber)
             : null;
+          cardNumberVal = result.data.cardNumber || null;
+          cardBrandVal = result.data.cardBrand || null;
+          cardTypeVal = result.data.cardType || null;
           setExitAuthCode(authCodeVal);
           setExitOpNumber(opNumberVal);
+          setVoucherData({
+            amount: extraCharge,
+            ticketNumber: code,
+            authorizationCode: authCodeVal || "",
+            operationNumber: opNumberVal || "",
+            cardNumber: result.data.cardNumber,
+            cardBrand: result.data.cardBrand,
+            cardType: result.data.cardType,
+            timestamp: result.data.timestamp,
+          });
         } else {
           const errMsg =
             result.error ||
@@ -470,6 +535,9 @@ export function ClientRegistration({
         extraFolio,
         authCodeVal,
         opNumberVal,
+        cardNumberVal,
+        cardBrandVal,
+        cardTypeVal,
       );
       if (success) {
         showToast("Entrega procesada con éxito", "success");
@@ -499,6 +567,10 @@ export function ClientRegistration({
         extraFolio={extraFolioState}
         authCode={exitAuthCode}
         opNumber={exitOpNumber}
+      />
+      <TransbankVoucher
+        ref={voucherRef}
+        data={voucherData}
       />
 
       {mode === "entrega" ? (
