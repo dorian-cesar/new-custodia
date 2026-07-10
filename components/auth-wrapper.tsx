@@ -161,6 +161,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                     className="w-full pl-10 pr-3 py-2 bg-white border border-zinc-300 rounded-md text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                     placeholder="Ingrese su usuario"
                     required
@@ -182,6 +183,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
                     className="w-full pl-10 pr-3 py-2 bg-white border border-zinc-300 rounded-md text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                     placeholder="••••••••"
                     required
