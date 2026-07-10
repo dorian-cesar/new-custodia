@@ -235,7 +235,7 @@ export function ClientRegistration({
       });
 
       try {
-        const response = await fetch("https://localhost:3000/payment", {
+        const response = await fetch("https://localhost:3000/api/payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -374,7 +374,7 @@ export function ClientRegistration({
       });
 
       try {
-        const response = await fetch("https://localhost:3000/payment", {
+        const response = await fetch("https://localhost:3000/api/payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
