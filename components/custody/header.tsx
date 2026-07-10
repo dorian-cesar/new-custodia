@@ -284,7 +284,9 @@ export function Header({
                 isBackendOnline ? "bg-green-500 shadow-green-500/50" : "bg-red-500 shadow-red-500/50"
               }`}
             />
-            <span className="text-zinc-600 hidden sm:inline-block">POS</span>
+            <span className="text-zinc-600 hidden sm:inline-block">
+              {isBackendOnline ? "Online" : "Offline"}
+            </span>
           </div>
 
           {currentUser && (
