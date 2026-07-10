@@ -154,3 +154,11 @@
     display: block !important;
   }
 }
+
+/* SweetAlert2 Dialog Overrides for Radix Modals */
+.swal2-container {
+  z-index: 99999 !important;
+}
+body.swal2-shown {
+  pointer-events: auto !important;
+}
