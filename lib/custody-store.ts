@@ -225,7 +225,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     await get().addTransaction(
       "income",
       sizeOption.price,
-      `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}${folio ? ` - Folio: ${folio}` : ""}`,
+      `Custodia ${code} - ${sizeOption.label} - ${paymentMethod}${authCode ? ` - Auth: ${authCode}` : ""}${opNumber ? ` - Op: ${opNumber}` : ""}${folio ? ` - Folio: ${folio}` : ""}`,
       newRecord.id,
     );
 
@@ -271,6 +271,8 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     extraCharge = 0,
     paymentMethod = "Efectivo",
     extraFolio = null,
+    authCode = null,
+    opNumber = null,
   ) => {
     const { records, currentCashRegister } = get();
     const record = records.find((r) => r.id === recordId);
@@ -291,7 +293,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
       await get().addTransaction(
         "income",
         extraCharge,
-        `Recargo extra Custodia ${record.code} - ${paymentMethod}${extraFolio ? ` - Folio: ${extraFolio}` : ""}`,
+        `Recargo extra Custodia ${record.code} - ${paymentMethod}${authCode ? ` - Auth: ${authCode}` : ""}${opNumber ? ` - Op: ${opNumber}` : ""}${extraFolio ? ` - Folio: ${extraFolio}` : ""}`,
         record.id,
       );
     }

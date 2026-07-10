@@ -52,6 +52,8 @@ export default function CustodyPage() {
 
   const handleGenerateBarcode = async (
     paymentMethod: string,
+    authCode?: string | null,
+    opNumber?: string | null,
   ): Promise<CustodyRecord | null> => {
     if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
       return null;
@@ -62,6 +64,8 @@ export default function CustodyPage() {
       clientDocument.trim(),
       selectedSize,
       paymentMethod,
+      authCode,
+      opNumber,
     );
     if (record) {
       setCurrentRecord(record);
@@ -77,6 +81,8 @@ export default function CustodyPage() {
     extraCharge?: number,
     paymentMethod?: string,
     extraFolio?: number | null,
+    authCode?: string | null,
+    opNumber?: string | null,
   ): Promise<boolean> => {
     const record = records.find(
       (r) => r.code === code && r.status === "Activo",
@@ -87,6 +93,8 @@ export default function CustodyPage() {
       extraCharge,
       paymentMethod,
       extraFolio,
+      authCode,
+      opNumber,
     );
   };
 
