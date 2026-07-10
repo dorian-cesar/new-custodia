@@ -155,10 +155,11 @@ export function ClientRegistration({
 
   useEffect(() => {
     if (voucherData) {
+      // Aumentamos el tiempo a 2500ms para evitar que choque con el handlePrintDelivery (que corre a los 500ms)
       const timer = setTimeout(() => {
         handlePrintVoucher();
         setVoucherData(null);
-      }, 800);
+      }, 2500);
       return () => clearTimeout(timer);
     }
   }, [voucherData, handlePrintVoucher]);
