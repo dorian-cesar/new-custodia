@@ -235,7 +235,10 @@ export default function CustodyPage() {
                 setSelectedLockerId(selectedLockerId === id ? null : id)
               }
               selectedSize={selectedSize}
-              onSelectSize={setSelectedSize}
+              onSelectSize={(size) => {
+                setSelectedSize(size);
+                setSelectedLockerId(null);
+              }}
               clientDocument={clientDocument}
               onChangeDocument={setClientDocument}
             >
