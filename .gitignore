@@ -18,3 +18,5 @@ node_modules
 
 # Database
 custodia.sqlite
+
+.agents
