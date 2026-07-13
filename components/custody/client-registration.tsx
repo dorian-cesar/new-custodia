@@ -213,26 +213,25 @@ export function ClientRegistration({
         setLastPrintedId(currentRecord.id);
         showToast("Custodia registrada con éxito", "success");
       } else {
-        // Ambos medios de pago: 1ra copia a 500ms, 2da copia a 1500ms.
-        // Para Tarjeta, el voucher Transbank se imprime a 2500ms (via voucherData useEffect),
-        // quedando siempre después de los dos tickets de entrada.
-        const timer1 = setTimeout(() => {
-          handlePrint();
+        // Delay inicial para que el SVG del barcode termine de renderizar.
+        const timer = setTimeout(() => {
+          handlePrint(); // 1ra copia
+
+          // Programar la 2da copia DENTRO del callback del 1er timer.
+          // Así el 2do setTimeout se registra en secondPrintTimerRef DESPUÉS de que
+          // setLastPrintedId dispara (y sus re-renders ya ocurrieron), eliminando
+          // cualquier riesgo de que el cleanup del efecto lo cancele.
+          if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
+          secondPrintTimerRef.current = setTimeout(() => {
+            handlePrint(); // 2da copia
+            secondPrintTimerRef.current = null;
+          }, 1500);
+
           setLastPrintedId(currentRecord.id);
           showToast("Custodia registrada con éxito", "success");
         }, 500);
 
-        // 2da copia para todos los medios de pago.
-        // Se almacena en secondPrintTimerRef para que el cleanup del efecto
-        // (que se ejecuta cuando setLastPrintedId dispara un re-render) NO lo cancele.
-        if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
-        secondPrintTimerRef.current = setTimeout(() => {
-          handlePrint();
-          secondPrintTimerRef.current = null;
-        }, 1500);
-
-        // Solo cancelamos timer1 en el cleanup; timer2 lo gestiona secondPrintTimerRef
-        return () => clearTimeout(timer1);
+        return () => clearTimeout(timer);
       }
 
     }
