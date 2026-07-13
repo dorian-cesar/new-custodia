@@ -317,6 +317,18 @@ export function ClientRegistration({
           result.data.approved
         ) {
           setIsEntryModalOpen(false);
+          // Primero crear el registro → los timers de tickets de entrada (500ms, 2000ms) arrancan aquí
+          await onGenerateBarcode(
+            "Tarjeta",
+            result.data.authorizationCode,
+            result.data.operationNumber
+              ? String(result.data.operationNumber)
+              : null,
+            result.data.cardNumber || null,
+            result.data.cardBrand || null,
+            result.data.cardType || null,
+          );
+          // Recién ahora armar el voucher → su timer de 2500ms empieza DESPUÉS de los tickets
           setVoucherData({
             amount: entryPrice,
             ticketNumber: clientDocument || "0",
@@ -329,16 +341,6 @@ export function ClientRegistration({
             cardType: result.data.cardType,
             timestamp: result.data.timestamp,
           });
-          await onGenerateBarcode(
-            "Tarjeta",
-            result.data.authorizationCode,
-            result.data.operationNumber
-              ? String(result.data.operationNumber)
-              : null,
-            result.data.cardNumber || null,
-            result.data.cardBrand || null,
-            result.data.cardType || null,
-          );
         } else {
           const errMsg =
             result.error ||
