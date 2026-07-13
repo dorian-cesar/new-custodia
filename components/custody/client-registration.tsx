@@ -220,16 +220,15 @@ export function ClientRegistration({
           showToast("Custodia registrada con éxito", "success");
         }, 500);
 
-        // 2da copia solo para pago en efectivo.
+        // 2da copia para todos los medios de pago (Efectivo y Tarjeta).
         // Se almacena en secondPrintTimerRef para que el cleanup del efecto
         // (que se ejecuta cuando setLastPrintedId dispara un re-render) NO lo cancele.
-        if (entryPaymentMethod === "Efectivo") {
-          if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
-          secondPrintTimerRef.current = setTimeout(() => {
-            handlePrint();
-            secondPrintTimerRef.current = null;
-          }, 2500);
-        }
+        // Delay de 1500ms: deja 1s de margen antes del voucher Transbank (~2500ms).
+        if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
+        secondPrintTimerRef.current = setTimeout(() => {
+          handlePrint();
+          secondPrintTimerRef.current = null;
+        }, 1500);
 
         // Solo cancelamos timer1 en el cleanup; timer2 lo gestiona secondPrintTimerRef
         return () => clearTimeout(timer1);
