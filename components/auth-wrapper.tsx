@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCustodyStore } from "@/lib/custody-store";
 import { loginUser } from "@/app/actions/db-actions";
 import { Label } from "@/components/ui/label";
-import { Lock, User as UserIcon, Power } from "lucide-react";
+import { Lock, User as UserIcon, Power, RotateCcw } from "lucide-react";
 import Swal from "sweetalert2";
 
 export function AuthWrapper({ children }: { children: React.ReactNode }) {
@@ -208,15 +208,25 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Botón de apagar en la esquina inferior izquierda */}
-        <button
-          type="button"
-          onClick={handleShutdown}
-          className="absolute bottom-4 left-4 p-3 bg-red-800 hover:bg-red-900 active:scale-95 text-white rounded-full shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center border border-zinc-500"
-          title="Apagar equipo"
-        >
-          <Power className="h-6 w-6" />
-        </button>
+        {/* Botones en la esquina inferior izquierda: refrescar y apagar */}
+        <div className="absolute bottom-4 left-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="p-3 bg-[#1588b3] hover:bg-[#0a6a8f] active:scale-95 text-white rounded-full shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center border border-zinc-500"
+            title="Refrescar pantalla"
+          >
+            <RotateCcw className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={handleShutdown}
+            className="p-3 bg-red-800 hover:bg-red-900 active:scale-95 text-white rounded-full shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center border border-zinc-500"
+            title="Apagar equipo"
+          >
+            <Power className="h-6 w-6" />
+          </button>
+        </div>
       </div>
     );
   }
