@@ -138,6 +138,18 @@ export function ClientRegistration({
   const deliveryTicketRef = useRef<HTMLDivElement>(null);
   const voucherRef = useRef<HTMLDivElement>(null);
 
+  // Ref para el timer de la 2da copia. Se guarda en un ref (no en estado)
+  // para que el cleanup del efecto no lo cancele cuando React re-renderiza
+  // tras llamar a setLastPrintedId.
+  const secondPrintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Limpiar el segundo timer solo al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
+    };
+  }, []);
+
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: "Ticket_Custodia",
@@ -208,19 +220,19 @@ export function ClientRegistration({
           showToast("Custodia registrada con éxito", "success");
         }, 500);
 
-        // En modo kiosko el evento afterprint no es confiable.
-        // Usamos un segundo timer independiente para imprimir la copia del cajero.
-        let timer2: ReturnType<typeof setTimeout> | null = null;
+        // 2da copia solo para pago en efectivo.
+        // Se almacena en secondPrintTimerRef para que el cleanup del efecto
+        // (que se ejecuta cuando setLastPrintedId dispara un re-render) NO lo cancele.
         if (entryPaymentMethod === "Efectivo") {
-          timer2 = setTimeout(() => {
+          if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
+          secondPrintTimerRef.current = setTimeout(() => {
             handlePrint();
+            secondPrintTimerRef.current = null;
           }, 2500);
         }
 
-        return () => {
-          clearTimeout(timer1);
-          if (timer2) clearTimeout(timer2);
-        };
+        // Solo cancelamos timer1 en el cleanup; timer2 lo gestiona secondPrintTimerRef
+        return () => clearTimeout(timer1);
       }
     }
   }, [
