@@ -74,22 +74,6 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
             <p style={{ margin: "3px 0" }}>
               <strong>Fecha/Hora:</strong> {printTime}
             </p>
-            
-            {data.cardNumber && (
-              <p style={{ margin: "3px 0" }}>
-                <strong>Tarjeta:</strong> {data.cardNumber}
-              </p>
-            )}
-            {data.cardBrand && (
-              <p style={{ margin: "3px 0" }}>
-                <strong>Marca:</strong> {data.cardBrand}
-              </p>
-            )}
-            {data.cardType && (
-              <p style={{ margin: "3px 0" }}>
-                <strong>Tipo:</strong> {data.cardType}
-              </p>
-            )}
 
             <div style={{ borderBottom: "1px dashed black", margin: "5px 0" }}></div>
 
