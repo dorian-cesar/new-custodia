@@ -100,6 +100,7 @@ export function ClientRegistration({
   const ticketRef = useRef<HTMLDivElement>(null);
   const deliveryTicketRef = useRef<HTMLDivElement>(null);
   const voucherRef = useRef<HTMLDivElement>(null);
+  const nextPrintActionRef = useRef<(() => void) | null>(null);
 
   // State for Entry Payment Modal
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
@@ -152,11 +153,25 @@ export function ClientRegistration({
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: "Ticket_Custodia",
+    onAfterPrint: () => {
+      if (nextPrintActionRef.current) {
+        const nextAction = nextPrintActionRef.current;
+        nextPrintActionRef.current = null;
+        setTimeout(nextAction, 500);
+      }
+    },
   });
 
   const handlePrintCopy = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: "Ticket_Custodia_Copia",
+    onAfterPrint: () => {
+      if (nextPrintActionRef.current) {
+        const nextAction = nextPrintActionRef.current;
+        nextPrintActionRef.current = null;
+        setTimeout(nextAction, 500);
+      }
+    },
   });
 
   const handlePrintDelivery = useReactToPrint({
@@ -167,6 +182,13 @@ export function ClientRegistration({
   const handlePrintVoucher = useReactToPrint({
     contentRef: voucherRef,
     documentTitle: "Comprobante_Transbank",
+    onAfterPrint: () => {
+      if (nextPrintActionRef.current) {
+        const nextAction = nextPrintActionRef.current;
+        nextPrintActionRef.current = null;
+        setTimeout(nextAction, 500);
+      }
+    },
   });
 
 
@@ -212,27 +234,29 @@ export function ClientRegistration({
         printTimersRef.current.forEach(clearTimeout);
         printTimersRef.current = [];
 
-        // 1. Ticket de Entrada - Primera copia (500ms para asegurar renderizado del código de barras)
+        // 1. Iniciar la cadena secuencial con un retraso inicial de 500ms para asegurar el renderizado
         const t1 = setTimeout(() => {
+          // 3. Voucher Transbank (si aplica)
+          let printVoucherAction: (() => void) | null = null;
+          if (entryPaymentMethod === "Tarjeta" && voucherData) {
+            printVoucherAction = () => {
+              handlePrintVoucher();
+            };
+          }
+
+          // 2. Segunda copia del ticket
+          const printCopyAction = () => {
+            nextPrintActionRef.current = printVoucherAction;
+            handlePrintCopy();
+          };
+
+          // 1. Primera copia del ticket
+          nextPrintActionRef.current = printCopyAction;
           handlePrint();
           setLastPrintedId(currentRecord.id);
           showToast("Custodia registrada con éxito", "success");
         }, 500);
         printTimersRef.current.push(t1);
-
-        // 2. Ticket de Entrada - Segunda copia (1500ms: da 1s de espacio para que Windows Spooler cree un trabajo separado y corte)
-        const t2 = setTimeout(() => {
-          handlePrintCopy();
-        }, 1500);
-        printTimersRef.current.push(t2);
-
-        // 3. Comprobante Transbank - Solo si es Tarjeta (2500ms: da 1s de espacio más para corte físico)
-        if (entryPaymentMethod === "Tarjeta" && voucherData) {
-          const t3 = setTimeout(() => {
-            handlePrintVoucher();
-          }, 2500);
-          printTimersRef.current.push(t3);
-        }
 
         // El cleanup del efecto ya no cancela los timers de impresión en cola,
         // ya que printTimersRef se encarga de conservarlos entre renders.
