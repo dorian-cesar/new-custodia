@@ -861,325 +861,349 @@ export default function CajaPage() {
       {/* Open Cash Dialog */}
       <Dialog open={showOpenDialog} onOpenChange={setShowOpenDialog}>
         <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <Unlock className="h-4 w-4" />
-              <span>Abrir Caja</span>
-            </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
-              Ingrese el monto inicial para comenzar la sesión de caja.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Monto Inicial ($)
-              </Label>
-              <Input
-                type="text"
-                value={
-                  openingAmount
-                    ? Number(openingAmount).toLocaleString("es-CL")
-                    : ""
-                }
-                onChange={(e) =>
-                  setOpeningAmount(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="0"
-                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
-              />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleOpenCash();
+            }}
+          >
+            <DialogHeader className="bg-[#242424] text-white p-4">
+              <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+                <Unlock className="h-4 w-4" />
+                <span>Abrir Caja</span>
+              </DialogTitle>
+              <DialogDescription className="text-zinc-300 text-xs mt-1">
+                Ingrese el monto inicial para comenzar la sesión de caja.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+                  Monto Inicial ($)
+                </Label>
+                <Input
+                  type="text"
+                  value={
+                    openingAmount
+                      ? Number(openingAmount).toLocaleString("es-CL")
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setOpeningAmount(e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="0"
+                  className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+                  Notas (opcional)
+                </Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Observaciones de apertura..."
+                  className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-20 resize-none"
+                />
+              </div>
+              {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
             </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Notas (opcional)
-              </Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observaciones de apertura..."
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] h-20 resize-none"
-              />
-            </div>
-            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
-          </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowOpenDialog(false)}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleOpenCash}
-              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
-            >
-              Abrir Caja
-            </Button>
-          </DialogFooter>
+            <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowOpenDialog(false)}
+                className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
+              >
+                Abrir Caja
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Close Cash Dialog */}
       <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
         <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <Lock className="h-4 w-4" />
-              <span>Cerrar Caja</span>
-            </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
-              Ingrese el monto final contado en caja para cerrar la sesión.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-2 text-zinc-800">
-              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
-                  Monto Inicial
-                </span>
-                <span className="text-xs font-black">
-                  ${currentCashRegister?.openingAmount.toLocaleString()}
-                </span>
-              </div>
-              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
-                  Total Ventas
-                </span>
-                <span className="text-xs font-black text-[#0a354c]">
-                  ${stats.totalSales.toLocaleString()}
-                </span>
-              </div>
-              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
-                  En Efectivo
-                </span>
-                <span className="text-xs font-black">
-                  ${ingresosEfectivo.toLocaleString()}
-                </span>
-              </div>
-              <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
-                  Por Tarjeta
-                </span>
-                <span className="text-xs font-black text-zinc-500">
-                  ${ingresosTarjeta.toLocaleString()}
-                </span>
-              </div>
-              <div className="col-span-2 bg-[#cef3ff] border border-zinc-300 rounded-lg p-2.5 flex justify-between items-center mt-1 shadow-sm">
-                <span className="text-[10px] font-black text-zinc-700 uppercase tracking-wider">
-                  Efectivo Físico Esperado
-                </span>
-                <span className="text-base font-black text-[#0a354c]">
-                  ${saldoEsperadoEfectivo.toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                  Monto Físico Contado ($)
-                </Label>
-                {diferenciaCaja !== null && (
-                  <span
-                    className={`text-[10px] font-black uppercase ${diferenciaCaja === 0 ? "text-emerald-600" : diferenciaCaja > 0 ? "text-blue-600" : "text-red-600"}`}
-                  >
-                    {diferenciaCaja === 0
-                      ? "Caja Cuadrada"
-                      : diferenciaCaja > 0
-                        ? `Sobrante: +$${diferenciaCaja.toLocaleString()}`
-                        : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCloseCash();
+            }}
+          >
+            <DialogHeader className="bg-[#242424] text-white p-4">
+              <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+                <Lock className="h-4 w-4" />
+                <span>Cerrar Caja</span>
+              </DialogTitle>
+              <DialogDescription className="text-zinc-300 text-xs mt-1">
+                Ingrese el monto final contado en caja para cerrar la sesión.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-2 text-zinc-800">
+                <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
+                    Monto Inicial
                   </span>
-                )}
-              </div>
-              <Input
-                type="text"
-                value={
-                  closingAmount
-                    ? Number(closingAmount).toLocaleString("es-CL")
-                    : ""
-                }
-                onChange={(e) =>
-                  setClosingAmount(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="0"
-                className={`bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] ${diferenciaCaja !== null && diferenciaCaja !== 0 ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Notas (opcional)
-              </Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observaciones de cierre..."
-                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-16 resize-none"
-              />
-            </div>
-
-            <div className="space-y-3 border-t border-zinc-300 pt-4 mt-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Lock className="h-4 w-4 text-red-600" />
-                <h4 className="font-extrabold text-xs text-red-600 uppercase tracking-wider">
-                  Autorización de Supervisor
-                </h4>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">
-                    Usuario
-                  </Label>
-                  <Input
-                    type="text"
-                    value={supervisorUsername}
-                    onChange={(e) => setSupervisorUsername(e.target.value)}
-                    placeholder="ej. admin"
-                    autoComplete="off"
-                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
-                  />
+                  <span className="text-xs font-black">
+                    ${currentCashRegister?.openingAmount.toLocaleString()}
+                  </span>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">
-                    Contraseña
-                  </Label>
-                  <Input
-                    type="password"
-                    value={supervisorPassword}
-                    onChange={(e) => setSupervisorPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
-                  />
+                <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
+                    Total Ventas
+                  </span>
+                  <span className="text-xs font-black text-[#0a354c]">
+                    ${stats.totalSales.toLocaleString()}
+                  </span>
+                </div>
+                <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
+                    En Efectivo
+                  </span>
+                  <span className="text-xs font-black">
+                    ${ingresosEfectivo.toLocaleString()}
+                  </span>
+                </div>
+                <div className="bg-white border border-zinc-300 rounded-lg p-2.5 flex flex-col justify-center shadow-sm">
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">
+                    Por Tarjeta
+                  </span>
+                  <span className="text-xs font-black text-zinc-500">
+                    ${ingresosTarjeta.toLocaleString()}
+                  </span>
+                </div>
+                <div className="col-span-2 bg-[#cef3ff] border border-zinc-300 rounded-lg p-2.5 flex justify-between items-center mt-1 shadow-sm">
+                  <span className="text-[10px] font-black text-zinc-700 uppercase tracking-wider">
+                    Efectivo Físico Esperado
+                  </span>
+                  <span className="text-base font-black text-[#0a354c]">
+                    ${saldoEsperadoEfectivo.toLocaleString()}
+                  </span>
                 </div>
               </div>
-            </div>
 
-            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
-          </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowCloseDialog(false)}
-              disabled={isVerifying}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleCloseCash}
-              disabled={isVerifying}
-              className="bg-red-600 text-white hover:bg-red-700 font-bold h-9 text-xs"
-            >
-              {isVerifying ? "Verificando..." : "Cerrar Caja"}
-            </Button>
-          </DialogFooter>
+              <div className="space-y-2">
+                <div className="flex justify-between items-end">
+                  <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+                    Monto Físico Contado ($)
+                  </Label>
+                  {diferenciaCaja !== null && (
+                    <span
+                      className={`text-[10px] font-black uppercase ${diferenciaCaja === 0 ? "text-emerald-600" : diferenciaCaja > 0 ? "text-blue-600" : "text-red-600"}`}
+                    >
+                      {diferenciaCaja === 0
+                        ? "Caja Cuadrada"
+                        : diferenciaCaja > 0
+                          ? `Sobrante: +$${diferenciaCaja.toLocaleString()}`
+                          : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  type="text"
+                  value={
+                    closingAmount
+                      ? Number(closingAmount).toLocaleString("es-CL")
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setClosingAmount(e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="0"
+                  className={`bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] ${diferenciaCaja !== null && diferenciaCaja !== 0 ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+                  Notas (opcional)
+                </Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Observaciones de cierre..."
+                  className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-16 resize-none"
+                />
+              </div>
+
+              <div className="space-y-3 border-t border-zinc-300 pt-4 mt-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <Lock className="h-4 w-4 text-red-600" />
+                  <h4 className="font-extrabold text-xs text-red-600 uppercase tracking-wider">
+                    Autorización de Supervisor
+                  </h4>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-zinc-600 font-bold text-[10px] uppercase">
+                      Usuario
+                    </Label>
+                    <Input
+                      type="text"
+                      value={supervisorUsername}
+                      onChange={(e) => setSupervisorUsername(e.target.value)}
+                      placeholder="ej. admin"
+                      autoComplete="off"
+                      className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-zinc-600 font-bold text-[10px] uppercase">
+                      Contraseña
+                    </Label>
+                    <Input
+                      type="password"
+                      value={supervisorPassword}
+                      onChange={(e) => setSupervisorPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
+            </div>
+            <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCloseDialog(false)}
+                disabled={isVerifying}
+                className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isVerifying}
+                className="bg-red-600 text-white hover:bg-red-700 font-bold h-9 text-xs"
+              >
+                {isVerifying ? "Verificando..." : "Cerrar Caja"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Giro de Caja Dialog */}
       <Dialog open={showGiroDialog} onOpenChange={setShowGiroDialog}>
         <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <TrendingDown className="h-4 w-4 text-amber-500" />
-              <span>Realizar Retiro de Caja</span>
-            </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
-              Retire efectivo de la caja actual. Requiere autorización del
-              supervisor.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Monto a Retirar ($)
-              </Label>
-              <Input
-                type="text"
-                value={
-                  giroAmount ? Number(giroAmount).toLocaleString("es-CL") : ""
-                }
-                onChange={(e) =>
-                  setGiroAmount(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="0"
-                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Motivo del Retiro
-              </Label>
-              <Input
-                type="text"
-                value={giroReason}
-                onChange={(e) => setGiroReason(e.target.value)}
-                placeholder="Ej: Límite de caja excedido, pago a proveedor..."
-                className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
-              />
-            </div>
-
-            <div className="space-y-3 border-t border-zinc-300 pt-4 mt-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Lock className="h-4 w-4 text-amber-600" />
-                <h4 className="font-extrabold text-xs text-amber-600 uppercase tracking-wider">
-                  Autorización de Supervisor
-                </h4>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleGiro();
+            }}
+          >
+            <DialogHeader className="bg-[#242424] text-white p-4">
+              <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+                <TrendingDown className="h-4 w-4 text-amber-500" />
+                <span>Realizar Retiro de Caja</span>
+              </DialogTitle>
+              <DialogDescription className="text-zinc-300 text-xs mt-1">
+                Retire efectivo de la caja actual. Requiere autorización del
+                supervisor.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+                  Monto a Retirar ($)
+                </Label>
+                <Input
+                  type="text"
+                  value={
+                    giroAmount ? Number(giroAmount).toLocaleString("es-CL") : ""
+                  }
+                  onChange={(e) =>
+                    setGiroAmount(e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="0"
+                  className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">
-                    Usuario
-                  </Label>
-                  <Input
-                    type="text"
-                    value={supervisorUsername}
-                    onChange={(e) => setSupervisorUsername(e.target.value)}
-                    placeholder="ej. admin"
-                    autoComplete="off"
-                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
-                  />
+              <div className="space-y-2">
+                <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+                  Motivo del Retiro
+                </Label>
+                <Input
+                  type="text"
+                  value={giroReason}
+                  onChange={(e) => setGiroReason(e.target.value)}
+                  placeholder="Ej: Límite de caja excedido, pago a proveedor..."
+                  className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424]"
+                />
+              </div>
+
+              <div className="space-y-3 border-t border-zinc-300 pt-4 mt-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <Lock className="h-4 w-4 text-amber-600" />
+                  <h4 className="font-extrabold text-xs text-amber-600 uppercase tracking-wider">
+                    Autorización de Supervisor
+                  </h4>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-zinc-600 font-bold text-[10px] uppercase">
-                    Contraseña
-                  </Label>
-                  <Input
-                    type="password"
-                    value={supervisorPassword}
-                    onChange={(e) => setSupervisorPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-zinc-600 font-bold text-[10px] uppercase">
+                      Usuario
+                    </Label>
+                    <Input
+                      type="text"
+                      value={supervisorUsername}
+                      onChange={(e) => setSupervisorUsername(e.target.value)}
+                      placeholder="ej. admin"
+                      autoComplete="off"
+                      className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-zinc-600 font-bold text-[10px] uppercase">
+                      Contraseña
+                    </Label>
+                    <Input
+                      type="password"
+                      value={supervisorPassword}
+                      onChange={(e) => setSupervisorPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      className="bg-white border border-zinc-300 text-zinc-900 placeholder:text-zinc-600 font-semibold focus-visible:ring-[#242424] h-8 text-xs"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
-          </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowGiroDialog(false)}
-              disabled={isVerifying || isProcessingGiro}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleGiro}
-              disabled={isVerifying || isProcessingGiro}
-              className="bg-amber-600 text-white hover:bg-amber-700 font-bold h-9 text-xs"
-            >
-              {isVerifying || isProcessingGiro
-                ? "Procesando..."
-                : "Confirmar Retiro"}
-            </Button>
-          </DialogFooter>
+              {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
+            </div>
+            <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowGiroDialog(false)}
+                disabled={isVerifying || isProcessingGiro}
+                className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isVerifying || isProcessingGiro}
+                className="bg-amber-600 text-white hover:bg-amber-700 font-bold h-9 text-xs"
+              >
+                {isVerifying || isProcessingGiro
+                  ? "Procesando..."
+                  : "Confirmar Retiro"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
