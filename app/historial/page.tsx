@@ -5,6 +5,7 @@ import { useReactToPrint } from "react-to-print";
 import { History, Search, Filter, Ruler, Printer } from "lucide-react";
 import { Header } from "@/components/custody/header";
 import { Ticket } from "@/components/custody/ticket";
+import { DeliveryTicket } from "@/components/custody/delivery-ticket";
 import { Button } from "@/components/ui/button";
 import { printerService } from "@/lib/printer-service";
 import { Input } from "@/components/ui/input";
@@ -35,13 +36,19 @@ export default function HistorialPage() {
   const [filterSize, setFilterSize] = useState<string>("all");
 
   const ticketRef = useRef<HTMLDivElement>(null);
+  const deliveryTicketRef = useRef<HTMLDivElement>(null);
   const [recordToPrint, setRecordToPrint] = useState<any>(null);
   const [paymentMethodToPrint, setPaymentMethodToPrint] =
     useState<string>("Efectivo");
 
   const handlePrintAction = useReactToPrint({
     contentRef: ticketRef,
-    documentTitle: "Reimpresion_Ticket",
+    documentTitle: "Reimpresion_Ticket_Entrada",
+  });
+
+  const handlePrintDeliveryAction = useReactToPrint({
+    contentRef: deliveryTicketRef,
+    documentTitle: "Reimpresion_Ticket_Retiro",
   });
 
   useEffect(() => {
@@ -54,17 +61,43 @@ export default function HistorialPage() {
         const lockerDisplay = locker
           ? `${locker.col}${locker.row}`
           : recordToPrint.lockerId.toString();
-        printerService.printEntryTicket(
-          recordToPrint,
-          sizeLabel,
-          lockerDisplay,
-          paymentMethodToPrint,
-        );
+
+        if (recordToPrint.status === "Entregado") {
+          const exitTime = recordToPrint.exitTime ? new Date(recordToPrint.exitTime).getTime() : Date.now();
+          const diffMs = exitTime - new Date(recordToPrint.entryTime).getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          let extraHours = 0;
+          let extraAmount = 0;
+          if (diffHours > 24) {
+            extraHours = diffHours - 24;
+            extraAmount = Math.ceil(extraHours / 24) * recordToPrint.price;
+          }
+          printerService.printDeliveryTicket(
+            recordToPrint,
+            sizeLabel,
+            lockerDisplay,
+            recordToPrint.exitPaymentMethod || "Efectivo",
+            extraHours,
+            extraAmount,
+            recordToPrint.extraFolio || null,
+          );
+        } else {
+          printerService.printEntryTicket(
+            recordToPrint,
+            sizeLabel,
+            lockerDisplay,
+            paymentMethodToPrint,
+          );
+        }
         setRecordToPrint(null);
       } else {
         // Pequeño delay para asegurar que el componente Ticket y el SVG terminen de renderizar
         const timer = setTimeout(() => {
-          handlePrintAction();
+          if (recordToPrint.status === "Entregado") {
+            handlePrintDeliveryAction();
+          } else {
+            handlePrintAction();
+          }
           setRecordToPrint(null);
         }, 300);
         return () => clearTimeout(timer);
@@ -73,6 +106,7 @@ export default function HistorialPage() {
   }, [
     recordToPrint,
     handlePrintAction,
+    handlePrintDeliveryAction,
     lockers,
     lockerSizes,
     paymentMethodToPrint,
@@ -410,11 +444,37 @@ export default function HistorialPage() {
       </div>
 
       {/* Hidden ticket for printing */}
-      <Ticket
-        record={recordToPrint}
-        paymentMethod={paymentMethodToPrint}
-        ref={ticketRef}
-      />
+      {recordToPrint?.status === "Entregado" ? (
+        (() => {
+          const exitTime = recordToPrint.exitTime ? new Date(recordToPrint.exitTime).getTime() : Date.now();
+          const diffMs = exitTime - new Date(recordToPrint.entryTime).getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          let extraHours = 0;
+          let extraAmount = 0;
+          if (diffHours > 24) {
+            extraHours = diffHours - 24;
+            extraAmount = Math.ceil(extraHours / 24) * recordToPrint.price;
+          }
+          return (
+            <DeliveryTicket
+              record={recordToPrint}
+              extraHours={extraHours}
+              extraAmount={extraAmount}
+              paymentMethod={recordToPrint.exitPaymentMethod || "Efectivo"}
+              extraFolio={recordToPrint.extraFolio || null}
+              authCode={recordToPrint.exitAuthCode || null}
+              opNumber={recordToPrint.exitOpNumber || null}
+              ref={deliveryTicketRef}
+            />
+          );
+        })()
+      ) : (
+        <Ticket
+          record={recordToPrint}
+          paymentMethod={paymentMethodToPrint}
+          ref={ticketRef}
+        />
+      )}
     </div>
   );
 }
