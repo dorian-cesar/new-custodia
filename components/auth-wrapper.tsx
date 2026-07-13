@@ -208,16 +208,8 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Botones en la esquina inferior izquierda: refrescar y apagar */}
+        {/* Botones en la esquina inferior izquierda: apagar y refrescar */}
         <div className="absolute bottom-4 left-4 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="p-3 bg-[#1588b3] hover:bg-[#0a6a8f] active:scale-95 text-white rounded-full shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center border border-zinc-500"
-            title="Refrescar pantalla"
-          >
-            <RotateCcw className="h-6 w-6" />
-          </button>
           <button
             type="button"
             onClick={handleShutdown}
@@ -225,6 +217,14 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
             title="Apagar equipo"
           >
             <Power className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="p-3 bg-[#1588b3] hover:bg-[#0a6a8f] active:scale-95 text-white rounded-full shadow-lg transition-all duration-200 cursor-pointer flex items-center justify-center border border-zinc-500"
+            title="Refrescar pantalla"
+          >
+            <RotateCcw className="h-6 w-6" />
           </button>
         </div>
       </div>
