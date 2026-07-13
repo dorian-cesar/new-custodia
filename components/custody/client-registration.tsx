@@ -138,17 +138,7 @@ export function ClientRegistration({
   const deliveryTicketRef = useRef<HTMLDivElement>(null);
   const voucherRef = useRef<HTMLDivElement>(null);
 
-  // Ref para el timer de la 2da copia. Se guarda en un ref (no en estado)
-  // para que el cleanup del efecto no lo cancele cuando React re-renderiza
-  // tras llamar a setLastPrintedId.
-  const secondPrintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Limpiar el segundo timer solo al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
-    };
-  }, []);
 
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
@@ -222,20 +212,11 @@ export function ClientRegistration({
         setLastPrintedId(currentRecord.id);
         showToast("Custodia registrada con éxito", "success");
       } else {
-        // Delay inicial para que el SVG del barcode termine de renderizar.
+        // Un solo delay de 500ms para asegurar que el código de barra SVG se renderice en el DOM.
+        // Luego enviamos ambas impresiones consecutivamente a la cola del sistema de Windows.
         const timer = setTimeout(() => {
-          handlePrint(); // 1ra copia
-
-          // Programar la 2da copia DENTRO del callback del 1er timer.
-          // Así el 2do setTimeout se registra en secondPrintTimerRef DESPUÉS de que
-          // setLastPrintedId dispara (y sus re-renders ya ocurrieron), eliminando
-          // cualquier riesgo de que el cleanup del efecto lo cancele.
-          if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
-          secondPrintTimerRef.current = setTimeout(() => {
-            handlePrintCopy(); // 2da copia — instancia separada, isPrintingRef propio
-            secondPrintTimerRef.current = null;
-          }, 1500);
-
+          handlePrint();     // Primera copia a la cola de Windows
+          handlePrintCopy(); // Segunda copia a la cola de Windows
           setLastPrintedId(currentRecord.id);
           showToast("Custodia registrada con éxito", "success");
         }, 500);
