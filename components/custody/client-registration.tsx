@@ -361,6 +361,8 @@ export function ClientRegistration({
             cardType: result.data.cardType,
             timestamp: result.data.timestamp,
           });
+          // Cerrar el modal de pago
+          setIsEntryModalOpen(false);
           // Luego crear el registro, lo cual gatillará el useEffect de impresión
           await onGenerateBarcode(
             "Tarjeta",
