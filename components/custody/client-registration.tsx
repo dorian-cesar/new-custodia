@@ -138,10 +138,24 @@ export function ClientRegistration({
   const deliveryTicketRef = useRef<HTMLDivElement>(null);
   const voucherRef = useRef<HTMLDivElement>(null);
 
+  // Ref para disparar la 2da copia del ticket de entrada (pago en efectivo)
+  const pendingSecondCopyRef = useRef(false);
+  // Ref a handlePrint para romper la referencia circular en onAfterPrint
+  const handlePrintRef = useRef<(() => void) | null>(null);
+
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: "Ticket_Custodia",
+    onAfterPrint: () => {
+      // Si estaba pendiente una 2da copia (pago en efectivo), imprimirla ahora
+      if (pendingSecondCopyRef.current) {
+        pendingSecondCopyRef.current = false;
+        handlePrintRef.current?.();
+      }
+    },
   });
+  // Mantener el ref sincronizado con la función actual
+  handlePrintRef.current = handlePrint;
 
   const handlePrintDelivery = useReactToPrint({
     contentRef: deliveryTicketRef,
@@ -203,6 +217,10 @@ export function ClientRegistration({
       } else {
         // Small delay to allow SVG Barcode inside Ticket to render completely
         const timer = setTimeout(() => {
+          // Pago en efectivo: armar flag para que onAfterPrint imprima la 2da copia
+          if (entryPaymentMethod === "Efectivo") {
+            pendingSecondCopyRef.current = true;
+          }
           handlePrint();
           setLastPrintedId(currentRecord.id);
           showToast("Custodia registrada con éxito", "success");
