@@ -19,8 +19,22 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
   ({ data }, ref) => {
     if (!data) return null;
 
+    const formatTimestamp = (ts: string) => {
+      // Si el formato es DDMMYYYY HHMMSS (ej: "13072026 104753")
+      if (/^\d{8}\s\d{6}$/.test(ts)) {
+        const day = ts.substring(0, 2);
+        const month = ts.substring(2, 4);
+        const year = ts.substring(4, 8);
+        const hour = ts.substring(9, 11);
+        const min = ts.substring(11, 13);
+        const sec = ts.substring(13, 15);
+        return `${day}-${month}-${year} ${hour}:${min}:${sec}`;
+      }
+      return ts;
+    };
+
     const printTime = data.timestamp 
-      ? data.timestamp 
+      ? formatTimestamp(data.timestamp) 
       : new Date().toLocaleString("es-CL");
 
     return (
