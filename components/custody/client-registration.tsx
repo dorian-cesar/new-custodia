@@ -96,6 +96,11 @@ export function ClientRegistration({
   const [deliveryCode, setDeliveryCode] = useState("");
   const [deliveryError, setDeliveryError] = useState("");
 
+  // Refs for printing
+  const ticketRef = useRef<HTMLDivElement>(null);
+  const deliveryTicketRef = useRef<HTMLDivElement>(null);
+  const voucherRef = useRef<HTMLDivElement>(null);
+
   // State for Entry Payment Modal
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [entryPaymentMethod, setEntryPaymentMethod] = useState<
