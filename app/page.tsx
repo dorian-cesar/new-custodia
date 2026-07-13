@@ -101,9 +101,14 @@ export default function CustodyPage() {
     );
     if (record) {
       setCurrentRecord(record);
-      setSelectedLockerId(null);
-      setSelectedSize(null);
-      setClientDocument("");
+      // Retrasar la limpieza de los campos de entrada de la UI por 4 segundos.
+      // Esto evita que el DOM del ticket se destruya o cambie antes de que
+      // react-to-print termine de enviar las 2 copias (y el voucher) a la cola de Windows.
+      setTimeout(() => {
+        setSelectedLockerId(null);
+        setSelectedSize(null);
+        setClientDocument("");
+      }, 4000);
     }
     return record;
   };
