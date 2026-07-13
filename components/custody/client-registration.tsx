@@ -155,6 +155,15 @@ export function ClientRegistration({
     documentTitle: "Ticket_Custodia",
   });
 
+  // Segunda instancia independiente para la copia del ticket de entrada.
+  // react-to-print v3 tiene un isPrintingRef interno que no se resetea si
+  // afterprint no dispara (modo kiosko). Usando una instancia separada,
+  // cada copia tiene su propio estado y nunca se bloquean entre sí.
+  const handlePrintCopy = useReactToPrint({
+    contentRef: ticketRef,
+    documentTitle: "Ticket_Custodia_Copia",
+  });
+
   const handlePrintDelivery = useReactToPrint({
     contentRef: deliveryTicketRef,
     documentTitle: "Ticket_Retiro",
@@ -223,7 +232,7 @@ export function ClientRegistration({
           // cualquier riesgo de que el cleanup del efecto lo cancele.
           if (secondPrintTimerRef.current) clearTimeout(secondPrintTimerRef.current);
           secondPrintTimerRef.current = setTimeout(() => {
-            handlePrint(); // 2da copia
+            handlePrintCopy(); // 2da copia — instancia separada, isPrintingRef propio
             secondPrintTimerRef.current = null;
           }, 1500);
 
@@ -239,6 +248,7 @@ export function ClientRegistration({
     currentRecord,
     lastPrintedId,
     handlePrint,
+    handlePrintCopy,
     lockers,
     lockerSizes,
     entryPaymentMethod,
