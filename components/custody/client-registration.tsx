@@ -213,18 +213,14 @@ export function ClientRegistration({
         setLastPrintedId(currentRecord.id);
         showToast("Custodia registrada con éxito", "success");
       } else {
-        // Tarjeta: los tickets de entrada se imprimen DESPUÉS del voucher Transbank (~2500ms)
-        //   1ra copia: 3500ms | 2da copia: 5000ms
-        // Efectivo: sin voucher, se imprimen antes
-        //   1ra copia:  500ms | 2da copia: 1500ms
-        const entryDelay = entryPaymentMethod === "Tarjeta" ? 3500 : 500;
-        const secondCopyDelay = entryPaymentMethod === "Tarjeta" ? 5000 : 1500;
-
+        // Ambos medios de pago: 1ra copia a 500ms, 2da copia a 1500ms.
+        // Para Tarjeta, el voucher Transbank se imprime a 2500ms (via voucherData useEffect),
+        // quedando siempre después de los dos tickets de entrada.
         const timer1 = setTimeout(() => {
           handlePrint();
           setLastPrintedId(currentRecord.id);
           showToast("Custodia registrada con éxito", "success");
-        }, entryDelay);
+        }, 500);
 
         // 2da copia para todos los medios de pago.
         // Se almacena en secondPrintTimerRef para que el cleanup del efecto
@@ -233,7 +229,7 @@ export function ClientRegistration({
         secondPrintTimerRef.current = setTimeout(() => {
           handlePrint();
           secondPrintTimerRef.current = null;
-        }, secondCopyDelay);
+        }, 1500);
 
         // Solo cancelamos timer1 en el cleanup; timer2 lo gestiona secondPrintTimerRef
         return () => clearTimeout(timer1);
