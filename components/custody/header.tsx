@@ -8,6 +8,7 @@ import {
   User as UserIcon,
   LogOut,
   Printer,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCustodyStore } from "@/lib/custody-store";
@@ -293,6 +294,15 @@ export function Header({
               <span className="text-[11px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-full capitalize">
                 {currentUser.username}
               </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.location.reload()}
+                className="h-7 w-7 text-zinc-500 hover:text-[#1588b3] hover:bg-[#1588b3]/10 rounded-full"
+                title="Refrescar pantalla"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
