@@ -145,15 +145,6 @@ export function ClientRegistration({
     documentTitle: "Ticket_Custodia",
   });
 
-  // Segunda instancia independiente para la copia del ticket de entrada.
-  // react-to-print v3 tiene un isPrintingRef interno que no se resetea si
-  // afterprint no dispara (modo kiosko). Usando una instancia separada,
-  // cada copia tiene su propio estado y nunca se bloquean entre sí.
-  const handlePrintCopy = useReactToPrint({
-    contentRef: ticketRef,
-    documentTitle: "Ticket_Custodia_Copia",
-  });
-
   const handlePrintDelivery = useReactToPrint({
     contentRef: deliveryTicketRef,
     documentTitle: "Ticket_Retiro",
@@ -164,16 +155,7 @@ export function ClientRegistration({
     documentTitle: "Comprobante_Transbank",
   });
 
-  useEffect(() => {
-    if (voucherData) {
-      // Aumentamos el tiempo a 2500ms para evitar que choque con el handlePrintDelivery (que corre a los 500ms)
-      const timer = setTimeout(() => {
-        handlePrintVoucher();
-        setVoucherData(null);
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [voucherData, handlePrintVoucher]);
+
 
   const getActiveRecordsByInput = useCustodyStore(
     (state) => state.getActiveRecordsByInput,
@@ -213,10 +195,14 @@ export function ClientRegistration({
         showToast("Custodia registrada con éxito", "success");
       } else {
         // Un solo delay de 500ms para asegurar que el código de barra SVG se renderice en el DOM.
-        // Luego enviamos ambas impresiones consecutivamente a la cola del sistema de Windows.
+        // Luego enviamos los documentos de forma secuencial a la cola del sistema de Windows.
         const timer = setTimeout(() => {
-          handlePrint();     // Primera copia a la cola de Windows
-          handlePrintCopy(); // Segunda copia a la cola de Windows
+          handlePrint(); // Imprime el ticket de entrada (doble copia configurada en DOM por pageBreakAfter)
+          
+          if (entryPaymentMethod === "Tarjeta" && voucherData) {
+            handlePrintVoucher(); // Imprime el comprobante Transbank (una copia)
+          }
+
           setLastPrintedId(currentRecord.id);
           showToast("Custodia registrada con éxito", "success");
         }, 500);
@@ -229,7 +215,8 @@ export function ClientRegistration({
     currentRecord,
     lastPrintedId,
     handlePrint,
-    handlePrintCopy,
+    handlePrintVoucher,
+    voucherData,
     lockers,
     lockerSizes,
     entryPaymentMethod,
@@ -307,19 +294,7 @@ export function ClientRegistration({
           result.data &&
           result.data.approved
         ) {
-          setIsEntryModalOpen(false);
-          // Primero crear el registro → los timers de tickets de entrada (500ms, 2000ms) arrancan aquí
-          await onGenerateBarcode(
-            "Tarjeta",
-            result.data.authorizationCode,
-            result.data.operationNumber
-              ? String(result.data.operationNumber)
-              : null,
-            result.data.cardNumber || null,
-            result.data.cardBrand || null,
-            result.data.cardType || null,
-          );
-          // Recién ahora armar el voucher → su timer de 2500ms empieza DESPUÉS de los tickets
+          // Armar el voucher primero para tener la data lista en render
           setVoucherData({
             amount: entryPrice,
             ticketNumber: clientDocument || "0",
@@ -332,6 +307,17 @@ export function ClientRegistration({
             cardType: result.data.cardType,
             timestamp: result.data.timestamp,
           });
+          // Luego crear el registro, lo cual gatillará el useEffect de impresión
+          await onGenerateBarcode(
+            "Tarjeta",
+            result.data.authorizationCode,
+            result.data.operationNumber
+              ? String(result.data.operationNumber)
+              : null,
+            result.data.cardNumber || null,
+            result.data.cardBrand || null,
+            result.data.cardType || null,
+          );
         } else {
           const errMsg =
             result.error ||
