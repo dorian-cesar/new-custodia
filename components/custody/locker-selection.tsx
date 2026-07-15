@@ -33,10 +33,10 @@ export function LockerSelection({
 
   // Fallback de etiquetas si la BD no tiene el tamaño
   const DEFAULT_LABELS: Record<string, { label: string; price: number }> = {
-    S:   { label: "S Bolso Pequeño",    price: 2500 },
-    M:   { label: "M Maleta Mediana",   price: 3500 },
-    L:   { label: "L Maleta Grande",    price: 5000 },
-    XL:  { label: "XL Equipaje Extra",  price: 6000 },
+    S: { label: "S Bolso Pequeño", price: 2500 },
+    M: { label: "M Maleta Mediana", price: 3500 },
+    L: { label: "L Maleta Grande", price: 5000 },
+    XL: { label: "XL Equipaje Extra", price: 6000 },
     XXL: { label: "XXL Sacos / Fardos", price: 8000 },
   };
 
@@ -52,15 +52,15 @@ export function LockerSelection({
 
   // Íconos por tamaño
   const sizeIcons: Record<string, React.ElementType> = {
-    S:   Briefcase,
-    M:   Backpack,
-    L:   Luggage,
-    XL:  Package,
+    S: Briefcase,
+    M: Backpack,
+    L: Luggage,
+    XL: Package,
     XXL: Package2,
   };
 
   const row1 = sizesToShow.slice(0, 3); // S, M, L
-  const row2 = sizesToShow.slice(3);    // XL, XXL
+  const row2 = sizesToShow.slice(3); // XL, XXL
 
   return (
     <div className="bg-[#d7d7d8] px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch lg:h-full lg:min-h-0">
@@ -127,7 +127,7 @@ export function LockerSelection({
                   {/* Badge "Solo Sector B" para XXL */}
                   {size.isXXL && (
                     <span className="absolute top-1.5 left-2 text-[8px] font-extrabold bg-amber-400 text-amber-900 rounded px-1 py-0.5 uppercase tracking-wide leading-none">
-                      Solo B
+                      Solo Sector B
                     </span>
                   )}
                   <span className="absolute top-2 right-3 text-xl font-black text-zinc-900 leading-none">

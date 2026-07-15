@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "migrate:lockers": "npx tsx scripts/migrate-lockers.ts"
+    "migrate:lockers": "npx tsx scripts/migrate-lockers.ts",
+    "test:full": "npx tsx --env-file=.env scripts/test-full.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
