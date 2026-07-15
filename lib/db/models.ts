@@ -163,30 +163,26 @@ UserModel.init(
 export const syncDatabase = async () => {
   await sequelize.sync();
   
-  // Upsert or reset the default test accounts so they are always guaranteed to work locally
+  // Crear cuentas por defecto SOLO si no existen.
+  // Si ya existen, NO se modifican — las contraseñas cambiadas en /admin se preservan.
   const cajeroHashed = await bcrypt.hash('1234', 10);
   const adminHashed = await bcrypt.hash('admin123', 10);
 
   const cajero = await UserModel.findOne({ where: { username: 'cajero' } });
-  if (cajero) {
-    await UserModel.update({ passwordHash: cajeroHashed, role: 'cajero' }, { where: { username: 'cajero' } });
-  } else {
+  if (!cajero) {
     await UserModel.create({ username: 'cajero', passwordHash: cajeroHashed, role: 'cajero' } as any);
   }
 
   const cajero2 = await UserModel.findOne({ where: { username: 'cajero2' } });
-  if (cajero2) {
-    await UserModel.update({ passwordHash: cajeroHashed, role: 'cajero' }, { where: { username: 'cajero2' } });
-  } else {
+  if (!cajero2) {
     await UserModel.create({ username: 'cajero2', passwordHash: cajeroHashed, role: 'cajero' } as any);
   }
 
   const admin = await UserModel.findOne({ where: { username: 'admin' } });
-  if (admin) {
-    await UserModel.update({ passwordHash: adminHashed, role: 'supervisor' }, { where: { username: 'admin' } });
-  } else {
+  if (!admin) {
     await UserModel.create({ username: 'admin', passwordHash: adminHashed, role: 'supervisor' } as any);
   }
+
 
   // Seed default prices if none exist, o agregar XL/XXL si faltan
   const priceCount = await PriceModel.count();
