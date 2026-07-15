@@ -29,17 +29,25 @@ export function LockerGrid({
     );
   }
 
-  const sectors = [
-    { label: "Sector A", key: "A", cols: "grid-cols-6" },
-    { label: "Sector B", key: "B", cols: "grid-cols-6" },
-    { label: "Sector C", key: "C", cols: "grid-cols-6" },
-    { label: "Sector D", key: "D", cols: "grid-cols-6" },
+  const allSectors = [
+    { label: "Sector A", key: "A" },
+    { label: "Sector B", key: "B" },
+    { label: "Sector C", key: "C" },
+    { label: "Sector D", key: "D" },
   ];
+
+  // Si es XXL, solo mostrar el Sector B (es el único que tiene XXL)
+  const sectors = selectedSize === "XXL"
+    ? allSectors.filter((s) => s.key === "B")
+    : allSectors;
+
 
   return (
     <div className="bg-[#d7d7d8] p-2 flex flex-col items-center w-full lg:flex-1 lg:h-full lg:min-h-0 gap-2">
       {/* Sector Cards */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 max-w-none lg:flex-1 lg:min-h-0 lg:h-full">
+      <div className={`w-full grid gap-3 max-w-none lg:flex-1 lg:min-h-0 lg:h-full ${
+        selectedSize === "XXL" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+      }`}>
         {sectors.map((sector) => {
           const colCode = `${sector.key}${selectedSize}`;
           const sectorLockers = lockers
@@ -68,7 +76,7 @@ export function LockerGrid({
               <div
                 className={cn(
                   "grid gap-1.5 content-start lg:flex-1 lg:min-h-0 lg:h-full",
-                  sector.cols,
+                  "grid-cols-4",
                 )}
               >
                 {sectorLockers.map((locker) => {

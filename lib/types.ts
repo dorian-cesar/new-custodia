@@ -77,41 +77,31 @@ export const LOCKER_ROWS: number[] = [];
 export function generateLockers(): Omit<Locker, "id">[] {
   const lockers: Omit<Locker, "id">[] = [];
 
-  const config = [
-    { sector: "A", S: 10, M: 8, L: 8 },
-    { sector: "B", S: 12, M: 6, L: 6 },
-    { sector: "C", S: 12, M: 6, L: 6 },
-    { sector: "D", S: 6, M: 4, L: 4 },
-  ];
+  // Sectores A, B, C, D: 12 casilleros de cada tamaño S, M, L, XL
+  const sectors = ["A", "B", "C", "D"];
+  const sizes = ["S", "M", "L", "XL"];
 
-  for (const item of config) {
-    // S size
-    for (let i = 1; i <= item.S; i++) {
-      lockers.push({
-        row: i,
-        col: `${item.sector}S`,
-        isOccupied: false,
-        currentRecordId: null,
-      });
+  for (const sector of sectors) {
+    for (const size of sizes) {
+      for (let i = 1; i <= 12; i++) {
+        lockers.push({
+          row: i,
+          col: `${sector}${size}`,
+          isOccupied: false,
+          currentRecordId: null,
+        });
+      }
     }
-    // M size
-    for (let i = 1; i <= item.M; i++) {
-      lockers.push({
-        row: i,
-        col: `${item.sector}M`,
-        isOccupied: false,
-        currentRecordId: null,
-      });
-    }
-    // L size
-    for (let i = 1; i <= item.L; i++) {
-      lockers.push({
-        row: i,
-        col: `${item.sector}L`,
-        isOccupied: false,
-        currentRecordId: null,
-      });
-    }
+  }
+
+  // Sector B también tiene 12 casilleros XXL (sacos / fardos)
+  for (let i = 1; i <= 12; i++) {
+    lockers.push({
+      row: i,
+      col: "BXXL",
+      isOccupied: false,
+      currentRecordId: null,
+    });
   }
 
   return lockers;
