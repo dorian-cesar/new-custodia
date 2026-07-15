@@ -76,7 +76,7 @@ export function LockerGrid({
               <div
                 className={cn(
                   "grid gap-1.5 content-start lg:flex-1 lg:min-h-0 lg:h-full",
-                  "grid-cols-4",
+                  "grid-cols-6",
                 )}
               >
                 {sectorLockers.map((locker) => {
