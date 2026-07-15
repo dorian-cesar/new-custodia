@@ -22,35 +22,10 @@ import bcrypt from "bcryptjs";
 const initDbAndFetch = async () => {
   await syncDatabase();
 
-  // Detectar si los casilleros están en formato antiguo (sin tamaño XL ni XXL)
-  // o si el formato ha cambiado (cantidad diferente). Se regeneran lockers, registros y caja.
-  // Usuarios y precios NO se tocan.
+  // Solo crear casilleros si la tabla está vacía.
+  // Para migrar o resetear casilleros, usar: npm run migrate:lockers
   const lockerCount = await LockerModel.count();
-  const hasXLLockers = lockerCount > 0
-    ? (await LockerModel.findOne({ where: { col: "AXL" } })) !== null
-    : false;
-
-  // Total esperado: 4 sectores × 4 tamaños × 12 + 12 (XXL sector B) = 204
-  const EXPECTED_LOCKER_COUNT = 204;
-
-  const needsMigration =
-    lockerCount === 0 ||
-    !hasXLLockers ||
-    lockerCount !== EXPECTED_LOCKER_COUNT;
-
-  if (needsMigration && lockerCount > 0) {
-    console.log(
-      `Migración de casilleros detectada (conteo actual: ${lockerCount}, esperado: ${EXPECTED_LOCKER_COUNT}). ` +
-      "Reiniciando casilleros, registros y caja. Usuarios y precios preservados.",
-    );
-    // Borrar solo datos de movimiento — NO usuarios ni precios
-    await CustodyRecordModel.destroy({ where: {} });
-    await CashTransactionModel.destroy({ where: {} });
-    await CashRegisterModel.destroy({ where: {} });
-    await LockerModel.destroy({ where: {} });
-  }
-
-  if (needsMigration) {
+  if (lockerCount === 0) {
     const defaultLockers = generateLockers();
     await LockerModel.bulkCreate(defaultLockers as any[]);
   }
