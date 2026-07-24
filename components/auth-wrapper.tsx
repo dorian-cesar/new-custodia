@@ -114,25 +114,25 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
     };
 
     return (
-      <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4 font-sans select-none relative">
-        <div className="bg-[#d7d7d8] w-full max-w-md rounded-lg border border-zinc-400 shadow-xl overflow-hidden flex flex-col pb-6">
+      <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4 font-sans select-none relative transition-colors duration-300">
+        <div className="bg-[#e6e6e7] dark:bg-zinc-900 w-full max-w-md rounded-lg border border-zinc-300 dark:border-zinc-800 shadow-xl overflow-hidden flex flex-col pb-6 transition-colors duration-300">
           {/* Header (Logo & Subtitle) */}
-          <div className="bg-white py-6 border-b-2 border-zinc-300 text-center flex flex-col items-center gap-1.5">
+          <div className="bg-white dark:bg-zinc-900 py-6 border-b border-zinc-200 dark:border-zinc-800 text-center flex flex-col items-center gap-1.5">
             <div className="flex items-center">
               <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
-                <span className="text-[#0a354c] leading-none">n</span>
+                <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">n</span>
                 <span
                   className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
                   style={{ borderWidth: "3.5px" }}
                 />
-                <span className="text-[#0a354c] leading-none">d</span>
+                <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">d</span>
                 <span
                   className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
                   style={{ borderWidth: "3.5px" }}
                 />
               </span>
             </div>
-            <h1 className="text-xl font-bold tracking-wider text-[#242424] leading-tight">
+            <h1 className="text-xl font-bold tracking-wider text-[#242424] dark:text-zinc-100 leading-tight">
               CUSTODIA
             </h1>
             <p className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">
@@ -142,7 +142,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
 
           {/* Form Content */}
           <div className="px-6 py-4 flex flex-col gap-4">
-            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider">
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider">
               INICIAR SESIÓN
             </div>
 
@@ -150,7 +150,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
               <div className="space-y-2">
                 <Label
                   htmlFor="username"
-                  className="text-xs font-bold uppercase tracking-wider text-zinc-700"
+                  className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300"
                 >
                   Usuario
                 </Label>
@@ -162,7 +162,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
-                    className="w-full pl-10 pr-3 py-2 bg-white border border-zinc-300 rounded-md text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                     placeholder="Ingrese su usuario"
                     required
                   />
@@ -172,7 +172,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
               <div className="space-y-2">
                 <Label
                   htmlFor="password"
-                  className="text-xs font-bold uppercase tracking-wider text-zinc-700"
+                  className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300"
                 >
                   Contraseña
                 </Label>
@@ -184,7 +184,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
-                    className="w-full pl-10 pr-3 py-2 bg-white border border-zinc-300 rounded-md text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                     placeholder="••••••••"
                     required
                   />
@@ -199,7 +199,7 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
 
               <button
                 type="submit"
-                className="w-full bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-sm font-bold py-3 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2"
+                className="w-full bg-[#242424] dark:bg-zinc-800 hover:bg-[#323232] dark:hover:bg-zinc-700 disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-sm font-bold py-3 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-2"
                 disabled={isLoading}
               >
                 {isLoading ? "Verificando..." : "Entrar al Sistema"}
