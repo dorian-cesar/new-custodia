@@ -89,29 +89,6 @@ export function Header({
     setTheme(nextTheme);
   };
 
-  const [isBackendOnline, setIsBackendOnline] = useState(false);
-
-  useEffect(() => {
-    const checkBackendStatus = async () => {
-      try {
-        const res = await fetch("https://localhost:3000/api/monitor");
-        const data = await res.json().catch(() => null);
-        
-        if (data && data.server && data.pos) {
-          setIsBackendOnline(true);
-          return;
-        }
-      } catch (err) {
-        // silent fail
-      }
-      setIsBackendOnline(false);
-    };
-
-    checkBackendStatus();
-    const interval = setInterval(checkBackendStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Printer settings state
   const [isNative, setIsNative] = useState(false);
   const [showPrinterDialog, setShowPrinterDialog] = useState(false);
@@ -347,20 +324,7 @@ export function Header({
             )}
           </div>
 
-          {/* Backend offline/online pill */}
-          <div
-            className="flex items-center gap-1 sm:gap-1.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-full h-7 px-2 sm:px-3 text-[10px] font-medium"
-            title={isBackendOnline ? "Backend Conectado" : "Backend Desconectado"}
-          >
-            <div
-              className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shadow-sm transition-colors duration-300 ${
-                isBackendOnline ? "bg-green-500 shadow-green-500/50" : "bg-red-500 shadow-red-500/50"
-              }`}
-            />
-            <span className="text-zinc-600 dark:text-zinc-400 hidden sm:inline-block">
-              {isBackendOnline ? "Online" : "Offline"}
-            </span>
-          </div>
+
 
           {/* Theme toggle */}
           <Button
