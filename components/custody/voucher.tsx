@@ -3,7 +3,7 @@
 import React, { forwardRef } from "react";
 import { formatCurrency } from "@/lib/utils";
  
-interface TransbankVoucherProps {
+interface VoucherProps {
   data: {
     amount: number;
     ticketNumber: string;
@@ -19,7 +19,7 @@ interface TransbankVoucherProps {
   } | null;
 }
  
-export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps>(
+export const Voucher = forwardRef<HTMLDivElement, VoucherProps>(
   ({ data }, ref) => {
     if (!data) return null;
  
@@ -143,4 +143,4 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
   }
 );
  
-TransbankVoucher.displayName = "TransbankVoucher";
+Voucher.displayName = "Voucher";

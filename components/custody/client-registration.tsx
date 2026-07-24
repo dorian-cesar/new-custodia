@@ -5,7 +5,7 @@ import { useReactToPrint } from "react-to-print";
 import Swal from "sweetalert2";
 import { Ticket } from "./ticket";
 import { DeliveryTicket } from "./delivery-ticket";
-import { TransbankVoucher } from "./transbank-voucher";
+import { Voucher } from "./voucher";
 import { printerService } from "@/lib/printer-service";
 import {
   Barcode as BarcodeIcon,
@@ -770,7 +770,7 @@ export function ClientRegistration({
           authCode={exitAuthCode}
           opNumber={exitOpNumber}
         />
-        <TransbankVoucher
+        <Voucher
           ref={voucherRef}
           data={voucherData}
         />
