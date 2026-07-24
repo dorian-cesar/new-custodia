@@ -289,6 +289,11 @@ export function ClientRegistration({
             recordExtraAmount,
             extraFolioState
           );
+          
+          if (paymentMethod === "Tarjeta" && voucherData) {
+            await (printerService as any).printTransbankVoucher(voucherData);
+          }
+
           setActiveDeliveryPrintRecord(null);
           setIsDeliveryPrinting(false);
         } else {
@@ -359,16 +364,31 @@ export function ClientRegistration({
         const lockerDisplay = locker
           ? `${locker.col}${locker.row}`
           : activePrintRecord.lockerId.toString();
-        printerService.printEntryTicket(
-          activePrintRecord,
-          sizeLabel,
-          lockerDisplay,
-          entryPaymentMethod,
-        );
-        // Avanzar cola
-        setPrintQueue((prev) => prev.slice(1));
-        setIsPrinting(false);
-        setActivePrintRecord(null);
+        const printNativeTicket = async () => {
+          // Imprimir copia cliente
+          await printerService.printEntryTicket(
+            activePrintRecord,
+            sizeLabel,
+            lockerDisplay,
+            entryPaymentMethod,
+          );
+          // Imprimir copia local
+          await printerService.printEntryTicket(
+            activePrintRecord,
+            sizeLabel,
+            lockerDisplay,
+            entryPaymentMethod,
+          );
+
+          if (entryPaymentMethod === "Tarjeta" && voucherData) {
+            await (printerService as any).printTransbankVoucher(voucherData);
+          }
+
+          setPrintQueue((prev) => prev.slice(1));
+          setIsPrinting(false);
+          setActivePrintRecord(null);
+        };
+        printNativeTicket();
       } else {
         printTimersRef.current.forEach(clearTimeout);
         printTimersRef.current = [];
