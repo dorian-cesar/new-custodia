@@ -470,7 +470,7 @@ export function ClientRegistration({
         );
         return;
       }
-      if (entryCashReceived < Math.round(totalPrice * PYG_RATE)) {
+      if (entryCashReceived < totalPrice) {
         showToast("El efectivo recibido es menor al monto a cobrar.", "error");
         return;
       }
@@ -563,7 +563,7 @@ export function ClientRegistration({
         );
         return;
       }
-      if (cashReceived < Math.round(extraCharge * PYG_RATE)) {
+      if (cashReceived < extraCharge) {
         showToast(
           "El efectivo recibido es menor al recargo a cobrar.",
           "error",
