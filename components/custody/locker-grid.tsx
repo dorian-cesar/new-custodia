@@ -86,28 +86,43 @@ export function LockerGrid({
                   const entryTimeStr = currentRecord 
                     ? new Date(currentRecord.entryTime).toLocaleString("es-PY") 
                     : "N/A";
-                  const tooltipText = isOccupied
-                    ? `Locker ${label}\nCliente: ${clientDoc}\nCódigo: ${currentRecord?.code || ""}\nFecha de Ingreso: ${entryTimeStr}`
-                    : `Locker ${label} (Disponible)`;
 
                   return (
-                    <button
-                      key={locker.id}
-                      type="button"
-                      onClick={() => !isOccupied && onSelectLocker(locker.id)}
-                      tabIndex={isOccupied ? -1 : 0}
-                      className={cn(
-                        "aspect-square w-full rounded-lg font-black text-xs md:text-sm transition-all duration-200 flex items-center justify-center border shadow-sm select-none",
-                        isOccupied
-                          ? "bg-[#4e4e4e] dark:bg-zinc-700 border-zinc-600 dark:border-zinc-600 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-90"
-                          : isSelected
-                            ? "bg-[#00c5ff] border-[#00b4eb] text-white ring-4 ring-[#00c5ff]/20 scale-[1.05] shadow-md z-10 cursor-pointer"
-                            : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/55 dark:bg-zinc-800 dark:hover:bg-zinc-800/80 border-[#aee2ff] dark:border-zinc-700 text-[#0a354c] dark:text-[#00c5ff] hover:scale-[1.02] cursor-pointer",
-                      )}
-                      title={tooltipText}
-                    >
-                      {label}
-                    </button>
+                    <div key={locker.id} className="relative group w-full">
+                      <button
+                        type="button"
+                        onClick={() => !isOccupied && onSelectLocker(locker.id)}
+                        tabIndex={isOccupied ? -1 : 0}
+                        className={cn(
+                          "aspect-square w-full rounded-lg font-black text-xs md:text-sm transition-all duration-200 flex items-center justify-center border shadow-sm select-none",
+                          isOccupied
+                            ? "bg-[#4e4e4e] dark:bg-zinc-700 border-zinc-600 dark:border-zinc-600 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-90"
+                            : isSelected
+                              ? "bg-[#00c5ff] border-[#00b4eb] text-white ring-4 ring-[#00c5ff]/20 scale-[1.05] shadow-md z-10 cursor-pointer"
+                              : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/55 dark:bg-zinc-800 dark:hover:bg-zinc-800/80 border-[#aee2ff] dark:border-zinc-700 text-[#0a354c] dark:text-[#00c5ff] hover:scale-[1.02] cursor-pointer",
+                        )}
+                      >
+                        {label}
+                      </button>
+
+                      {/* Custom Instant Tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none w-max max-w-[220px]">
+                        {isOccupied ? (
+                          <div className="bg-[#242424] text-white text-[10px] py-2 px-3 rounded-lg shadow-xl border border-zinc-750 text-left font-semibold space-y-0.5 leading-tight select-none">
+                            <p className="font-extrabold text-amber-400 text-[11px] mb-0.5">Locker {label}</p>
+                            <p><span className="opacity-70">Cliente:</span> {clientDoc}</p>
+                            <p><span className="opacity-70">Código:</span> {currentRecord?.code || "N/A"}</p>
+                            <p className="text-[9px] opacity-50 mt-1">{entryTimeStr}</p>
+                          </div>
+                        ) : (
+                          <div className="bg-[#242424] text-white text-[10px] py-1.5 px-2.5 rounded-lg shadow-xl border border-zinc-750 text-center font-bold select-none">
+                            <span className="text-emerald-400">Disponible</span>
+                          </div>
+                        )}
+                        {/* Tooltip Arrow */}
+                        <div className="w-1.5 h-1.5 bg-[#242424] rotate-45 -mt-1 border-r border-b border-zinc-750" />
+                      </div>
+                    </div>
                   );
                 })}
               </div>
