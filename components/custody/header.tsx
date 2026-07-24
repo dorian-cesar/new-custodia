@@ -216,23 +216,23 @@ export function Header({
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
         {/* Left: Logo 'CUSTODIA' */}
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none">
+          <span className="text-xl sm:text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none">
             CUSTODIA
           </span>
         </div>
 
         {/* Center: Subtitle */}
-        <div className="text-center flex-1">
+        <div className="text-center flex-1 hidden lg:block">
           <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
             Sistema de Control de Casilleros
           </p>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {isNative && (
             <Button
               variant="outline"
@@ -241,15 +241,17 @@ export function Header({
                 setShowPrinterDialog(true);
                 printerService.getPrinterStatus().then(setPrinterStatus);
               }}
-              className={`rounded-full h-7 px-3 text-xs font-medium border-zinc-400 bg-white ${
+              className={`rounded-full h-7 px-2 sm:px-3 text-xs font-medium border-zinc-400 bg-white ${
                 printerStatus.connected
                   ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50"
                   : "text-amber-600 hover:bg-amber-50"
               }`}
               title="Configurar Impresora"
             >
-              <Printer className="h-3 w-3 mr-1" />
-              {printerStatus.connected ? "Impresora OK" : "Impresora"}
+              <Printer className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline-block">
+                {printerStatus.connected ? "Impresora OK" : "Impresora"}
+              </span>
             </Button>
           )}
 
@@ -257,40 +259,52 @@ export function Header({
             <Button
               asChild
               variant="outline"
-              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              title="Caja"
             >
-              <Link href="/caja">Caja</Link>
+              <Link href="/caja" className="flex items-center">
+                <DollarSign className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline-block">Caja</span>
+              </Link>
             </Button>
           )}
           {showHistory && (
             <Button
               asChild
               variant="outline"
-              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              title="Ver Historial"
             >
-              <Link href="/historial">Ver Historial</Link>
+              <Link href="/historial" className="flex items-center">
+                <History className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline-block">Historial</span>
+              </Link>
             </Button>
           )}
           {showBack && (
             <Button
               asChild
               variant="outline"
-              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              title="Volver"
             >
-              <Link href="/">Volver</Link>
+              <Link href="/" className="flex items-center">
+                <ArrowLeft className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline-block">Volver</span>
+              </Link>
             </Button>
           )}
 
           <div
-            className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-full h-7 px-3 text-[10px] font-medium"
+            className="flex items-center gap-1 sm:gap-1.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-full h-7 px-2 sm:px-3 text-[10px] font-medium"
             title={isBackendOnline ? "Backend Conectado" : "Backend Desconectado"}
           >
             <div
-              className={`w-2.5 h-2.5 rounded-full shadow-sm transition-colors duration-300 ${
+              className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shadow-sm transition-colors duration-300 ${
                 isBackendOnline ? "bg-green-500 shadow-green-500/50" : "bg-red-500 shadow-red-500/50"
               }`}
             />
-            <span className="text-zinc-600 dark:text-zinc-400 hidden sm:inline-block">
+            <span className="text-zinc-600 dark:text-zinc-400 hidden md:inline-block">
               {isBackendOnline ? "Online" : "Offline"}
             </span>
           </div>
@@ -311,8 +325,8 @@ export function Header({
           </Button>
 
           {currentUser && (
-            <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-zinc-300 dark:border-zinc-700">
-              <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full capitalize">
+            <div className="flex items-center gap-1 sm:gap-1.5 ml-1 pl-1 sm:ml-2 sm:pl-2 border-l border-zinc-300 dark:border-zinc-700">
+              <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full capitalize hidden md:inline-block">
                 {currentUser.username}
               </span>
               <Button
