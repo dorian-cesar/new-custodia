@@ -200,20 +200,49 @@ export default function CustodyPage() {
         />
 
         {/* Inventory Stats Bar */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border-b border-zinc-300 dark:border-zinc-700 transition-colors duration-300">
-          <div className="flex items-center gap-1.5 flex-1 justify-center">
-            <Package className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-            <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Ocupados</span>
-            <span className="text-sm font-black text-[#242424] dark:text-zinc-100 ml-1">{lockers.filter((l) => l.isOccupied).length}</span>
-            <span className="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
-            <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Libres</span>
-            <span className="text-sm font-black text-[#00c5ff] ml-1">{lockers.filter((l) => !l.isOccupied).length}</span>
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-white dark:bg-zinc-800 border-b border-zinc-300 dark:border-zinc-700 transition-colors duration-300 text-xs">
+          {/* General Stats */}
+          <div className="flex items-center gap-3.5 w-full lg:w-auto justify-center lg:justify-start">
+            <div className="flex items-center gap-1.5">
+              <Package className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+              <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Ocupados:</span>
+              <span className="text-sm font-black text-[#242424] dark:text-zinc-100">{lockers.filter((l) => l.isOccupied).length}</span>
+            </div>
+            <div className="h-3.5 w-px bg-zinc-300 dark:bg-zinc-700" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-extrabold text-[#00c5ff] uppercase tracking-wider">Libres:</span>
+              <span className="text-sm font-black text-[#00c5ff]">{lockers.filter((l) => !l.isOccupied).length}</span>
+            </div>
+            <div className="h-3.5 w-px bg-zinc-300 dark:bg-zinc-700" />
+            <div className="flex items-center gap-1.5">
+              <Luggage className="h-4 w-4 text-amber-500" />
+              <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">En Custodia:</span>
+              <span className="text-sm font-black text-amber-500">{records.filter((r) => r.status === "Activo").length}</span>
+            </div>
           </div>
-          <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-600" />
-          <div className="flex items-center gap-1.5 flex-1 justify-center">
-            <Luggage className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Equipajes en custodia</span>
-            <span className="text-sm font-black text-amber-500 ml-1">{records.filter((r) => r.status === "Activo").length}</span>
+
+          {/* Occupied by Size Grid */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center w-full lg:w-auto">
+            <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mr-1">Ocupación por Medida:</span>
+            {(["S", "M", "L", "XL", "XXL"] as const).map((size) => {
+              const occupied = lockers.filter((l) => l.isOccupied && l.col.slice(1) === size).length;
+              const total = lockers.filter((l) => l.col.slice(1) === size).length;
+              
+              return (
+                <div 
+                  key={size} 
+                  className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-extrabold select-none transition-all duration-200 ${
+                    occupied > 0 
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 font-black shadow-[0_1px_4px_rgba(245,158,11,0.05)]" 
+                      : "bg-zinc-100/50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400"
+                  }`}
+                  title={`${occupied} de ${total} casilleros ${size} ocupados`}
+                >
+                  <span className="opacity-75">{size}:</span>
+                  <span>{occupied}/{total}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
