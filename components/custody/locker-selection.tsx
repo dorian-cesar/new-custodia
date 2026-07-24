@@ -84,11 +84,11 @@ export function LockerSelection({
                   type="button"
                   onClick={() => onSelectSize(size.value as LockerSize)}
                   className={`
-                    relative flex flex-col items-center justify-between p-3 rounded-xl border h-28 transition-all duration-250 cursor-pointer select-none
+                    relative flex flex-col items-center justify-between p-3 rounded-xl border-2 h-28 transition-all duration-250 cursor-pointer select-none
                     ${
                       isSelected
-                        ? "bg-[#00c5ff] border-[#00b4eb] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
-                        : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/40 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-[#0a354c] dark:text-zinc-200 hover:scale-[1.01]"
+                        ? "bg-[#00c5ff] border-[#0089b3] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
+                        : "bg-[#cef3ff]/30 hover:bg-[#cef3ff]/60 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border-[#1588b3]/50 dark:border-zinc-500 text-[#0a354c] dark:text-zinc-200 hover:scale-[1.01]"
                     }
                   `}
                 >
@@ -117,11 +117,11 @@ export function LockerSelection({
                   type="button"
                   onClick={() => onSelectSize(size.value as LockerSize)}
                   className={`
-                    relative flex flex-col items-center justify-between p-3 rounded-xl border h-28 transition-all duration-250 cursor-pointer select-none
+                    relative flex flex-col items-center justify-between p-3 rounded-xl border-2 h-28 transition-all duration-250 cursor-pointer select-none
                     ${
                       isSelected
-                        ? "bg-[#00c5ff] border-[#00b4eb] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
-                        : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/40 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-[#0a354c] dark:text-zinc-200 hover:scale-[1.01]"
+                        ? "bg-[#00c5ff] border-[#0089b3] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
+                        : "bg-[#cef3ff]/30 hover:bg-[#cef3ff]/60 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border-[#1588b3]/50 dark:border-zinc-500 text-[#0a354c] dark:text-zinc-200 hover:scale-[1.01]"
                     }
                   `}
                 >
