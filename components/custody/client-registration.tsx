@@ -340,6 +340,7 @@ export function ClientRegistration({
 
   useEffect(() => {
     if (currentRecords.length > 0 && currentRecords[0].id !== lastPrintedId) {
+      console.log("ClientRegistration: Adding currentRecords to printQueue", currentRecords);
       setPrintQueue((prev) => [...prev, ...currentRecords]);
       setLastPrintedId(currentRecords[0].id);
       showToast("Custodias registradas con éxito", "success");
@@ -348,6 +349,7 @@ export function ClientRegistration({
 
   useEffect(() => {
     if (printQueue.length > 0 && !isPrinting) {
+      console.log("ClientRegistration: Setting activePrintRecord to", printQueue[0]);
       setIsPrinting(true);
       const nextRecord = printQueue[0];
       setActivePrintRecord(nextRecord);
@@ -356,6 +358,7 @@ export function ClientRegistration({
 
   useEffect(() => {
     if (activePrintRecord && isPrinting) {
+      console.log("ClientRegistration: Triggering printing effect for activePrintRecord", activePrintRecord, "isNative:", printerService.isNative());
       if (printerService.isNative()) {
         const sizeLabel =
           lockerSizes.find((s) => s.value === activePrintRecord.size)?.label ||
@@ -365,20 +368,23 @@ export function ClientRegistration({
           ? `${locker.col}${locker.row}`
           : activePrintRecord.lockerId.toString();
         const printNativeTicket = async () => {
+          console.log("ClientRegistration: printNativeTicket starting...");
           // Imprimir copia cliente
-          await printerService.printEntryTicket(
+          const ok1 = await printerService.printEntryTicket(
             activePrintRecord,
             sizeLabel,
             lockerDisplay,
             entryPaymentMethod,
           );
+          console.log("ClientRegistration: printEntryTicket client copy finished, success:", ok1);
           // Imprimir copia local
-          await printerService.printEntryTicket(
+          const ok2 = await printerService.printEntryTicket(
             activePrintRecord,
             sizeLabel,
             lockerDisplay,
             entryPaymentMethod,
           );
+          console.log("ClientRegistration: printEntryTicket local copy finished, success:", ok2);
 
           if (entryPaymentMethod === "Tarjeta" && voucherData) {
             await (printerService as any).printTransbankVoucher(voucherData);

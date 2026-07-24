@@ -254,7 +254,11 @@ export const printerService = {
     lockerDisplay: string,
     paymentMethod: string,
   ): Promise<boolean> {
-    if (!connectedDeviceId) return false;
+    console.log("printerService: printEntryTicket called with", { record, sizeLabel, lockerDisplay, paymentMethod, connectedDeviceId });
+    if (!connectedDeviceId) {
+      console.warn("printerService: printEntryTicket failed - connectedDeviceId is null!");
+      return false;
+    }
     try {
       const formattedDate = new Date(record.entryTime).toLocaleString("es-PY");
       
@@ -302,7 +306,11 @@ export const printerService = {
     extraAmount: number,
     extraFolio?: number | null,
   ): Promise<boolean> {
-    if (!connectedDeviceId) return false;
+    console.log("printerService: printDeliveryTicket called with", { record, sizeLabel, lockerDisplay, paymentMethod, extraHours, extraAmount, extraFolio, connectedDeviceId });
+    if (!connectedDeviceId) {
+      console.warn("printerService: printDeliveryTicket failed - connectedDeviceId is null!");
+      return false;
+    }
     try {
       const entryDate = new Date(record.entryTime).toLocaleString("es-PY");
       const exitDate = new Date().toLocaleString("es-PY");
