@@ -492,31 +492,41 @@ export const printerService = {
         await writeText(`Cod. Autoriz:${data.authorizationCode}\n`);
       }
       await writeText("------------------------------------------------\n\n");
- 
+
       if (data.items && data.items.length > 0) {
         await writeBytes(ESC_ALIGN_LEFT);
-        await writeText("DETALLE DE CARGOS:\n");
-        for (const item of data.items) {
-          const itemText = ` - Casillero ${item.position} (${item.size})`;
+        await writeText("DETALLE:\n");
+        for (let i = 0; i < data.items.length; i++) {
+          const item = data.items[i];
+          const label = `${i + 1}. Equipaje ${item.size}`;
           const priceText = formatCurrency(item.price);
-          const spaces = 48 - itemText.length - priceText.length;
+          const spaces = 48 - label.length - priceText.length;
           const pad = spaces > 0 ? " ".repeat(spaces) : " ";
-          await writeText(`${itemText}${pad}${priceText}\n`);
+          await writeText(`${label}${pad}${priceText}\n`);
+        }
+        await writeText("------------------------------------------------\n");
+        const totalLabel = "TOTAL";
+        const totalText = formatCurrency(data.amount);
+        const totalSpaces = 48 - totalLabel.length - totalText.length;
+        const totalPad = totalSpaces > 0 ? " ".repeat(totalSpaces) : " ";
+        await writeBytes(ESC_BOLD_ON);
+        await writeText(`${totalLabel}${totalPad}${totalText}\n`);
+        await writeBytes(ESC_BOLD_OFF);
+        if (isCash && data.cashReceived !== undefined) {
+          const recLabel = "Efectivo recibido";
+          const recText = formatCurrency(data.cashReceived);
+          const recSpaces = 48 - recLabel.length - recText.length;
+          await writeText(`${recLabel}${recSpaces > 0 ? " ".repeat(recSpaces) : " "}${recText}\n`);
+          const chLabel = "Vuelto";
+          const chText = formatCurrency(data.change ?? 0);
+          const chSpaces = 48 - chLabel.length - chText.length;
+          await writeBytes(ESC_BOLD_ON);
+          await writeText(`${chLabel}${chSpaces > 0 ? " ".repeat(chSpaces) : " "}${chText}\n`);
+          await writeBytes(ESC_BOLD_OFF);
         }
         await writeText("------------------------------------------------\n\n");
       }
-      
-      await writeBytes(ESC_ALIGN_RIGHT);
-      await writeBytes(ESC_BOLD_ON);
-      await writeText(`TOTAL: ${formatCurrency(data.amount)}\n`);
-      await writeBytes(ESC_BOLD_OFF);
- 
-      if (isCash && data.cashReceived !== undefined) {
-        await writeText(`EFECTIVO RECIBIDO: ${formatCurrency(data.cashReceived)}\n`);
-        await writeText(`VUELTO ENTREGADO:  ${formatCurrency(data.change)}\n`);
-      }
-      await writeText("\n");
-      
+
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_BOLD_ON);
       await writeText("PAGO PROCESADO CON EXITO\n");

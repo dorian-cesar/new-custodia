@@ -101,34 +101,35 @@ export const Voucher = forwardRef<HTMLDivElement, VoucherProps>(
  
           {data.items && data.items.length > 0 && (
             <div style={{ fontSize: "11px", margin: "10px 0", textAlign: "left" }}>
-              <p style={{ margin: "0 0 5px 0", fontWeight: "bold", fontSize: "12px" }}>DETALLE DE CARGOS:</p>
+              <p style={{ margin: "0 0 5px 0", fontWeight: "bold", fontSize: "12px" }}>DETALLE:</p>
               {data.items.map((item: any, idx: number) => (
                 <div key={idx} style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
-                  <span>- Casillero {item.position} ({item.size})</span>
+                  <span>{idx + 1}. Equipaje {item.size}</span>
                   <span>{formatCurrency(item.price)}</span>
                 </div>
               ))}
+              <div style={{ borderTop: "1px dashed black", marginTop: "6px", paddingTop: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px" }}>
+                  <span>TOTAL</span>
+                  <span>{formatCurrency(data.amount)}</span>
+                </div>
+                {isCash && data.cashReceived !== undefined && (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "3px" }}>
+                      <span>Efectivo recibido</span>
+                      <span>{formatCurrency(data.cashReceived)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginTop: "2px" }}>
+                      <span>Vuelto</span>
+                      <span>{formatCurrency(data.change || 0)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
- 
-          <div style={{ borderBottom: "1px dashed black", margin: "10px 0" }}></div>
- 
-          <div style={{ textAlign: "right", marginBottom: "15px" }}>
-            <p style={{ margin: "3px 0", fontSize: "16px", fontWeight: "bold" }}>
-              TOTAL: {formatCurrency(data.amount)}
-            </p>
-            {isCash && data.cashReceived !== undefined && (
-              <>
-                <p style={{ margin: "2px 0", fontSize: "12px" }}>
-                  Efectivo Recibido: {formatCurrency(data.cashReceived)}
-                </p>
-                <p style={{ margin: "2px 0", fontSize: "12px", fontWeight: "bold" }}>
-                  Vuelto: {formatCurrency(data.change || 0)}
-                </p>
-              </>
-            )}
-          </div>
- 
+
+
           <div style={{ textAlign: "center", marginTop: "10px" }}>
             <p style={{ margin: "0 0 5px 0", fontSize: "12px", fontWeight: "bold" }}>
               PAGO PROCESADO CON ÉXITO

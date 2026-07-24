@@ -375,27 +375,47 @@ export function ClientRegistration({
           ? `${locker.col}${locker.row}`
           : activePrintRecord.lockerId.toString();
         const printNativeTicket = async () => {
-          console.log("ClientRegistration: printNativeTicket starting...");
           // Imprimir copia cliente
-          const ok1 = await printerService.printEntryTicket(
+          await printerService.printEntryTicket(
             activePrintRecord,
             sizeLabel,
             lockerDisplay,
             entryPaymentMethod,
           );
-          console.log("ClientRegistration: printEntryTicket client copy finished, success:", ok1);
-          // Imprimir copia local
-          const ok2 = await printerService.printEntryTicket(
-            activePrintRecord,
-            sizeLabel,
-            lockerDisplay,
-            entryPaymentMethod,
-          );
-          console.log("ClientRegistration: printEntryTicket local copy finished, success:", ok2);
+
+          // Pausa: pedir confirmación antes de imprimir copia administración
+          const { isConfirmed: okCopy } = await Swal.fire({
+            icon: "info",
+            title: "Copia Administración",
+            text: "Retire el primer ticket y confirme para imprimir la copia de administración.",
+            confirmButtonText: "Imprimir Copia",
+            showCancelButton: false,
+            allowOutsideClick: false,
+          });
+
+          if (okCopy) {
+            await printerService.printEntryTicket(
+              activePrintRecord,
+              sizeLabel,
+              lockerDisplay,
+              entryPaymentMethod,
+            );
+          }
 
           if (voucherData) {
-            await (printerService as any).printTransbankVoucher(voucherData);
-            setVoucherData(null);
+            // Pausa: pedir confirmación antes de imprimir voucher de pago
+            const { isConfirmed: okVoucher } = await Swal.fire({
+              icon: "info",
+              title: "Comprobante de Pago",
+              text: "Retire la copia de administración y confirme para imprimir el comprobante de pago.",
+              confirmButtonText: "Imprimir Comprobante",
+              showCancelButton: false,
+              allowOutsideClick: false,
+            });
+            if (okVoucher) {
+              await (printerService as any).printTransbankVoucher(voucherData);
+              setVoucherData(null);
+            }
           }
 
           setPrintQueue((prev) => prev.slice(1));
@@ -417,7 +437,22 @@ export function ClientRegistration({
                 setIsPrinting(false);
                 setActivePrintRecord(null);
               };
-              handlePrintVoucher();
+              Swal.fire({
+                icon: "info",
+                title: "Comprobante de Pago",
+                text: "Retire la copia de administración y confirme para imprimir el comprobante.",
+                confirmButtonText: "Imprimir Comprobante",
+                showCancelButton: false,
+                allowOutsideClick: false,
+              }).then(({ isConfirmed }) => {
+                if (isConfirmed) handlePrintVoucher();
+                else {
+                  setVoucherData(null);
+                  setPrintQueue((prev) => prev.slice(1));
+                  setIsPrinting(false);
+                  setActivePrintRecord(null);
+                }
+              });
             };
           } else {
             printVoucherAction = () => {
@@ -429,7 +464,17 @@ export function ClientRegistration({
 
           const printCopyAction = () => {
             nextPrintActionRef.current = printVoucherAction;
-            handlePrintCopy();
+            Swal.fire({
+              icon: "info",
+              title: "Copia Administración",
+              text: "Retire el primer ticket y confirme para imprimir la copia de administración.",
+              confirmButtonText: "Imprimir Copia",
+              showCancelButton: false,
+              allowOutsideClick: false,
+            }).then(({ isConfirmed }) => {
+              if (isConfirmed) handlePrintCopy();
+              else printVoucherAction?.();
+            });
           };
 
           nextPrintActionRef.current = printCopyAction;
