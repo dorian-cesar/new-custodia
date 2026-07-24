@@ -217,18 +217,14 @@ export function Header({
   return (
     <>
       <header className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
-        {/* Left: Logo 'CUSTODIA' */}
-        <div className="flex items-center gap-2">
-          <span className="text-xl sm:text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none">
+        {/* Left: Logo 'CUSTODIA' & Subtitle stacked */}
+        <div className="flex flex-col items-start gap-0.5">
+          <span className="text-xl sm:text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none leading-none">
             CUSTODIA
           </span>
-        </div>
-
-        {/* Center: Subtitle */}
-        <div className="text-center flex-1 hidden lg:block">
-          <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+          <span className="text-[8px] sm:text-[9px] text-zinc-500 font-semibold uppercase tracking-wider leading-none">
             Sistema de Control de Casilleros
-          </p>
+          </span>
         </div>
 
         {/* Right: Actions */}
