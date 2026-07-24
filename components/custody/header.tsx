@@ -271,7 +271,7 @@ export function Header({
             <Button
               asChild
               variant="outline"
-              className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-3 text-[10px] font-bold leading-none transition-colors duration-200"
             >
               <Link href="/caja">Caja</Link>
             </Button>
@@ -280,7 +280,7 @@ export function Header({
             <Button
               asChild
               variant="outline"
-              className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-3 text-[10px] font-bold leading-none transition-colors duration-200"
             >
               <Link href="/historial">Ver Historial</Link>
             </Button>
@@ -289,7 +289,7 @@ export function Header({
             <Button
               asChild
               variant="outline"
-              className="border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 rounded-full h-7 px-3 text-[10px] font-medium leading-none"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-3 text-[10px] font-bold leading-none transition-colors duration-200"
             >
               <Link href="/">Volver</Link>
             </Button>
