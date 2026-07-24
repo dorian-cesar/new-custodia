@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     // Cambie esta URL por la IP de su servidor Next.js local en desarrollo
     // o por la URL del servidor de producción (ej. https://su-dominio.com)
     // para que las Server Actions de la base de datos funcionen en el Webview.
-    url: 'http://192.168.1.100:3000', 
+    url: 'http://10.126.71.95:3000', 
     cleartext: true
   },
   plugins: {

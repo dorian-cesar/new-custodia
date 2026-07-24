@@ -292,7 +292,7 @@ export default function CustodyPage() {
                     : "bg-[#0a354c]/60 text-white/70 hover:bg-[#0a354c]/85 hover:scale-[1.01]"
                 }`}
               >
-                ENTREGA
+                INGRESO
               </button>
               <button
                 type="button"
