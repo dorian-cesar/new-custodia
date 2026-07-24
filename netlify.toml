@@ -1,3 +1,6 @@
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [functions]
   external_node_modules = ["mysql2", "sequelize"]
   node_bundler = "esbuild"
