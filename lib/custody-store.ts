@@ -73,8 +73,29 @@ interface CustodyState {
     cardBrand?: string | null,
     cardType?: string | null,
   ) => Promise<CustodyRecord | null>;
+  createMultipleRecords: (
+    items: { lockerId: number; size: LockerSize }[],
+    clientDocument: string,
+    paymentMethod?: string,
+    authCode?: string | null,
+    opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
+  ) => Promise<CustodyRecord[] | null>;
   deliverRecord: (
     recordId: number,
+    extraCharge?: number,
+    paymentMethod?: string,
+    extraFolio?: number | null,
+    authCode?: string | null,
+    opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
+  ) => Promise<boolean>;
+  deliverMultipleRecords: (
+    recordIds: number[],
     extraCharge?: number,
     paymentMethod?: string,
     extraFolio?: number | null,
@@ -247,6 +268,106 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     return newRecord;
   },
 
+  createMultipleRecords: async (
+    items,
+    clientDocument,
+    paymentMethod = "Efectivo",
+    authCode = null,
+    opNumber = null,
+    cardNumber = null,
+    cardBrand = null,
+    cardType = null,
+  ) => {
+    const { currentCashRegister, lockers, lockerSizes } = get();
+
+    if (!currentCashRegister || currentCashRegister.status !== "open") {
+      return null;
+    }
+
+    // Calcular precio total y validar casilleros
+    let totalPrice = 0;
+    const validatedItems = [];
+
+    for (const item of items) {
+      const locker = lockers.find((l) => l.id === item.lockerId);
+      if (!locker || locker.isOccupied) {
+        continue;
+      }
+      const sizeOption = lockerSizes.find((s) => s.value === item.size);
+      if (!sizeOption) continue;
+      
+      totalPrice += sizeOption.price;
+      validatedItems.push({ item, sizeOption });
+    }
+
+    if (validatedItems.length === 0) return null;
+
+    let folio: number | null = null;
+
+    if (paymentMethod === "Efectivo") {
+      try {
+        const boletaRes = await sendBoleta("Servicios de Custodia", totalPrice);
+        if (boletaRes.success && boletaRes.data) {
+          folio = boletaRes.data.folio;
+        }
+      } catch (err) {
+        console.error("Error al emitir boleta en la entrada múltiple:", err);
+      }
+    }
+
+    const createdRecords: CustodyRecord[] = [];
+
+    for (const { item, sizeOption } of validatedItems) {
+      const code = generateCode(clientDocument);
+
+      const recordData: Omit<CustodyRecord, "id"> = {
+        code,
+        lockerId: item.lockerId,
+        clientDocument,
+        entryTime: new Date().toISOString(),
+        exitTime: null,
+        size: item.size,
+        status: "Activo",
+        price: sizeOption.price,
+        folio: folio || undefined,
+        entryPaymentMethod: paymentMethod,
+        authCode,
+        opNumber,
+        cardNumber,
+        cardBrand,
+        cardType,
+      };
+
+      // Sync record creation to DB
+      const newRecord = await dbCreateRecord(recordData);
+      createdRecords.push(newRecord);
+
+      // Local state update
+      set((state) => ({
+        records: [newRecord, ...state.records],
+      }));
+      await get().occupyLocker(item.lockerId, newRecord.id);
+    }
+
+    // Agregar una única transacción de ingreso de caja para la venta total
+    const lockerNames = validatedItems.map(
+      ({ item }) => {
+        const l = lockers.find((lock) => lock.id === item.lockerId);
+        const lName = l ? `${l.col}${l.row}` : item.lockerId;
+        return `${lName}(${item.size})`;
+      }
+    ).join(", ");
+
+    await get().addTransaction(
+      "income",
+      totalPrice,
+      `Custodia Múltiple [${lockerNames}] - ${paymentMethod}${authCode ? ` - Auth: ${authCode}` : ""}${opNumber ? ` - Op: ${opNumber}` : ""}${folio ? ` - Folio: ${folio}` : ""}`,
+      createdRecords[0]?.id
+    );
+
+    return createdRecords;
+  },
+
   getRecordByCode: (code) => {
     const { records } = get();
     // 1. Buscar por código exacto de barras
@@ -346,6 +467,87 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     }));
 
     await get().releaseLocker(record.lockerId);
+    return true;
+  },
+
+  deliverMultipleRecords: async (
+    recordIds,
+    extraCharge = 0,
+    paymentMethod = "Efectivo",
+    extraFolio = null,
+    authCode = null,
+    opNumber = null,
+    cardNumber = null,
+    cardBrand = null,
+    cardType = null,
+  ) => {
+    const { records, currentCashRegister, lockers } = get();
+
+    if (!currentCashRegister || currentCashRegister.status !== "open") {
+      return false;
+    }
+
+    const recordsToDeliver = records.filter(
+      (r) => recordIds.includes(r.id) && r.status === "Activo"
+    );
+
+    if (recordsToDeliver.length === 0) return false;
+
+    // Process each record delivery
+    for (const record of recordsToDeliver) {
+      await dbDeliverRecord(
+        record.id,
+        record.lockerId,
+        extraFolio,
+        paymentMethod,
+        authCode,
+        opNumber,
+        cardNumber,
+        cardBrand,
+        cardType
+      );
+    }
+
+    // Apply extra charge transaction if any (single transaction for the total)
+    if (extraCharge > 0) {
+      const lockerNames = recordsToDeliver.map((r) => {
+        const l = lockers.find((lock) => lock.id === r.lockerId);
+        return l ? `${l.col}${l.row}` : r.lockerId;
+      }).join(", ");
+
+      await get().addTransaction(
+        "income",
+        extraCharge,
+        `Recargo extra Custodia Múltiple [${lockerNames}] - ${paymentMethod}${authCode ? ` - Auth: ${authCode}` : ""}${opNumber ? ` - Op: ${opNumber}` : ""}${extraFolio ? ` - Folio: ${extraFolio}` : ""}`,
+        recordsToDeliver[0].id
+      );
+    }
+
+    // Update Zustand state
+    set((state) => ({
+      records: state.records.map((r) =>
+        recordIds.includes(r.id)
+          ? {
+              ...r,
+              status: "Entregado",
+              exitTime: new Date().toISOString(),
+              extraFolio: extraFolio || undefined,
+              exitPaymentMethod: paymentMethod,
+              exitAuthCode: authCode,
+              exitOpNumber: opNumber,
+              exitCardNumber: cardNumber,
+              exitCardBrand: cardBrand,
+              exitCardType: cardType,
+            }
+          : r
+      ),
+      lockers: state.lockers.map((l) =>
+        recordsToDeliver.some((r) => r.lockerId === l.id)
+          ? { ...l, isOccupied: false, currentRecordId: null }
+          : l
+      ),
+    }));
+
     return true;
   },
 
