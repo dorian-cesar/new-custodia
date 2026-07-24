@@ -70,7 +70,7 @@ export function Header({
   showShutdown = false,
 }: HeaderProps) {
   const { currentUser, logout } = useCustodyStore();
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
