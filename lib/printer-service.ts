@@ -309,11 +309,10 @@ export const printerService = {
       
       await writeBytes(ESC_INIT);
       await writeBytes(ESC_ALIGN_CENTER);
-      await writeBytes(ESC_DOUBLE_SIZE_ON);
       await writeBytes(ESC_BOLD_ON);
-      await writeText("CUSTODIA\n");
-      await writeBytes(ESC_DOUBLE_SIZE_OFF);
+      await writeText("   C U S T O D I A   \n");
       await writeBytes(ESC_BOLD_OFF);
+      await writeText("EQUIPAJE & OBJETOS DE VALOR\n");
       await writeText("------------------------------------------------\n");
       await writeBytes(ESC_BOLD_ON);
       await writeText("COMPROBANTE DE RETIRO\n");
@@ -343,8 +342,11 @@ export const printerService = {
 
       await writeBytes(ESC_ALIGN_CENTER);
       await writeText("------------------------------------------------\n");
-      await writeText("Equipaje retirado a conformidad\n");
-      await writeText("¡Gracias por su visita!\n");
+      await writeText("Equipaje retirado a conformidad\n\n");
+      await writeBytes(ESC_BOLD_ON);
+      await writeText(" \u00a1MUCHAS GRACIAS! \n");
+      await writeBytes(ESC_BOLD_OFF);
+      await writeText("Vuelva pronto \u00b7 Custodia Equipaje\n");
       await writeBytes(ESC_CUT);
       return true;
     } catch (err) {

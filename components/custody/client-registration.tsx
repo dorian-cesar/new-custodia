@@ -269,14 +269,21 @@ export function ClientRegistration({
     }
   });
 
+  const processingDeliveryRecordIdRef = useRef<string | number | null>(null);
+
   useEffect(() => {
     if (activeDeliveryPrintRecord && isDeliveryPrinting) {
-      const runPrint = async () => {
-        if (printerService.isNative()) {
-          const sizeLabel = lockerSizes.find((s) => s.value === activeDeliveryPrintRecord.size)?.label || activeDeliveryPrintRecord.size;
-          const locker = lockers.find((l) => l.id === activeDeliveryPrintRecord.lockerId);
-          const lockerDisplay = locker ? `${locker.col}${locker.row}` : activeDeliveryPrintRecord.lockerId.toString();
+      if (processingDeliveryRecordIdRef.current === activeDeliveryPrintRecord.id) {
+        return;
+      }
+      processingDeliveryRecordIdRef.current = activeDeliveryPrintRecord.id;
 
+      const runPrint = async () => {
+        const sizeLabel = lockerSizes.find((s) => s.value === activeDeliveryPrintRecord.size)?.label || activeDeliveryPrintRecord.size;
+        const locker = lockers.find((l) => l.id === activeDeliveryPrintRecord.lockerId);
+        const lockerDisplay = locker ? `${locker.col}${locker.row}` : activeDeliveryPrintRecord.lockerId.toString();
+
+        if (printerService.isNative()) {
           const diffMs = Date.now() - new Date(activeDeliveryPrintRecord.entryTime).getTime();
           const diffHours = diffMs / (1000 * 60 * 60);
           let recordExtraHours = 0;
@@ -286,33 +293,110 @@ export function ClientRegistration({
             recordExtraAmount = Math.ceil(recordExtraHours / 24) * activeDeliveryPrintRecord.price;
           }
 
-          await printerService.printDeliveryTicket(
-            activeDeliveryPrintRecord,
-            sizeLabel,
-            lockerDisplay,
-            paymentMethod,
-            recordExtraHours,
-            recordExtraAmount,
-            extraFolioState
-          );
-          
-          if (voucherData) {
-            await (printerService as any).printTransbankVoucher(voucherData);
+          // 1. Permiso Comprobante de Retiro
+          const { isConfirmed: okDelivery } = await Swal.fire({
+            icon: "info",
+            title: "Comprobante de Retiro",
+            text: `Confirme para imprimir el comprobante de retiro (${lockerDisplay}).`,
+            confirmButtonText: "Imprimir Comprobante",
+            showCancelButton: true,
+            cancelButtonText: "No Imprimir",
+            allowOutsideClick: false,
+          });
+
+          if (okDelivery) {
+            await printerService.printDeliveryTicket(
+              activeDeliveryPrintRecord,
+              sizeLabel,
+              lockerDisplay,
+              paymentMethod,
+              recordExtraHours,
+              recordExtraAmount,
+              extraFolioState
+            );
+          }
+
+          // 2. Permiso Voucher (si hay comprobante de pago)
+          if (voucherDataRef.current) {
+            const { isConfirmed: okVoucher } = await Swal.fire({
+              icon: "info",
+              title: "Comprobante de Pago",
+              text: "Retire el comprobante de retiro y confirme para imprimir el comprobante de pago.",
+              confirmButtonText: "Imprimir Comprobante",
+              showCancelButton: true,
+              cancelButtonText: "No Imprimir",
+              allowOutsideClick: false,
+            });
+
+            if (okVoucher) {
+              await (printerService as any).printTransbankVoucher(voucherDataRef.current);
+            }
             setVoucherData(null);
           }
 
+          processingDeliveryRecordIdRef.current = null;
           setActiveDeliveryPrintRecord(null);
           setIsDeliveryPrinting(false);
         } else {
+          printTimersRef.current.forEach(clearTimeout);
+          printTimersRef.current = [];
+
           const timer = setTimeout(() => {
-            handlePrintDelivery();
-          }, 300);
+            let printVoucherAction: (() => void) | null = null;
+            if (voucherDataRef.current) {
+              printVoucherAction = () => {
+                nextPrintActionRef.current = () => {
+                  setVoucherData(null);
+                  processingDeliveryRecordIdRef.current = null;
+                  setActiveDeliveryPrintRecord(null);
+                  setIsDeliveryPrinting(false);
+                };
+                Swal.fire({
+                  icon: "info",
+                  title: "Comprobante de Pago",
+                  text: "Retire el comprobante de retiro y confirme para imprimir el comprobante.",
+                  confirmButtonText: "Imprimir Comprobante",
+                  showCancelButton: true,
+                  cancelButtonText: "No Imprimir",
+                  allowOutsideClick: false,
+                }).then(({ isConfirmed }) => {
+                  if (isConfirmed) handlePrintVoucher();
+                  else {
+                    setVoucherData(null);
+                    processingDeliveryRecordIdRef.current = null;
+                    setActiveDeliveryPrintRecord(null);
+                    setIsDeliveryPrinting(false);
+                  }
+                });
+              };
+            } else {
+              printVoucherAction = () => {
+                processingDeliveryRecordIdRef.current = null;
+                setActiveDeliveryPrintRecord(null);
+                setIsDeliveryPrinting(false);
+              };
+            }
+
+            nextPrintActionRef.current = printVoucherAction;
+            Swal.fire({
+              icon: "info",
+              title: "Comprobante de Retiro",
+              text: `Confirme para imprimir el comprobante de retiro (${lockerDisplay}).`,
+              confirmButtonText: "Imprimir Comprobante",
+              showCancelButton: true,
+              cancelButtonText: "No Imprimir",
+              allowOutsideClick: false,
+            }).then(({ isConfirmed }) => {
+              if (isConfirmed) handlePrintDelivery();
+              else printVoucherAction?.();
+            });
+          }, 500);
           printTimersRef.current.push(timer);
         }
       };
       runPrint();
     }
-  }, [activeDeliveryPrintRecord, isDeliveryPrinting, lockers, lockerSizes, paymentMethod, extraFolioState, handlePrintDelivery]);
+  }, [activeDeliveryPrintRecord, isDeliveryPrinting, lockers, lockerSizes, paymentMethod, extraFolioState, handlePrintDelivery, handlePrintVoucher]);
 
   const handlePrintVoucher = useReactToPrint({
     contentRef: voucherRef,
