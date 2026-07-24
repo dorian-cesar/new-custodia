@@ -22,6 +22,7 @@ import {
   dbCloseCashRegister,
   dbAddTransaction,
   sendBoleta,
+  dbUpdateSetting,
 } from "@/app/actions/db-actions";
 
 export interface User {
@@ -40,6 +41,9 @@ interface CustodyState {
   currentCashRegister: CashRegister | null;
   currentUser: User | null;
   lockerSizes: LockerSizeOption[];
+  settings: { key: string; value: string }[];
+  getSetting: (key: string) => string;
+  updateSetting: (key: string, value: string) => Promise<void>;
 
   // Hydration
   hydrateState: (state: {
@@ -48,6 +52,7 @@ interface CustodyState {
     cashRegisters: CashRegister[];
     cashTransactions: CashTransaction[];
     lockerSizes?: LockerSizeOption[];
+    settings?: { key: string; value: string }[];
   }) => void;
   setLockerSizes: (sizes: LockerSizeOption[]) => void;
 
@@ -138,6 +143,28 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
   currentCashRegister: null,
   currentUser: null,
   lockerSizes: LOCKER_SIZES,
+  settings: [],
+
+  getSetting: (key) => {
+    const s = get().settings.find((item) => item.key === key);
+    return s ? s.value : "";
+  },
+
+  updateSetting: async (key, value) => {
+    await dbUpdateSetting(key, value);
+    set((state) => {
+      const exists = state.settings.some((s) => s.key === key);
+      if (exists) {
+        return {
+          settings: state.settings.map((s) => (s.key === key ? { ...s, value } : s)),
+        };
+      } else {
+        return {
+          settings: [...state.settings, { key, value }],
+        };
+      }
+    });
+  },
 
   login: (user) => {
     if (typeof window !== "undefined") {
@@ -159,6 +186,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
       cashRegisters: dbState.cashRegisters,
       cashTransactions: dbState.cashTransactions,
       lockerSizes: dbState.lockerSizes || get().lockerSizes,
+      settings: dbState.settings || get().settings,
       currentCashRegister:
         dbState.cashRegisters.find((r) => r.status === "open") || null,
     });

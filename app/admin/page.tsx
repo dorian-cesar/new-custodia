@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/custody/header";
 import {
@@ -124,7 +125,30 @@ export default function AdminPage() {
     lockers,
     records,
     cashTransactions,
+    getSetting,
+    updateSetting,
   } = useCustodyStore();
+
+  const currentCurrency = getSetting("currency") || "CLP";
+
+  const handleUpdateCurrency = async (currency: "CLP" | "PYG") => {
+    try {
+      await updateSetting("currency", currency);
+      Swal.fire({
+        icon: "success",
+        title: "Moneda Actualizada",
+        text: `El sistema ahora opera en ${currency === "CLP" ? "Pesos Chilenos (CLP)" : "Guaraníes Paraguayos (PYG)"}.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Error al actualizar",
+        text: err.message,
+      });
+    }
+  };
   const [showEditPriceDialog, setShowEditPriceDialog] = useState(false);
   const [editingSize, setEditingSize] = useState<{
     size: string;
@@ -756,6 +780,34 @@ export default function AdminPage() {
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Nuevo Tamaño
               </Button>
+            </div>
+
+            {/* Currency Selector Card */}
+            <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-300">
+              <div className="flex flex-col gap-1">
+                <span className="font-extrabold text-sm text-[#0a354c] dark:text-[#00c5ff]">
+                  Moneda del Sistema
+                </span>
+                <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+                  Define el símbolo y formato de los cobros
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleUpdateCurrency("CLP")}
+                  variant={currentCurrency === "CLP" ? "default" : "outline"}
+                  className="h-8 text-xs font-bold px-4 rounded-full"
+                >
+                  Pesos (CLP / $)
+                </Button>
+                <Button
+                  onClick={() => handleUpdateCurrency("PYG")}
+                  variant={currentCurrency === "PYG" ? "default" : "outline"}
+                  className="h-8 text-xs font-bold px-4 rounded-full"
+                >
+                  Guaraníes (PYG / Gs.)
+                </Button>
+              </div>
             </div>
 
             <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">

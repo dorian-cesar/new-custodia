@@ -160,8 +160,27 @@ UserModel.init(
   { sequelize, modelName: 'User', tableName: 'users', timestamps: false }
 );
 
+export class SettingModel extends Model {
+  declare key: string;
+  declare value: string;
+}
+
+SettingModel.init(
+  {
+    key: { type: DataTypes.STRING, primaryKey: true },
+    value: { type: DataTypes.STRING, allowNull: false },
+  },
+  { sequelize, modelName: 'Setting', tableName: 'settings', timestamps: false }
+);
+
 export const syncDatabase = async () => {
   await sequelize.sync();
+  await SettingModel.sync();
+
+  const defaultCurrency = await SettingModel.findOne({ where: { key: 'currency' } });
+  if (!defaultCurrency) {
+    await SettingModel.create({ key: 'currency', value: 'CLP' } as any);
+  }
   
   // Crear cuentas por defecto SOLO si no existen.
   // Si ya existen, NO se modifican — las contraseñas cambiadas en /admin se preservan.

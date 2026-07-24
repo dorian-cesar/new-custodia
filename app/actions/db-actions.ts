@@ -7,6 +7,7 @@ import {
   CashTransactionModel,
   UserModel,
   PriceModel,
+  SettingModel,
   syncDatabase,
 } from "@/lib/db/models";
 import { generateLockers } from "@/lib/types";
@@ -35,6 +36,7 @@ const initDbAndFetch = async () => {
   const rawRegisters = await CashRegisterModel.findAll();
   const rawTransactions = await CashTransactionModel.findAll();
   const rawPrices = await PriceModel.findAll({ order: [["price", "ASC"]] });
+  const rawSettings = await SettingModel.findAll();
 
   // Convert from Sequelize instances to plain JS objects with correct typings
   return {
@@ -52,8 +54,14 @@ const initDbAndFetch = async () => {
       const pData = p.get({ plain: true });
       return { value: pData.size, label: pData.label, price: pData.price };
     }) as any[],
+    settings: rawSettings.map((s) => s.get({ plain: true })) as any[],
   };
 };
+
+export async function dbUpdateSetting(key: string, value: string) {
+  await SettingModel.upsert({ key, value });
+  return true;
+}
 
 
 export async function getInitialState() {

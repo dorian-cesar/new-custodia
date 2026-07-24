@@ -30,7 +30,7 @@ import {
 import { type CustodyRecord, type LockerSize } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
 import { sendBoleta } from "@/app/actions/db-actions";
-import { formatCurrency, PYG_RATE } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 interface ClientRegistrationProps {
   selectedItems: { lockerId: number; size: LockerSize }[];
@@ -902,10 +902,10 @@ export function ClientRegistration({
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-zinc-300 text-xs font-semibold">
                       <span className="text-zinc-500">Vuelto a entregar:</span>
                       <span
-                        className={`text-sm font-bold ${entryCashReceived - Math.round(totalPrice * PYG_RATE) >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                        className={`text-sm font-bold ${entryCashReceived - totalPrice >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                       >
-                        {entryCashReceived - Math.round(totalPrice * PYG_RATE) >= 0
-                          ? formatCurrency((entryCashReceived / PYG_RATE) - totalPrice)
+                        {entryCashReceived - totalPrice >= 0
+                          ? formatCurrency(entryCashReceived - totalPrice)
                           : "Monto insuficiente"}
                       </span>
                     </div>
@@ -1111,10 +1111,10 @@ export function ClientRegistration({
                           Vuelto a entregar:
                         </span>
                         <span
-                          className={`text-sm font-bold ${cashReceived - Math.round(extraAmount * PYG_RATE) >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                          className={`text-sm font-bold ${cashReceived - extraAmount >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                         >
-                          {cashReceived - Math.round(extraAmount * PYG_RATE) >= 0
-                            ? formatCurrency((cashReceived / PYG_RATE) - extraAmount)
+                          {cashReceived - extraAmount >= 0
+                            ? formatCurrency(cashReceived - extraAmount)
                             : "Monto insuficiente"}
                         </span>
                       </div>

@@ -216,10 +216,9 @@ export function Header({
 
   return (
     <>
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between px-4 sm:px-6 py-3 lg:py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300 gap-2 lg:gap-0">
-        {/* Row 1: Logo and primary navigation (on tablet portrait / mobile) */}
-        <div className="flex items-center justify-between w-full lg:w-auto gap-4">
-          {/* Left: Logo 'CUSTODIA' & Subtitle stacked */}
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between px-4 sm:px-6 py-3 lg:py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300 gap-2.5 lg:gap-0">
+        {/* Row 1: Logo & Slogan */}
+        <div className="w-full lg:w-auto flex items-center justify-between">
           <div className="flex flex-col items-start gap-0.5">
             <span className="text-xl sm:text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none leading-none">
               CUSTODIA
@@ -228,75 +227,75 @@ export function Header({
               Sistema de Control de Casilleros
             </span>
           </div>
-
-          {/* Navigation buttons: Impresora, Caja, Historial, Volver (Visible on mobile/tablet here) */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:hidden">
-            {isNative && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowPrinterDialog(true);
-                  printerService.getPrinterStatus().then(setPrinterStatus);
-                }}
-                className={`rounded-full h-7 px-2 sm:px-3 text-xs font-medium border-zinc-400 bg-white ${
-                  printerStatus.connected
-                    ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-                    : "text-amber-600 hover:bg-amber-50"
-                }`}
-                title="Configurar Impresora"
-              >
-                <Printer className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline-block">
-                  {printerStatus.connected ? "Impresora OK" : "Impresora"}
-                </span>
-              </Button>
-            )}
-
-            {showCash && (
-              <Button
-                asChild
-                variant="outline"
-                className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
-                title="Caja"
-              >
-                <Link href="/caja" className="flex items-center">
-                  <DollarSign className="h-3 w-3 sm:mr-1" />
-                  <span className="hidden sm:inline-block">Caja</span>
-                </Link>
-              </Button>
-            )}
-            {showHistory && (
-              <Button
-                asChild
-                variant="outline"
-                className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
-                title="Ver Historial"
-              >
-                <Link href="/historial" className="flex items-center">
-                  <History className="h-3 w-3 sm:mr-1" />
-                  <span className="hidden sm:inline-block">Historial</span>
-                </Link>
-              </Button>
-            )}
-            {showBack && (
-              <Button
-                asChild
-                variant="outline"
-                className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
-                title="Volver"
-              >
-                <Link href="/" className="flex items-center">
-                  <ArrowLeft className="h-3 w-3 sm:mr-1" />
-                  <span className="hidden sm:inline-block">Volver</span>
-                </Link>
-              </Button>
-            )}
-          </div>
         </div>
 
-        {/* Row 2: Status, theme toggle, profile & logout (on mobile/tablet, aligned below Row 1) */}
-        <div className="flex items-center justify-end w-full lg:w-auto gap-2 border-t lg:border-t-0 border-zinc-100 dark:border-zinc-800 pt-2 lg:pt-0">
+        {/* Row 2: Core navigation buttons (Visible on mobile/tablet here, below Row 1) */}
+        <div className="flex items-center gap-1 sm:gap-2 w-full lg:hidden border-t border-zinc-100 dark:border-zinc-800/60 pt-2.5">
+          {isNative && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowPrinterDialog(true);
+                printerService.getPrinterStatus().then(setPrinterStatus);
+              }}
+              className={`rounded-full h-7 px-2 sm:px-3 text-xs font-medium border-zinc-400 bg-white ${
+                printerStatus.connected
+                  ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                  : "text-amber-600 hover:bg-amber-50"
+              }`}
+              title="Configurar Impresora"
+            >
+              <Printer className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline-block">
+                {printerStatus.connected ? "Impresora OK" : "Impresora"}
+              </span>
+            </Button>
+          )}
+
+          {showCash && (
+            <Button
+              asChild
+              variant="outline"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              title="Caja"
+            >
+              <Link href="/caja" className="flex items-center">
+                <DollarSign className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline-block">Caja</span>
+              </Link>
+            </Button>
+          )}
+          {showHistory && (
+            <Button
+              asChild
+              variant="outline"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              title="Ver Historial"
+            >
+              <Link href="/historial" className="flex items-center">
+                <History className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline-block">Historial</span>
+              </Link>
+            </Button>
+          )}
+          {showBack && (
+            <Button
+              asChild
+              variant="outline"
+              className="border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 rounded-full h-7 px-2 sm:px-3 text-[10px] font-bold leading-none transition-colors duration-200"
+              title="Volver"
+            >
+              <Link href="/" className="flex items-center">
+                <ArrowLeft className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline-block">Volver</span>
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        {/* Row 3: Status, theme toggle, profile & logout (on mobile/tablet, aligned below Row 2) */}
+        <div className="flex items-center justify-end w-full lg:w-auto gap-2 border-t lg:border-t-0 border-zinc-100 dark:border-zinc-800 pt-2.5 lg:pt-0">
           {/* Navigation buttons: Impresora, Caja, Historial, Volver (Visible on desktop here) */}
           <div className="hidden lg:flex items-center gap-2 mr-2">
             {isNative && (
