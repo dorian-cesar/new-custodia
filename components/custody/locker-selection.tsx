@@ -4,10 +4,11 @@ import { Briefcase, Backpack, Luggage, Package, Package2 } from "lucide-react";
 import { LockerGrid } from "./locker-grid";
 import { type Locker, type LockerSize } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
+import { formatCurrency } from "@/lib/utils";
 
 interface LockerSelectionProps {
   lockers: Locker[];
-  selectedLockerId: number | null;
+  selectedItems: { lockerId: number; size: LockerSize }[];
   onSelectLocker: (lockerId: number) => void;
   selectedSize: LockerSize | null;
   onSelectSize: (size: LockerSize) => void;
@@ -18,7 +19,7 @@ interface LockerSelectionProps {
 
 export function LockerSelection({
   lockers,
-  selectedLockerId,
+  selectedItems,
   onSelectLocker,
   selectedSize,
   onSelectSize,
@@ -63,19 +64,19 @@ export function LockerSelection({
   const row2 = sizesToShow.slice(3); // XL, XXL
 
   return (
-    <div className="bg-[#d7d7d8] px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch lg:h-full lg:min-h-0">
+    <div className="bg-[#e6e6e7] dark:bg-zinc-900 px-4 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch md:h-full md:min-h-0 transition-colors duration-300">
       {/* Columna Izquierda: Tamaño y Registro del Cliente */}
-      <div className="lg:col-span-5 flex flex-col gap-3 w-full">
+      <div className="md:col-span-5 flex flex-col gap-3 w-full">
         {/* TAMAÑO DEL EQUIPAJE */}
         <div>
-          <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
+          <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
             TAMAÑO DEL EQUIPAJE
           </div>
 
           {/* Fila 1: S, M, L */}
           <div className="grid grid-cols-3 gap-2 mb-2">
             {row1.map((size) => {
-              const Icon = sizeIcons[size.value] ?? Luggage;
+              const Icon = sizeIcons[size.value] ?? Package;
               const isSelected = selectedSize === size.value;
               return (
                 <button
@@ -86,19 +87,19 @@ export function LockerSelection({
                     relative flex flex-col items-center justify-between p-3 rounded-xl border h-28 transition-all duration-250 cursor-pointer select-none
                     ${
                       isSelected
-                        ? "bg-[#00c5ff] border-[#00b4eb] scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)]"
-                        : "bg-[#cef3ff] hover:bg-[#bceeff] border-zinc-200 hover:scale-[1.01]"
+                        ? "bg-[#00c5ff] border-[#00b4eb] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
+                        : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/40 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-[#0a354c] dark:text-zinc-200 hover:scale-[1.01]"
                     }
                   `}
                 >
-                  <span className="absolute top-2 right-3 text-xl font-black text-zinc-900 leading-none">
+                  <span className={`absolute top-2 right-3 text-xl font-black leading-none ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-300"}`}>
                     {size.value}
                   </span>
                   <div className="flex-1 flex items-center justify-center mt-2">
-                    <Icon className="w-9 h-9 text-zinc-900 stroke-[1.5]" />
+                    <Icon className={`w-9 h-9 stroke-[1.5] ${isSelected ? "text-white" : "text-[#1588b3] dark:text-zinc-400"}`} />
                   </div>
-                  <span className="text-sm font-black text-zinc-900 mt-1">
-                    $ {size.price.toLocaleString("es-CL")}
+                  <span className={`text-sm font-black mt-1 ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-100"}`}>
+                    {formatCurrency(size.price)}
                   </span>
                 </button>
               );
@@ -119,8 +120,8 @@ export function LockerSelection({
                     relative flex flex-col items-center justify-between p-3 rounded-xl border h-28 transition-all duration-250 cursor-pointer select-none
                     ${
                       isSelected
-                        ? "bg-[#00c5ff] border-[#00b4eb] scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)]"
-                        : "bg-[#cef3ff] hover:bg-[#bceeff] border-zinc-200 hover:scale-[1.01]"
+                        ? "bg-[#00c5ff] border-[#00b4eb] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
+                        : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/40 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-[#0a354c] dark:text-zinc-200 hover:scale-[1.01]"
                     }
                   `}
                 >
@@ -130,14 +131,14 @@ export function LockerSelection({
                       Solo Sector B
                     </span>
                   )}
-                  <span className="absolute top-2 right-3 text-xl font-black text-zinc-900 leading-none">
+                  <span className={`absolute top-2 right-3 text-xl font-black leading-none ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-300"}`}>
                     {size.value}
                   </span>
                   <div className="flex-1 flex items-center justify-center mt-2">
-                    <Icon className="w-9 h-9 text-zinc-900 stroke-[1.5]" />
+                    <Icon className={`w-9 h-9 stroke-[1.5] ${isSelected ? "text-white" : "text-[#1588b3] dark:text-zinc-400"}`} />
                   </div>
-                  <span className="text-sm font-black text-zinc-900 mt-1">
-                    $ {size.price.toLocaleString("es-CL")}
+                  <span className={`text-sm font-black mt-1 ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-100"}`}>
+                    {formatCurrency(size.price)}
                   </span>
                 </button>
               );
@@ -145,9 +146,8 @@ export function LockerSelection({
           </div>
         </div>
 
-        {/* REGISTRO DEL CLIENTE */}
         <div>
-          <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
+          <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
             REGISTRO DEL CLIENTE
           </div>
           <input
@@ -155,7 +155,7 @@ export function LockerSelection({
             value={clientDocument}
             onChange={(e) => onChangeDocument(e.target.value)}
             placeholder="12.345.678-k"
-            className="w-full bg-white border border-zinc-300 rounded-md px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff] font-semibold"
+            className="w-full bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#00c5ff] font-semibold transition-colors"
           />
         </div>
 
@@ -168,14 +168,14 @@ export function LockerSelection({
       </div>
 
       {/* Columna Derecha: Casilleros */}
-      <div className="lg:col-span-7 flex flex-col gap-4 w-full lg:h-full lg:min-h-0">
-        <div className="flex-1 flex flex-col min-h-0 lg:h-full">
-          <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
+      <div className="md:col-span-7 flex flex-col gap-4 w-full md:h-full md:min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 md:h-full">
+          <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
             CASILLEROS
           </div>
           <LockerGrid
             lockers={lockers}
-            selectedLockerId={selectedLockerId}
+            selectedItems={selectedItems}
             onSelectLocker={onSelectLocker}
             selectedSize={selectedSize}
           />

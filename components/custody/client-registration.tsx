@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useReactToPrint } from "react-to-print";
 import Swal from "sweetalert2";
 import { Ticket } from "./ticket";
@@ -30,10 +30,10 @@ import {
 import { type CustodyRecord, type LockerSize } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
 import { sendBoleta } from "@/app/actions/db-actions";
+import { formatCurrency } from "@/lib/utils";
 
 interface ClientRegistrationProps {
-  selectedLockerId: number | null;
-  selectedSize?: LockerSize | null;
+  selectedItems: { lockerId: number; size: LockerSize }[];
   clientDocument?: string;
   onGenerateBarcode: (
     paymentMethod: string,
@@ -42,7 +42,7 @@ interface ClientRegistrationProps {
     cardNumber?: string | null,
     cardBrand?: string | null,
     cardType?: string | null,
-  ) => Promise<CustodyRecord | null>;
+  ) => Promise<CustodyRecord[] | null>;
   onDeliver: (
     code: string,
     extraCharge?: number,
@@ -54,7 +54,18 @@ interface ClientRegistrationProps {
     cardBrand?: string | null,
     cardType?: string | null,
   ) => Promise<boolean>;
-  currentRecord: CustodyRecord | null;
+  onDeliverMultiple?: (
+    recordIds: number[],
+    extraCharge?: number,
+    paymentMethod?: string,
+    extraFolio?: number | null,
+    authCode?: string | null,
+    opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
+  ) => Promise<boolean>;
+  currentRecords: CustodyRecord[];
   isCashOpen: boolean;
   mode?: "entrega" | "retiro";
   lastPrintedId: number | null;
@@ -82,12 +93,12 @@ const showToast = (
 };
 
 export function ClientRegistration({
-  selectedLockerId,
-  selectedSize,
+  selectedItems,
   clientDocument,
   onGenerateBarcode,
   onDeliver,
-  currentRecord,
+  onDeliverMultiple,
+  currentRecords,
   isCashOpen,
   mode = "entrega",
   lastPrintedId,
@@ -102,6 +113,11 @@ export function ClientRegistration({
   const voucherRef = useRef<HTMLDivElement>(null);
   const nextPrintActionRef = useRef<(() => void) | null>(null);
 
+  // Estado para la cola de impresión secuencial
+  const [printQueue, setPrintQueue] = useState<CustodyRecord[]>([]);
+  const [activePrintRecord, setActivePrintRecord] = useState<CustodyRecord | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+
   // State for Entry Payment Modal
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [entryPaymentMethod, setEntryPaymentMethod] = useState<
@@ -114,9 +130,7 @@ export function ClientRegistration({
   const [isProcessingCard, setIsProcessingCard] = useState(false);
   const [extraAmount, setExtraAmount] = useState(0);
   const [extraHours, setExtraHours] = useState(0);
-  const [pendingRecord, setPendingRecord] = useState<CustodyRecord | null>(
-    null,
-  );
+  const [pendingDeliverRecords, setPendingDeliverRecords] = useState<CustodyRecord[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta">(
     "Efectivo",
   );
@@ -127,7 +141,56 @@ export function ClientRegistration({
 
   // State for Multiple Records Selection Modal
   const [multiRecords, setMultiRecords] = useState<CustodyRecord[]>([]);
+  const [selectedDeliverRecords, setSelectedDeliverRecords] = useState<CustodyRecord[]>([]);
   const [isMultiModalOpen, setIsMultiModalOpen] = useState(false);
+
+  // Sequential printing queue for exit tickets
+  const [deliveryPrintQueue, setDeliveryPrintQueue] = useState<CustodyRecord[]>([]);
+  const [activeDeliveryPrintRecord, setActiveDeliveryPrintRecord] = useState<CustodyRecord | null>(null);
+  const [isDeliveryPrinting, setIsDeliveryPrinting] = useState(false);
+
+  // Store selectors needed before memos
+  const getActiveRecordsByInput = useCustodyStore(
+    (state) => state.getActiveRecordsByInput,
+  );
+  const lockers = useCustodyStore((state) => state.lockers);
+  const lockerSizes = useCustodyStore((state) => state.lockerSizes);
+
+  // Memo for selected deliveries stats in the list modal
+  const selectedDeliverStats = useMemo(() => {
+    let totalExtraHours = 0;
+    let totalExtraAmount = 0;
+    const breakdowns: { record: CustodyRecord; extraH: number; amount: number; lockerDisplay: string }[] = [];
+
+    selectedDeliverRecords.forEach((record) => {
+      const diffMs = Date.now() - new Date(record.entryTime).getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      let extraH = 0;
+      let amount = 0;
+      if (diffHours > 24) {
+        extraH = diffHours - 24;
+        amount = Math.ceil(extraH / 24) * record.price;
+      }
+      totalExtraHours += extraH;
+      totalExtraAmount += amount;
+
+      const locker = lockers.find((l) => l.id === record.lockerId);
+      const lockerDisplay = locker ? `${locker.col}${locker.row}` : record.lockerId.toString();
+
+      breakdowns.push({
+        record,
+        extraH,
+        amount,
+        lockerDisplay,
+      });
+    });
+
+    return {
+      totalExtraHours,
+      totalExtraAmount,
+      breakdowns,
+    };
+  }, [selectedDeliverRecords, lockers]);
 
   const [voucherData, setVoucherData] = useState<{
     amount: number;
@@ -153,6 +216,7 @@ export function ClientRegistration({
   const handlePrint = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: "Ticket_Custodia",
+    suppressErrors: true,
     onAfterPrint: () => {
       if (nextPrintActionRef.current) {
         const nextAction = nextPrintActionRef.current;
@@ -165,6 +229,7 @@ export function ClientRegistration({
   const handlePrintCopy = useReactToPrint({
     contentRef: ticketRef,
     documentTitle: "Ticket_Custodia_Copia",
+    suppressErrors: true,
     onAfterPrint: () => {
       if (nextPrintActionRef.current) {
         const nextAction = nextPrintActionRef.current;
@@ -173,15 +238,74 @@ export function ClientRegistration({
       }
     },
   });
+
+  // Queue controller for Delivery/Exit Tickets
+  useEffect(() => {
+    if (deliveryPrintQueue.length > 0 && !activeDeliveryPrintRecord && !isDeliveryPrinting) {
+      const nextRecord = deliveryPrintQueue[0];
+      setDeliveryPrintQueue((prev) => prev.slice(1));
+      setActiveDeliveryPrintRecord(nextRecord);
+      setIsDeliveryPrinting(true);
+    }
+  }, [deliveryPrintQueue, activeDeliveryPrintRecord, isDeliveryPrinting]);
 
   const handlePrintDelivery = useReactToPrint({
     contentRef: deliveryTicketRef,
     documentTitle: "Ticket_Retiro",
+    suppressErrors: true,
+    onAfterPrint: () => {
+      setActiveDeliveryPrintRecord(null);
+      setIsDeliveryPrinting(false);
+    },
+    onPrintError: () => {
+      setActiveDeliveryPrintRecord(null);
+      setIsDeliveryPrinting(false);
+    }
   });
+
+  useEffect(() => {
+    if (activeDeliveryPrintRecord && isDeliveryPrinting) {
+      const runPrint = async () => {
+        if (printerService.isNative()) {
+          const sizeLabel = lockerSizes.find((s) => s.value === activeDeliveryPrintRecord.size)?.label || activeDeliveryPrintRecord.size;
+          const locker = lockers.find((l) => l.id === activeDeliveryPrintRecord.lockerId);
+          const lockerDisplay = locker ? `${locker.col}${locker.row}` : activeDeliveryPrintRecord.lockerId.toString();
+
+          const diffMs = Date.now() - new Date(activeDeliveryPrintRecord.entryTime).getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          let recordExtraHours = 0;
+          let recordExtraAmount = 0;
+          if (diffHours > 24) {
+            recordExtraHours = diffHours - 24;
+            recordExtraAmount = Math.ceil(recordExtraHours / 24) * activeDeliveryPrintRecord.price;
+          }
+
+          await printerService.printDeliveryTicket(
+            activeDeliveryPrintRecord,
+            sizeLabel,
+            lockerDisplay,
+            paymentMethod,
+            recordExtraHours,
+            recordExtraAmount,
+            extraFolioState
+          );
+          setActiveDeliveryPrintRecord(null);
+          setIsDeliveryPrinting(false);
+        } else {
+          const timer = setTimeout(() => {
+            handlePrintDelivery();
+          }, 300);
+          printTimersRef.current.push(timer);
+        }
+      };
+      runPrint();
+    }
+  }, [activeDeliveryPrintRecord, isDeliveryPrinting, lockers, lockerSizes, paymentMethod, extraFolioState, handlePrintDelivery]);
 
   const handlePrintVoucher = useReactToPrint({
     contentRef: voucherRef,
-    documentTitle: "Comprobante_Transbank",
+    documentTitle: "Voucher_Transbank",
+    suppressErrors: true,
     onAfterPrint: () => {
       if (nextPrintActionRef.current) {
         const nextAction = nextPrintActionRef.current;
@@ -192,89 +316,103 @@ export function ClientRegistration({
   });
 
 
+  // Calcular precios acumulados del carrito
+  const itemsWithPrice = selectedItems.map((item) => {
+    const sizeOption = lockerSizes.find((s) => s.value === item.size);
+    const price = sizeOption ? sizeOption.price : 0;
+    const label = sizeOption ? sizeOption.label : item.size;
+    const l = lockers.find((lock) => lock.id === item.lockerId);
+    const position = l ? `${l.col}${l.row}` : item.lockerId.toString();
+    return { ...item, price, label, position };
+  });
 
-  const getActiveRecordsByInput = useCustodyStore(
-    (state) => state.getActiveRecordsByInput,
-  );
-  const lockers = useCustodyStore((state) => state.lockers);
-  const lockerSizes = useCustodyStore((state) => state.lockerSizes);
-  const selectedLocker = lockers.find((l) => l.id === selectedLockerId);
-  const displayLockerName = selectedLocker
-    ? `${selectedLocker.col}${selectedLocker.row}`
-    : "";
-  const selectedSizeInfo = lockerSizes.find((s) => s.value === selectedSize);
-  const entryPrice = selectedSizeInfo ? selectedSizeInfo.price : 0;
+  const totalPrice = itemsWithPrice.reduce((sum, item) => sum + item.price, 0);
 
-  // Reset cashReceived when modal or pendingRecord changes
+  // Reset cashReceived when modal or pending records change
   useEffect(() => {
     setCashReceived(0);
-  }, [pendingRecord, isModalOpen]);
+  }, [pendingDeliverRecords, isModalOpen]);
 
   useEffect(() => {
-    // Automatically print when a *new* record is generated and received
-    if (currentRecord && currentRecord.id !== lastPrintedId) {
+    if (currentRecords.length > 0 && currentRecords[0].id !== lastPrintedId) {
+      setPrintQueue((prev) => [...prev, ...currentRecords]);
+      setLastPrintedId(currentRecords[0].id);
+      showToast("Custodias registradas con éxito", "success");
+    }
+  }, [currentRecords, lastPrintedId, setLastPrintedId]);
+
+  useEffect(() => {
+    if (printQueue.length > 0 && !isPrinting) {
+      setIsPrinting(true);
+      const nextRecord = printQueue[0];
+      setActivePrintRecord(nextRecord);
+    }
+  }, [printQueue, isPrinting]);
+
+  useEffect(() => {
+    if (activePrintRecord && isPrinting) {
       if (printerService.isNative()) {
         const sizeLabel =
-          lockerSizes.find((s) => s.value === currentRecord.size)?.label ||
-          currentRecord.size;
-        const locker = lockers.find((l) => l.id === currentRecord.lockerId);
+          lockerSizes.find((s) => s.value === activePrintRecord.size)?.label ||
+          activePrintRecord.size;
+        const locker = lockers.find((l) => l.id === activePrintRecord.lockerId);
         const lockerDisplay = locker
           ? `${locker.col}${locker.row}`
-          : currentRecord.lockerId.toString();
+          : activePrintRecord.lockerId.toString();
         printerService.printEntryTicket(
-          currentRecord,
+          activePrintRecord,
           sizeLabel,
           lockerDisplay,
           entryPaymentMethod,
         );
-        setLastPrintedId(currentRecord.id);
-        showToast("Custodia registrada con éxito", "success");
+        // Avanzar cola
+        setPrintQueue((prev) => prev.slice(1));
+        setIsPrinting(false);
+        setActivePrintRecord(null);
       } else {
-        // Limpiamos timeouts previos si quedara alguno huérfano
         printTimersRef.current.forEach(clearTimeout);
         printTimersRef.current = [];
 
-        // 1. Iniciar la cadena secuencial con un retraso inicial de 500ms para asegurar el renderizado
         const t1 = setTimeout(() => {
-          // 3. Voucher Transbank (si aplica)
           let printVoucherAction: (() => void) | null = null;
           if (entryPaymentMethod === "Tarjeta" && voucherData) {
             printVoucherAction = () => {
+              nextPrintActionRef.current = () => {
+                setPrintQueue((prev) => prev.slice(1));
+                setIsPrinting(false);
+                setActivePrintRecord(null);
+              };
               handlePrintVoucher();
+            };
+          } else {
+            printVoucherAction = () => {
+              setPrintQueue((prev) => prev.slice(1));
+              setIsPrinting(false);
+              setActivePrintRecord(null);
             };
           }
 
-          // 2. Segunda copia del ticket
           const printCopyAction = () => {
             nextPrintActionRef.current = printVoucherAction;
             handlePrintCopy();
           };
 
-          // 1. Primera copia del ticket
           nextPrintActionRef.current = printCopyAction;
           handlePrint();
-          setLastPrintedId(currentRecord.id);
-          showToast("Custodia registrada con éxito", "success");
-        }, 500);
+        }, 800);
         printTimersRef.current.push(t1);
-
-        // El cleanup del efecto ya no cancela los timers de impresión en cola,
-        // ya que printTimersRef se encarga de conservarlos entre renders.
-        return () => {};
       }
-
     }
   }, [
-    currentRecord,
-    lastPrintedId,
-    handlePrint,
-    handlePrintCopy,
-    handlePrintVoucher,
+    activePrintRecord,
+    isPrinting,
+    entryPaymentMethod,
     voucherData,
     lockers,
     lockerSizes,
-    entryPaymentMethod,
-    setLastPrintedId,
+    handlePrint,
+    handlePrintCopy,
+    handlePrintVoucher,
   ]);
 
   const handleGenerateBarcode = () => {
@@ -285,9 +423,9 @@ export function ClientRegistration({
       );
       return;
     }
-    if (!selectedLockerId || !selectedSize || !clientDocument?.trim()) {
+    if (selectedItems.length === 0 || !clientDocument?.trim()) {
       showToast(
-        "Por favor, selecciona un casillero, el tamaño del equipaje y escribe el RUT del cliente antes de cobrar.",
+        "Por favor, seleccione al menos un casillero y escriba el RUT del cliente antes de cobrar.",
         "warning",
       );
       return;
@@ -306,7 +444,7 @@ export function ClientRegistration({
         );
         return;
       }
-      if (entryCashReceived < entryPrice) {
+      if (entryCashReceived < totalPrice) {
         showToast("El efectivo recibido es menor al monto a cobrar.", "error");
         return;
       }
@@ -333,7 +471,7 @@ export function ClientRegistration({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: entryPrice,
+            amount: totalPrice,
             ticketNumber: clientDocument || "0",
           }),
         });
@@ -350,7 +488,7 @@ export function ClientRegistration({
         ) {
           // Armar el voucher primero para tener la data lista en render
           setVoucherData({
-            amount: entryPrice,
+            amount: totalPrice,
             ticketNumber: clientDocument || "0",
             authorizationCode: result.data.authorizationCode,
             operationNumber: result.data.operationNumber
@@ -399,24 +537,27 @@ export function ClientRegistration({
     }
   };
 
-  const processDelivery = (record: CustodyRecord) => {
-    setIsMultiModalOpen(false);
-    const diffMs = Date.now() - new Date(record.entryTime).getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
 
-    let extraH = 0;
-    let amount = 0;
 
-    if (diffHours > 24) {
-      extraH = diffHours - 24;
-      // Recargo por bloque o fracción adicional de 24 horas igual al precio inicial
-      amount = Math.ceil(extraH / 24) * record.price;
-    }
+  const processDelivery = (recordsToDeliver: CustodyRecord[]) => {
+    let totalExtraH = 0;
+    let totalAmount = 0;
 
-    setExtraHours(extraH > 0 ? extraH : 0);
-    setExtraAmount(amount > 0 ? amount : 0);
+    recordsToDeliver.forEach((record) => {
+      const diffMs = Date.now() - new Date(record.entryTime).getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      if (diffHours > 24) {
+        const extraH = diffHours - 24;
+        totalExtraH += extraH;
+        totalAmount += Math.ceil(extraH / 24) * record.price;
+      }
+    });
+
+    setExtraHours(totalExtraH);
+    setExtraAmount(totalAmount);
     setPaymentMethod("Efectivo");
-    setPendingRecord(record);
+    setPendingDeliverRecords(recordsToDeliver);
+    setCashReceived(0);
     setIsModalOpen(true);
   };
 
@@ -436,15 +577,16 @@ export function ClientRegistration({
     }
 
     if (records.length === 1) {
-      processDelivery(records[0]);
+      processDelivery([records[0]]);
     } else {
       setMultiRecords(records);
+      setSelectedDeliverRecords(records); // Pre-seleccionar todos
       setIsMultiModalOpen(true);
     }
   };
 
   const confirmDelivery = async (
-    code: string,
+    codes: string[],
     extraCharge: number,
     method: "Efectivo" | "Tarjeta",
   ) => {
@@ -494,7 +636,7 @@ export function ClientRegistration({
           },
           body: JSON.stringify({
             amount: extraCharge,
-            ticketNumber: code,
+            ticketNumber: codes.join(", "),
           }),
         });
 
@@ -519,7 +661,7 @@ export function ClientRegistration({
           setExitOpNumber(opNumberVal);
           setVoucherData({
             amount: extraCharge,
-            ticketNumber: code,
+            ticketNumber: codes[0] || "",
             authorizationCode: authCodeVal || "",
             operationNumber: opNumberVal || "",
             cardNumber: result.data.cardNumber,
@@ -565,48 +707,45 @@ export function ClientRegistration({
     }
 
     setExtraFolioState(extraFolio);
+    
+    // Add all pendingDeliverRecords to print queue
+    setDeliveryPrintQueue(pendingDeliverRecords);
+
     setTimeout(async () => {
-      if (pendingRecord) {
-        if (printerService.isNative()) {
-          const sizeLabel =
-            lockerSizes.find((s) => s.value === pendingRecord.size)?.label ||
-            pendingRecord.size;
-          const locker = lockers.find((l) => l.id === pendingRecord.lockerId);
-          const lockerDisplay = locker
-            ? `${locker.col}${locker.row}`
-            : pendingRecord.lockerId.toString();
-          await printerService.printDeliveryTicket(
-            pendingRecord,
-            sizeLabel,
-            lockerDisplay,
-            method,
-            extraHours,
-            extraCharge,
-            extraFolio,
-          );
-        } else {
-          handlePrintDelivery();
-        }
+      let success = false;
+      if (pendingDeliverRecords.length === 1) {
+        success = await onDeliver(
+          pendingDeliverRecords[0].code,
+          extraCharge,
+          method,
+          extraFolio,
+          authCodeVal,
+          opNumberVal,
+          cardNumberVal,
+          cardBrandVal,
+          cardTypeVal,
+        );
+      } else if (onDeliverMultiple) {
+        success = await onDeliverMultiple(
+          pendingDeliverRecords.map(r => r.id),
+          extraCharge,
+          method,
+          extraFolio,
+          authCodeVal,
+          opNumberVal,
+          cardNumberVal,
+          cardBrandVal,
+          cardTypeVal,
+        );
       }
 
-      const success = await onDeliver(
-        code,
-        extraCharge,
-        method,
-        extraFolio,
-        authCodeVal,
-        opNumberVal,
-        cardNumberVal,
-        cardBrandVal,
-        cardTypeVal,
-      );
       if (success) {
         showToast("Entrega procesada con éxito", "success");
         setDeliveryCode("");
         setIsModalOpen(false);
-        // Esperamos 2 segundos antes de limpiar el estado para que react-to-print alcance a clonar el DOM
+        setIsMultiModalOpen(false);
         setTimeout(() => {
-          setPendingRecord(null);
+          setPendingDeliverRecords([]);
           setExtraFolioState(null);
         }, 2000);
       } else {
@@ -617,33 +756,88 @@ export function ClientRegistration({
 
   return (
     <div className={mode === "entrega" ? "w-full" : "bg-[#d7d7d8] px-4 pb-4"}>
-      <Ticket
-        ref={ticketRef}
-        record={currentRecord}
-        paymentMethod={entryPaymentMethod}
-      />
-      <DeliveryTicket
-        ref={deliveryTicketRef}
-        record={pendingRecord}
-        extraHours={extraHours}
-        extraAmount={extraAmount}
-        paymentMethod={paymentMethod}
-        extraFolio={extraFolioState}
-        authCode={exitAuthCode}
-        opNumber={exitOpNumber}
-      />
-      <TransbankVoucher
-        ref={voucherRef}
-        data={voucherData}
-      />
+      {/* Hidden print areas - always in DOM for react-to-print */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", top: 0, pointerEvents: "none" }}>
+        <Ticket
+          ref={ticketRef}
+          record={activePrintRecord}
+          paymentMethod={entryPaymentMethod}
+        />
+        <DeliveryTicket
+          ref={deliveryTicketRef}
+          record={activeDeliveryPrintRecord}
+          extraHours={
+            activeDeliveryPrintRecord
+              ? (() => {
+                  const diffMs = Date.now() - new Date(activeDeliveryPrintRecord.entryTime).getTime();
+                  const diffHours = diffMs / (1000 * 60 * 60);
+                  return diffHours > 24 ? diffHours - 24 : 0;
+                })()
+              : 0
+          }
+          extraAmount={
+            activeDeliveryPrintRecord
+              ? (() => {
+                  const diffMs = Date.now() - new Date(activeDeliveryPrintRecord.entryTime).getTime();
+                  const diffHours = diffMs / (1000 * 60 * 60);
+                  return diffHours > 24
+                    ? Math.ceil((diffHours - 24) / 24) * activeDeliveryPrintRecord.price
+                    : 0;
+                })()
+              : 0
+          }
+          paymentMethod={paymentMethod}
+          extraFolio={extraFolioState}
+          authCode={exitAuthCode}
+          opNumber={exitOpNumber}
+        />
+        <TransbankVoucher
+          ref={voucherRef}
+          data={voucherData}
+        />
+      </div>
 
       {mode === "entrega" ? (
         <div className="w-full flex flex-col items-center">
+          {/* TABLITA DE RESUMEN DE SELECCIÓN */}
+          {selectedItems.length > 0 && (
+            <div className="w-full max-w-[320px] mb-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg p-3 shadow-sm space-y-2 select-none">
+              <div className="text-[10px] font-black text-[#0a354c] dark:text-[#00c5ff] uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1 flex justify-between">
+                <span>Resumen de Selección</span>
+                <span>{selectedItems.length} Bulto(s)</span>
+              </div>
+              <div className="max-h-[140px] overflow-y-auto">
+                <table className="w-full text-left text-[11px] text-zinc-700 dark:text-zinc-300">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-700 text-zinc-400 font-bold uppercase text-[9px]">
+                      <th className="py-1">Posición</th>
+                      <th className="py-1">Medida</th>
+                      <th className="py-1 text-right">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700 font-semibold">
+                    {itemsWithPrice.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-1.5 font-mono text-[#1588b3] dark:text-[#00c5ff]">{item.position}</td>
+                        <td className="py-1.5">{item.label}</td>
+                        <td className="py-1.5 text-right text-zinc-800 dark:text-zinc-100">{formatCurrency(item.price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex justify-between items-center pt-1.5 border-t border-dashed border-zinc-300 dark:border-zinc-700 font-black text-sm text-[#0a354c] dark:text-[#00c5ff]">
+                <span>Total:</span>
+                <span>{formatCurrency(totalPrice)}</span>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleGenerateBarcode}
             disabled={!isCashOpen}
-            className="w-full max-w-[320px] bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-md font-black py-2.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-1 text-center"
+            className="w-full max-w-[320px] bg-[#242424] dark:bg-zinc-800 hover:bg-[#323232] dark:hover:bg-zinc-700 disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-md font-black py-2.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-1 text-center"
           >
             GENERAR CÓDIGO
           </button>
@@ -656,7 +850,7 @@ export function ClientRegistration({
       ) : (
         <div className="flex flex-col gap-4 max-w-md mx-auto w-full mt-2">
           <div>
-            <div className="bg-[#242424] text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
               REGISTRO DEL CLIENTE
             </div>
             <input
@@ -664,7 +858,7 @@ export function ClientRegistration({
               value={deliveryCode}
               onChange={(e) => setDeliveryCode(e.target.value)}
               placeholder="Código de barras o RUT / DNI del cliente"
-              className="w-full bg-white border border-zinc-300 rounded-md px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff] font-semibold"
+              className="w-full bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#00c5ff] font-semibold transition-colors"
             />
             {deliveryError && (
               <p className="text-xs font-semibold text-destructive mt-1.5">
@@ -677,7 +871,7 @@ export function ClientRegistration({
               type="button"
               onClick={handleDeliverClick}
               disabled={!isCashOpen}
-              className="w-full bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-md font-black py-2.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-1 text-center"
+              className="w-full bg-[#242424] dark:bg-zinc-800 hover:bg-[#323232] dark:hover:bg-zinc-700 disabled:bg-zinc-500 disabled:cursor-not-allowed text-white text-md font-black py-2.5 px-6 rounded-lg uppercase tracking-wider transition-all duration-200 cursor-pointer shadow-md select-none mt-1 text-center"
             >
               BUSCAR Y RETIRAR
             </button>
@@ -690,10 +884,9 @@ export function ClientRegistration({
         </div>
       )}
 
-      {/* Entry Payment Confirmation Modal */}
       <Dialog open={isEntryModalOpen} onOpenChange={setIsEntryModalOpen}>
-        <DialogContent className="sm:max-w-md bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden">
-          <DialogHeader className="bg-[#242424] text-white py-3 px-6 flex items-center justify-between space-y-0">
+        <DialogContent className="sm:max-w-md bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 p-0 overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <DialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white py-3 px-6 flex items-center justify-between space-y-0">
             <DialogTitle className="text-lg font-bold tracking-wide flex items-center gap-2 text-white">
               <Coins className="h-5 w-5 text-[#00c5ff]" />
               PAGO DE CUSTODIA
@@ -701,43 +894,56 @@ export function ClientRegistration({
           </DialogHeader>
 
           <div className="px-6 py-4 flex flex-col gap-4">
-            <div className="bg-white border border-zinc-300 p-4 rounded-lg space-y-2 text-sm">
-              <div className="flex justify-between font-semibold text-zinc-700">
+            <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 p-4 rounded-lg space-y-3 text-sm">
+              <div className="flex justify-between font-semibold text-zinc-700 dark:text-zinc-300 pb-1.5 border-b border-zinc-100 dark:border-zinc-700">
                 <span>Cliente:</span>
-                <span className="font-mono text-zinc-900">
+                <span className="font-mono text-zinc-900 dark:text-zinc-100">
                   {clientDocument}
                 </span>
               </div>
-              <div className="flex justify-between font-semibold text-zinc-700">
-                <span>Casillero:</span>
-                <span className="text-zinc-900">{displayLockerName}</span>
-              </div>
-              <div className="flex justify-between font-semibold text-zinc-700">
-                <span>Tamaño:</span>
-                <span className="text-zinc-900">{selectedSizeInfo?.label}</span>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black uppercase text-zinc-400">Desglose de Casilleros:</span>
+                <table className="w-full text-left text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-700 text-zinc-400 font-bold uppercase text-[9px]">
+                      <th className="pb-1">Casillero</th>
+                      <th className="pb-1">Tamaño</th>
+                      <th className="pb-1 text-right">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700 font-semibold">
+                    {itemsWithPrice.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-2 font-mono text-[#1588b3] dark:text-[#00c5ff]">{item.position}</td>
+                        <td className="py-2">{item.label}</td>
+                        <td className="py-2 text-right text-zinc-800 dark:text-zinc-100">{formatCurrency(item.price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
-              <span className="font-bold text-zinc-800 text-lg">
+            <div className="flex justify-between items-center bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 p-4 rounded-lg select-none">
+              <span className="font-bold text-zinc-850 dark:text-zinc-200 text-lg">
                 Total a cobrar:
               </span>
-              <span className="font-black text-2xl text-[#0a354c]">
-                $ {entryPrice.toLocaleString("es-CL")}
+              <span className="font-black text-2xl text-[#0a354c] dark:text-[#00c5ff]">
+                {formatCurrency(totalPrice)}
               </span>
             </div>
 
             <div className="space-y-2 pt-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700">
+              <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
                 Medio de Pago
               </Label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
                     entryPaymentMethod === "Efectivo"
-                      ? "bg-[#0a354c] text-white shadow-md"
-                      : "bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800"
+                      ? "bg-[#0a354c] dark:bg-[#00c5ff] text-white dark:text-zinc-900 shadow-md font-black"
+                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
                   }`}
                   onClick={() => setEntryPaymentMethod("Efectivo")}
                 >
@@ -746,10 +952,10 @@ export function ClientRegistration({
                 </button>
                 <button
                   type="button"
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
                     entryPaymentMethod === "Tarjeta"
-                      ? "bg-[#1588b3] text-white shadow-md"
-                      : "bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800"
+                      ? "bg-[#1588b3] dark:bg-zinc-700 text-white shadow-md font-black"
+                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
                   }`}
                   onClick={() => setEntryPaymentMethod("Tarjeta")}
                 >
@@ -758,7 +964,7 @@ export function ClientRegistration({
                 </button>
               </div>
 
-              {entryPaymentMethod === "Efectivo" && entryPrice > 0 && (
+              {entryPaymentMethod === "Efectivo" && totalPrice > 0 && (
                 <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
                   <Label
                     htmlFor="entryCashReceived"
@@ -767,8 +973,8 @@ export function ClientRegistration({
                     Efectivo Recibido
                   </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">
-                      $
+                    <span className="absolute left-3 top-2 text-zinc-500 text-[10px] font-bold">
+                      Gs.
                     </span>
                     <input
                       id="entryCashReceived"
@@ -777,24 +983,24 @@ export function ClientRegistration({
                       value={
                         entryCashReceived === 0
                           ? ""
-                          : entryCashReceived.toLocaleString("es-CL")
+                          : entryCashReceived.toLocaleString("es-PY")
                       }
                       onChange={(e) => {
                         const val = Number(e.target.value.replace(/\D/g, ""));
                         setEntryCashReceived(val);
                       }}
                       placeholder="Monto entregado por el cliente"
-                      className="pl-7 bg-white border border-zinc-300 rounded-md w-full h-9 text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                      className="pl-10 bg-white border border-zinc-300 rounded-md w-full h-9 text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                     />
                   </div>
                   {entryCashReceived > 0 && (
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-zinc-300 text-xs font-semibold">
                       <span className="text-zinc-500">Vuelto a entregar:</span>
                       <span
-                        className={`text-sm font-bold ${entryCashReceived - entryPrice >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                        className={`text-sm font-bold ${entryCashReceived - totalPrice >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                       >
-                        {entryCashReceived - entryPrice >= 0
-                          ? `$ ${(entryCashReceived - entryPrice).toLocaleString("es-CL")}`
+                        {entryCashReceived - totalPrice >= 0
+                          ? `${formatCurrency(entryCashReceived - totalPrice)}`
                           : "Monto insuficiente"}
                       </span>
                     </div>
@@ -804,10 +1010,10 @@ export function ClientRegistration({
             </div>
           </div>
 
-          <div className="px-6 py-4 bg-zinc-200 border-t border-zinc-300 flex justify-end gap-3">
+          <div className="px-6 py-4 bg-zinc-200 dark:bg-zinc-900 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors duration-300">
             <button
               type="button"
-              className="px-4 py-2 rounded-lg border border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 font-semibold text-sm cursor-pointer select-none"
+              className="px-4 py-2 rounded-lg border border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-sm cursor-pointer select-none transition-colors"
               onClick={() => setIsEntryModalOpen(false)}
             >
               Cancelar
@@ -843,106 +1049,139 @@ export function ClientRegistration({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-6 py-4 flex flex-col gap-4">
-            {pendingRecord &&
+          <div className="px-6 py-4 flex flex-col gap-4 text-zinc-900 dark:text-zinc-100">
+            {pendingDeliverRecords.length === 1 &&
               (() => {
+                const record = pendingDeliverRecords[0];
                 const pLocker = lockers.find(
-                  (l) => l.id === pendingRecord.lockerId,
+                  (l) => l.id === record.lockerId,
                 );
                 return (
-                  <div className="bg-white border border-zinc-300 p-4 rounded-lg space-y-2 text-sm">
-                    <div className="flex justify-between font-semibold text-zinc-700">
+                  <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 p-4 rounded-lg space-y-2 text-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                    <div className="flex justify-between font-semibold text-zinc-700 dark:text-zinc-300">
                       <span>Código:</span>
-                      <span className="font-mono text-zinc-900">
-                        {pendingRecord.code}
+                      <span className="font-mono text-zinc-900 dark:text-zinc-100">
+                        {record.code}
                       </span>
                     </div>
-                    <div className="flex justify-between font-semibold text-zinc-700">
+                    <div className="flex justify-between font-semibold text-zinc-700 dark:text-zinc-300">
                       <span>Casillero:</span>
-                      <span className="text-zinc-900">
+                      <span className="text-zinc-900 dark:text-zinc-100">
                         {pLocker
                           ? `${pLocker.col}${pLocker.row}`
-                          : pendingRecord.lockerId}
+                          : record.lockerId}
                       </span>
                     </div>
-                    <div className="flex justify-between font-semibold text-zinc-700">
+                    <div className="flex justify-between font-semibold text-zinc-700 dark:text-zinc-300">
                       <span>Tamaño:</span>
-                      <span className="text-zinc-900">
-                        {pendingRecord.size}
+                      <span className="text-zinc-900 dark:text-zinc-100">
+                        {record.size}
                       </span>
                     </div>
                   </div>
                 );
               })()}
 
+            {pendingDeliverRecords.length > 1 && (
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 p-4 rounded-lg space-y-2 text-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                <div className="text-[10px] font-black uppercase text-zinc-400 dark:text-zinc-500 mb-1">
+                  Casilleros a Retirar ({pendingDeliverRecords.length} bultos)
+                </div>
+                <div className="max-h-[140px] overflow-y-auto">
+                  <table className="w-full text-left text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    <thead>
+                      <tr className="border-b border-zinc-200 dark:border-zinc-700 text-zinc-400 font-bold uppercase text-[9px]">
+                        <th className="pb-1">Código</th>
+                        <th className="pb-1">Casillero</th>
+                        <th className="pb-1 text-right">Medida</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700 font-medium">
+                      {pendingDeliverRecords.map((r, idx) => {
+                        const pLocker = lockers.find((l) => l.id === r.lockerId);
+                        return (
+                          <tr key={idx} className="text-zinc-800 dark:text-zinc-200">
+                            <td className="py-2 font-mono text-[11px]">{r.code}</td>
+                            <td className="py-2 text-[#1588b3] dark:text-[#00c5ff]">
+                              {pLocker ? `${pLocker.col}${pLocker.row}` : r.lockerId}
+                            </td>
+                            <td className="py-2 text-right">{r.size}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {extraAmount > 0 ? (
               <>
-                <div className="flex justify-between items-center text-sm px-1 font-semibold text-zinc-700">
+                <div className="flex justify-between items-center text-sm px-1 font-semibold text-zinc-700 dark:text-zinc-300">
                   <span>Horas adicionales:</span>
-                  <span className="font-bold text-zinc-900">
-                    {extraHours.toFixed(2)} hrs
+                  <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                    {extraHours.toFixed(2)} hrs (total)
                   </span>
                 </div>
-                <div className="flex justify-between items-center bg-white border border-zinc-300 p-4 rounded-lg select-none">
-                  <span className="font-bold text-zinc-800 text-lg">
+                <div className="flex justify-between items-center bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 p-4 rounded-lg select-none">
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200 text-lg">
                     Total extra a cobrar:
                   </span>
-                  <span className="font-black text-2xl text-rose-600">
-                    $ {extraAmount.toLocaleString("es-CL")}
+                  <span className="font-black text-2xl text-rose-600 dark:text-rose-500">
+                    {formatCurrency(extraAmount)}
                   </span>
                 </div>
               </>
             ) : (
-              <div className="flex flex-col justify-center items-center p-4 border border-zinc-300 rounded-lg bg-white select-none">
-                <span className="text-zinc-500 font-bold text-sm">
+              <div className="flex flex-col justify-center items-center p-4 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 select-none">
+                <span className="text-zinc-500 dark:text-zinc-400 font-bold text-sm">
                   Sin recargos adicionales
                 </span>
               </div>
             )}
 
-            {extraAmount > 0 && (
-              <div className="space-y-2 pt-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700">
-                  Medio de Pago
-                </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
-                      paymentMethod === "Efectivo"
-                        ? "bg-[#0a354c] text-white shadow-md"
-                        : "bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800"
-                    }`}
-                    onClick={() => setPaymentMethod("Efectivo")}
-                  >
-                    <Coins className="h-5 w-5" />
-                    Efectivo
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 transition-all cursor-pointer ${
-                      paymentMethod === "Tarjeta"
-                        ? "bg-[#1588b3] text-white shadow-md"
-                        : "bg-white border-zinc-300 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800"
-                    }`}
-                    onClick={() => setPaymentMethod("Tarjeta")}
-                  >
-                    <CreditCard className="h-5 w-5" />
-                    Tarjeta
-                  </button>
-                </div>
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                Medio de Pago
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
+                    paymentMethod === "Efectivo"
+                      ? "bg-[#0a354c] dark:bg-[#00c5ff] text-white dark:text-zinc-900 shadow-md font-black"
+                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                  onClick={() => setPaymentMethod("Efectivo")}
+                >
+                  <Coins className="h-5 w-5" />
+                  Efectivo
+                </button>
+                <button
+                  type="button"
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
+                    paymentMethod === "Tarjeta"
+                      ? "bg-[#1588b3] dark:bg-zinc-700 text-white shadow-md font-black"
+                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                  onClick={() => setPaymentMethod("Tarjeta")}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  Tarjeta
+                </button>
+              </div>
 
                 {paymentMethod === "Efectivo" && extraAmount > 0 && (
-                  <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
+                  <div className="space-y-2 mt-3 p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg animate-in fade-in slide-in-from-top-1">
                     <Label
                       htmlFor="cashReceived"
-                      className="text-[10px] font-bold uppercase tracking-wider text-zinc-600"
+                      className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
                     >
                       Efectivo Recibido
                     </Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2 text-zinc-500 text-sm font-semibold">
-                        $
+                      <span className="absolute left-3 top-2 text-zinc-500 text-[10px] font-bold">
+                        Gs.
                       </span>
                       <input
                         id="cashReceived"
@@ -951,14 +1190,14 @@ export function ClientRegistration({
                         value={
                           cashReceived === 0
                             ? ""
-                            : cashReceived.toLocaleString("es-CL")
+                            : cashReceived.toLocaleString("es-PY")
                         }
                         onChange={(e) => {
                           const val = Number(e.target.value.replace(/\D/g, ""));
                           setCashReceived(val);
                         }}
                         placeholder="Monto entregado por el cliente"
-                        className="pl-7 bg-white border border-zinc-300 rounded-md w-full h-9 text-sm font-semibold text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
+                        className="pl-10 bg-white dark:bg-zinc-850 border border-zinc-300 dark:border-zinc-700 rounded-md w-full h-9 text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#00c5ff]"
                       />
                     </div>
                     {cashReceived > 0 && (
@@ -970,7 +1209,7 @@ export function ClientRegistration({
                           className={`text-sm font-bold ${cashReceived - extraAmount >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                         >
                           {cashReceived - extraAmount >= 0
-                            ? `$ ${(cashReceived - extraAmount).toLocaleString("es-CL")}`
+                            ? `${formatCurrency(cashReceived - extraAmount)}`
                             : "Monto insuficiente"}
                         </span>
                       </div>
@@ -978,23 +1217,22 @@ export function ClientRegistration({
                   </div>
                 )}
               </div>
-            )}
           </div>
 
-          <div className="px-6 py-4 bg-zinc-200 border-t border-zinc-300 flex justify-end gap-3">
+          <div className="px-6 py-4 bg-zinc-200 dark:bg-zinc-900 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors duration-300">
             <button
               type="button"
-              className="px-4 py-2 rounded-lg border border-zinc-400 bg-white hover:bg-zinc-100 text-zinc-800 font-semibold text-sm cursor-pointer select-none"
+              className="px-4 py-2 rounded-lg border border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-sm cursor-pointer select-none transition-colors"
               onClick={() => setIsModalOpen(false)}
             >
               Cancelar
             </button>
             <button
               type="button"
-              className="px-4 py-2 rounded-lg bg-[#242424] hover:bg-[#323232] disabled:bg-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-wide cursor-pointer select-none"
+              className="px-4 py-2 rounded-lg bg-[#242424] dark:bg-zinc-800 hover:bg-[#323232] dark:hover:bg-zinc-700 disabled:bg-zinc-500 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-wide cursor-pointer select-none"
               onClick={() =>
-                pendingRecord &&
-                confirmDelivery(pendingRecord.code, extraAmount, paymentMethod)
+                pendingDeliverRecords.length > 0 &&
+                confirmDelivery(pendingDeliverRecords.map(r => r.code), extraAmount, paymentMethod)
               }
               disabled={isProcessingCard}
             >
@@ -1008,51 +1246,86 @@ export function ClientRegistration({
         </DialogContent>
       </Dialog>
 
-      {/* MULTIPLE RECORDS MODAL */}
       <Dialog open={isMultiModalOpen} onOpenChange={setIsMultiModalOpen}>
-        <DialogContent className="bg-card border-border sm:max-w-[850px] w-[95vw]">
+        <DialogContent className="bg-card dark:bg-zinc-900 border-border dark:border-zinc-800 sm:max-w-[850px] w-[95vw] text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Hash className="h-5 w-5" />
-              Múltiples Casilleros Encontrados
+            <DialogTitle className="flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
+              <Hash className="h-5 w-5 text-[#00c5ff]" />
+              Múltiples Casilleros Activos
             </DialogTitle>
-            <DialogDescription>
-              El RUT ingresado tiene varios casilleros activos. Seleccione cuál
-              desea entregar:
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+              El cliente tiene varios casilleros activos. Seleccione los que desea retirar:
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 overflow-x-auto">
+
+          <div className="py-2 overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-secondary/20">
-                <tr>
+              <thead className="text-xs text-muted-foreground dark:text-zinc-400 uppercase bg-secondary/20 dark:bg-zinc-800">
+                <tr className="border-b border-zinc-200 dark:border-zinc-700">
+                  <th className="px-4 py-2 text-center w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedDeliverRecords.length === multiRecords.length && multiRecords.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDeliverRecords(multiRecords);
+                        } else {
+                          setSelectedDeliverRecords([]);
+                        }
+                      }}
+                      className="rounded border-zinc-300 dark:border-zinc-750 text-[#00c5ff] focus:ring-[#00c5ff] cursor-pointer w-4 h-4"
+                    />
+                  </th>
                   <th className="px-4 py-2">Código</th>
                   <th className="px-4 py-2">Casillero</th>
                   <th className="px-4 py-2">Tamaño</th>
                   <th className="px-4 py-2">Entrada</th>
-                  <th className="px-4 py-2 text-right">Acción</th>
+                  <th className="px-4 py-2 text-right">Transcurrido</th>
+                  <th className="px-4 py-2 text-right">Recargo</th>
                 </tr>
               </thead>
               <tbody>
                 {multiRecords.map((r) => {
                   const locker = lockers.find((l) => l.id === r.lockerId);
+                  const isChecked = selectedDeliverRecords.some((selected) => selected.id === r.id);
+                  
+                  // Calculate elapsed time and extra charge
+                  const diffMs = Date.now() - new Date(r.entryTime).getTime();
+                  const diffHours = diffMs / (1000 * 60 * 60);
+                  let charge = 0;
+                  if (diffHours > 24) {
+                    charge = Math.ceil((diffHours - 24) / 24) * r.price;
+                  }
+
                   return (
-                    <tr key={r.id} className="border-b border-border/50">
-                      <td className="px-4 py-3 font-mono">{r.code}</td>
-                      <td className="px-4 py-3">
+                    <tr key={r.id} className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 text-zinc-800 dark:text-zinc-200">
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDeliverRecords([...selectedDeliverRecords, r]);
+                            } else {
+                              setSelectedDeliverRecords(selectedDeliverRecords.filter((selected) => selected.id !== r.id));
+                            }
+                          }}
+                          className="rounded border-zinc-300 dark:border-zinc-750 text-[#00c5ff] focus:ring-[#00c5ff] cursor-pointer w-4 h-4"
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">{r.code}</td>
+                      <td className="px-4 py-3 font-semibold text-[#1588b3] dark:text-[#00c5ff]">
                         {locker ? `${locker.col}${locker.row}` : r.lockerId}
                       </td>
-                      <td className="px-4 py-3">{r.size}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {new Date(r.entryTime).toLocaleString("es-CL")}
+                      <td className="px-4 py-3 font-bold">{r.size}</td>
+                      <td className="px-4 py-3 text-muted-foreground dark:text-zinc-400 text-xs whitespace-nowrap">
+                        {new Date(r.entryTime).toLocaleString("es-PY")}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => processDelivery(r)}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          Seleccionar
-                        </Button>
+                      <td className="px-4 py-3 text-right font-medium text-xs">
+                        {diffHours.toFixed(1)} hrs
+                      </td>
+                      <td className="px-4 py-3 text-right font-black text-rose-600 dark:text-rose-500">
+                        {charge > 0 ? formatCurrency(charge) : "Sin recargo"}
                       </td>
                     </tr>
                   );
@@ -1060,14 +1333,37 @@ export function ClientRegistration({
               </tbody>
             </table>
           </div>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setIsMultiModalOpen(false)}
-            >
-              Cancelar
-            </Button>
-          </DialogFooter>
+
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex flex-col gap-1 w-full sm:w-auto">
+              <div>Total Seleccionados: <span className="text-[#0a354c] dark:text-[#00c5ff] font-black">{selectedDeliverRecords.length} Bulto(s)</span></div>
+              {selectedDeliverStats.totalExtraAmount > 0 && (
+                <div className="text-rose-600 dark:text-rose-500">Recargo Total Acumulado: <span className="font-black">{formatCurrency(selectedDeliverStats.totalExtraAmount)}</span></div>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => setIsMultiModalOpen(false)}
+                className="bg-white dark:bg-zinc-800 hover:bg-zinc-100 text-zinc-800 dark:text-zinc-200 font-semibold"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedDeliverRecords.length === 0) {
+                    showToast("Por favor seleccione al menos un casillero", "warning");
+                    return;
+                  }
+                  setIsMultiModalOpen(false);
+                  processDelivery(selectedDeliverRecords);
+                }}
+                className="bg-[#0a354c] hover:bg-[#1588b3] text-white font-extrabold"
+              >
+                Retirar Seleccionados ({selectedDeliverRecords.length})
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
