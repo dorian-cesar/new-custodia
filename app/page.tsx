@@ -185,9 +185,9 @@ export default function CustodyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex flex-col items-center py-3 md:py-4 px-3 md:px-4 md:overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex flex-col items-center py-3 md:py-4 px-3 md:px-4 lg:overflow-hidden transition-colors duration-300">
       {/* Main Cashier Card */}
-      <div className="w-full max-w-[720px] md:max-w-[1330px] md:h-[calc(100vh-32px)] bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4 transition-colors duration-300">
+      <div className="w-full max-w-[720px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4 transition-colors duration-300">
         {/* Header inside Card */}
         <Header showHistory showCash />
 

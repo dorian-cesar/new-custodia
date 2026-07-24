@@ -44,11 +44,11 @@ export function LockerGrid({
     : allSectors;
 
   return (
-    <div className="bg-[#e6e6e7] dark:bg-zinc-900 p-2 flex flex-col items-center w-full md:flex-1 md:h-full md:min-h-0 gap-2 transition-colors duration-300">
+    <div className="bg-[#e6e6e7] dark:bg-zinc-900 p-2 flex flex-col items-center w-full lg:flex-1 lg:h-full lg:min-h-0 gap-2 transition-colors duration-300">
       {/* Grid de Sectores */}
       <div className={cn(
-        "w-full grid gap-3 max-w-none md:flex-1 md:min-h-0 md:h-full",
-        selectedSize === "XXL" ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+        "w-full grid gap-3 max-w-none lg:flex-1 lg:h-full lg:min-h-0",
+        selectedSize === "XXL" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
       )}>
         {sectors.map((sector) => {
           const colCode = `${sector.key}${selectedSize}`;
@@ -65,7 +65,7 @@ export function LockerGrid({
           return (
             <div
               key={sector.key}
-              className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-3 rounded-xl border border-zinc-300 dark:border-zinc-700 shadow-sm flex flex-col gap-2 md:flex-1 md:min-h-0 md:h-full transition-colors duration-300"
+              className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-3 rounded-xl border border-zinc-300 dark:border-zinc-700 shadow-sm flex flex-col gap-2 lg:flex-1 lg:h-full lg:min-h-0 transition-colors duration-300"
             >
               <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-700 pb-1.5">
                 <span className="font-extrabold text-[11px] text-[#0a354c] dark:text-[#00c5ff] tracking-widest uppercase">
@@ -75,7 +75,7 @@ export function LockerGrid({
                   Disp: {availableCount} / {sectorLockers.length}
                 </span>
               </div>
-              <div className="grid gap-1.5 content-start md:flex-1 md:min-h-0 md:h-full grid-cols-6">
+              <div className="grid gap-1.5 content-start lg:flex-1 lg:h-full lg:min-h-0 grid-cols-6">
                 {sectorLockers.map((locker) => {
                   const isOccupied = locker.isOccupied;
                   const isSelected = selectedItems.some((item) => item.lockerId === locker.id);

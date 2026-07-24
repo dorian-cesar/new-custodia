@@ -64,9 +64,9 @@ export function LockerSelection({
   const row2 = sizesToShow.slice(3); // XL, XXL
 
   return (
-    <div className="bg-[#e6e6e7] dark:bg-zinc-900 px-4 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch md:h-full md:min-h-0 transition-colors duration-300">
+    <div className="bg-[#e6e6e7] dark:bg-zinc-900 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch lg:h-full lg:min-h-0 transition-colors duration-300">
       {/* Columna Izquierda: Tamaño y Registro del Cliente */}
-      <div className="md:col-span-5 flex flex-col gap-3 w-full">
+      <div className="lg:col-span-5 flex flex-col gap-3 w-full">
         {/* TAMAÑO DEL EQUIPAJE */}
         <div>
           <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
@@ -168,8 +168,8 @@ export function LockerSelection({
       </div>
 
       {/* Columna Derecha: Casilleros */}
-      <div className="md:col-span-7 flex flex-col gap-4 w-full md:h-full md:min-h-0">
-        <div className="flex-1 flex flex-col min-h-0 md:h-full">
+      <div className="lg:col-span-7 flex flex-col gap-4 w-full lg:h-full lg:min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 lg:h-full">
           <div className="bg-[#242424] dark:bg-zinc-800 text-white py-1 px-4 text-xs font-bold uppercase tracking-wider mb-2">
             CASILLEROS
           </div>
