@@ -474,35 +474,40 @@ export const printerService = {
       await writeBytes(ESC_INIT);
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_BOLD_ON);
+      await writeText("   C U S T O D I A   \n");
+      await writeBytes(ESC_BOLD_OFF);
+      await writeText("EQUIPAJE & OBJETOS DE VALOR\n");
+      await writeText("------------------------------------------------\n");
+      await writeBytes(ESC_BOLD_ON);
       await writeText("COMPROBANTE DE PAGO\n");
       await writeText(isCash ? "VENTA EFECTIVO\n" : "VENTA TARJETA / POS\n");
       await writeBytes(ESC_BOLD_OFF);
       await writeText("------------------------------------------------\n\n");
-      
       await writeBytes(ESC_ALIGN_LEFT);
-      await writeText(`Comercio:    Custodia Equipaje\n`);
-      await writeText(`Ticket/Doc:  ${data.ticketNumber}\n`);
+      await writeText(`Documento:   ${data.ticketNumber}\n`);
       await writeText(`Fecha/Hora:  ${printTime}\n`);
-      await writeText("------------------------------------------------\n");
-      
-      if (isCash) {
-        await writeText(`Medio Pago:  EFECTIVO\n`);
-      } else {
-        await writeText(`N° Operacion:${data.operationNumber}\n`);
-        await writeText(`Cod. Autoriz:${data.authorizationCode}\n`);
+      if (!isCash) {
+        await writeText(`N° Operacion: ${data.operationNumber}\n`);
       }
-      await writeText("------------------------------------------------\n\n");
+      await writeText("------------------------------------------------\n");
 
       if (data.items && data.items.length > 0) {
         await writeBytes(ESC_ALIGN_LEFT);
         await writeText("DETALLE:\n");
-        for (let i = 0; i < data.items.length; i++) {
-          const item = data.items[i];
-          const label = `${i + 1}. Equipaje ${item.size}`;
-          const priceText = formatCurrency(item.price);
+        const grp: Record<string, { qty: number; unitPrice: number }> = {};
+        for (const item of data.items) {
+          if (!grp[item.size]) grp[item.size] = { qty: 0, unitPrice: item.price };
+          grp[item.size].qty += 1;
+        }
+        let lineIdx = 1;
+        for (const [sz, { qty, unitPrice }] of Object.entries(grp) as [string, { qty: number; unitPrice: number }][]) {
+          const subtotal = qty * unitPrice;
+          const label = `${lineIdx}. Equipaje ${sz}  x${qty}`;
+          const priceText = formatCurrency(subtotal);
           const spaces = 48 - label.length - priceText.length;
           const pad = spaces > 0 ? " ".repeat(spaces) : " ";
           await writeText(`${label}${pad}${priceText}\n`);
+          lineIdx++;
         }
         await writeText("------------------------------------------------\n");
         const totalLabel = "TOTAL";
@@ -532,6 +537,11 @@ export const printerService = {
       await writeText("PAGO PROCESADO CON EXITO\n");
       await writeBytes(ESC_BOLD_OFF);
       await writeText("Copia Cliente\n");
+      await writeText("\n");
+      await writeBytes(ESC_BOLD_ON);
+      await writeText(" \u00a1MUCHAS GRACIAS! \n");
+      await writeBytes(ESC_BOLD_OFF);
+      await writeText("Vuelva pronto · Custodia Equipaje\n");
       await writeBytes(ESC_CUT);
       return true;
     } catch (err) {
