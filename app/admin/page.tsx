@@ -19,6 +19,7 @@ import {
   DollarSign,
   Calendar,
   TrendingUp,
+  Luggage,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { formatCurrency } from "@/lib/utils";
 
 interface UserRow {
   id: number;
@@ -192,44 +194,44 @@ export default function AdminPage() {
 
   if (!currentUser || currentUser.role !== "supervisor") {
     return (
-      <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4 font-sans select-none">
-        <div className="bg-[#d7d7d8] w-full max-w-md rounded-lg border border-zinc-400 shadow-xl overflow-hidden flex flex-col pb-6 text-center">
-          <div className="bg-white py-6 border-b-2 border-zinc-300 text-center flex flex-col items-center gap-1.5">
+      <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4 font-sans select-none transition-colors duration-300">
+        <div className="bg-[#e6e6e7] dark:bg-zinc-900 w-full max-w-md rounded-lg border border-zinc-300 dark:border-zinc-800 shadow-xl overflow-hidden flex flex-col pb-6 text-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <div className="bg-white dark:bg-zinc-850 py-6 border-b-2 border-zinc-350 dark:border-zinc-800 text-center flex flex-col items-center gap-1.5 transition-colors">
             <div className="flex items-center">
               <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
-                <span className="text-[#0a354c] leading-none">n</span>
+                <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">n</span>
                 <span
-                  className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
+                  className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] dark:border-[#00c5ff] mx-0.5 align-middle"
                   style={{ borderWidth: "3.5px" }}
                 />
-                <span className="text-[#0a354c] leading-none">d</span>
+                <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">d</span>
                 <span
-                  className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
+                  className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] dark:border-[#00c5ff] mx-0.5 align-middle"
                   style={{ borderWidth: "3.5px" }}
                 />
               </span>
             </div>
-            <h1 className="text-xl font-bold tracking-wider text-[#242424] leading-tight">
+            <h1 className="text-xl font-bold tracking-wider text-[#242424] dark:text-zinc-200 leading-tight">
               CUSTODIA
             </h1>
-            <p className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">
+            <p className="text-[9px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider">
               Sistema de Control de Casilleros
             </p>
           </div>
 
           <div className="px-6 py-6 flex flex-col items-center gap-4">
-            <div className="bg-red-100 text-red-600 p-3 rounded-full">
+            <div className="bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-3 rounded-full">
               <Shield className="h-8 w-8" />
             </div>
-            <h2 className="text-base font-black text-[#242424] uppercase tracking-wider">
+            <h2 className="text-base font-black text-[#242424] dark:text-zinc-200 uppercase tracking-wider">
               Acceso Restringido
             </h2>
-            <p className="text-xs text-zinc-600 font-semibold">
+            <p className="text-xs text-zinc-650 dark:text-zinc-400 font-semibold">
               Solo los supervisores pueden acceder al panel de administración.
             </p>
             <Button
               onClick={() => router.push("/")}
-              className="w-full bg-[#242424] hover:bg-zinc-800 text-white font-bold h-10 text-xs uppercase mt-2"
+              className="w-full bg-[#242424] dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-bold h-10 text-xs uppercase mt-2 transition-colors"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver al Inicio
@@ -479,21 +481,21 @@ export default function AdminPage() {
     .reduce((sum, t) => sum + t.amount, 0);
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
-      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden transition-colors duration-300">
+      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4 transition-colors duration-300">
         <Header showBack />
 
         <main className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto min-h-0">
           {/* ── Supervisor Dashboard ── */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2">
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2 transition-colors duration-300">
               <Box className="h-4 w-4" />
-              <span>Ocupación Actual y Estadísticas</span>
+              <span>Ocupación Actual</span>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1 bg-white border border-zinc-300 rounded-xl p-6 shadow-sm flex flex-col justify-center items-center h-[300px]">
-                <h2 className="text-xs font-bold text-zinc-700 mb-4 w-full flex items-center gap-2 uppercase tracking-wide">
+              <div className="lg:col-span-1 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-6 shadow-sm flex flex-col justify-center items-center h-[300px] text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                <h2 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-4 w-full flex items-center gap-2 uppercase tracking-wide">
                   <Box className="h-4 w-4 text-zinc-500" />
                   Estado de Casilleros
                 </h2>
@@ -534,35 +536,43 @@ export default function AdminPage() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <Shield className="h-3.5 w-3.5" /> Total Casilleros
                   </h3>
-                  <p className="text-3xl font-black text-[#242424]">
+                  <p className="text-3xl font-black text-[#242424] dark:text-[#00c5ff]">
                     {lockers.length}
                   </p>
                 </div>
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <Box className="h-3.5 w-3.5 text-[#00c5ff]" /> Disponibles
                   </h3>
                   <p className="text-3xl font-black text-[#00c5ff]">
                     {lockers.filter((l) => !l.isOccupied).length}
                   </p>
                 </div>
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <Users className="h-3.5 w-3.5 text-[#4e4e4e]" /> Ocupados
                   </h3>
-                  <p className="text-3xl font-black text-[#4e4e4e]">
+                  <p className="text-3xl font-black text-[#4e4e4e] dark:text-zinc-350">
                     {lockers.filter((l) => l.isOccupied).length}
                   </p>
                 </div>
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-red-600" /> Vencidos (+24
-                    Hrs)
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Luggage className="h-3.5 w-3.5 text-amber-500" /> Total Equipajes
+                  </h3>
+                  <p className="text-3xl font-black text-amber-500">
+                    {records.filter((r) => r.status === "Activo").length}
+                  </p>
+                  <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-semibold mt-0.5">En custodia activa</p>
+                </div>
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-red-655" /> Vencidos (+24 Hrs)
                   </h3>
                   <p className="text-3xl font-black text-red-600">
                     {
@@ -582,44 +592,43 @@ export default function AdminPage() {
 
           {/* ── Income Metrics ── */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2 transition-colors duration-300">
+              <DollarSign className="h-4 w-4 text-[#00c5ff]" />
               <span>Resumen de Recaudación</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-zinc-300 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group">
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
                 <div className="absolute -right-6 -top-6 text-[#00c5ff]/10 group-hover:scale-110 transition-transform duration-300">
                   <DollarSign className="w-32 h-32" />
                 </div>
-                <h3 className="text-xs font-extrabold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-[#00c5ff]" /> Ingresos Hoy
                 </h3>
-                <p className="text-2xl font-black text-zinc-800 relative z-10">
-                  $ {ingresosHoy.toLocaleString("es-CL")}
+                <p className="text-2xl font-black text-zinc-800 dark:text-zinc-100 relative z-10">
+                  {formatCurrency(ingresosHoy)}
                 </p>
               </div>
-              <div className="bg-white border border-zinc-300 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group">
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
                 <div className="absolute -right-6 -top-6 text-[#0a354c]/10 group-hover:scale-110 transition-transform duration-300">
                   <Calendar className="w-32 h-32" />
                 </div>
-                <h3 className="text-xs font-extrabold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-[#0a354c]" /> Últimos 7 Días
+                <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-[#0a354c] dark:text-[#00c5ff]" /> Últimos 7 Días
                 </h3>
-                <p className="text-2xl font-black text-[#0a354c] relative z-10">
-                  $ {ingresosSemana.toLocaleString("es-CL")}
+                <p className="text-2xl font-black text-[#0a354c] dark:text-[#00c5ff] relative z-10">
+                  {formatCurrency(ingresosSemana)}
                 </p>
               </div>
-              <div className="bg-white border border-zinc-300 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group">
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
                 <div className="absolute -right-6 -top-6 text-[#1588b3]/10 group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="w-32 h-32" />
                 </div>
-                <h3 className="text-xs font-extrabold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-[#1588b3]" /> Últimos 30
-                  Días
+                <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-[#1588b3] dark:text-[#00c5ff]" /> Últimos 30 Días
                 </h3>
-                <p className="text-2xl font-black text-[#1588b3] relative z-10">
-                  $ {ingresosMes.toLocaleString("es-CL")}
+                <p className="text-2xl font-black text-[#1588b3] dark:text-[#00c5ff] relative z-10">
+                  {formatCurrency(ingresosMes)}
                 </p>
               </div>
             </div>
@@ -746,9 +755,9 @@ export default function AdminPage() {
 
           {/* ── Prices Section ── */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between">
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between transition-colors duration-300">
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <Shield className="h-4 w-4 text-[#00c5ff]" />
                 <span>Precios de Casilleros</span>
               </div>
               <Button
@@ -756,16 +765,16 @@ export default function AdminPage() {
                   setPriceError("");
                   setShowCreatePriceDialog(true);
                 }}
-                className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border border-zinc-300 hover:bg-zinc-100"
+                className="h-7 text-[10px] uppercase font-bold bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Nuevo Tamaño
               </Button>
             </div>
 
-            <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+            <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
               <Table>
-                <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                <TableHeader className="bg-[#242424] dark:bg-zinc-850 hover:bg-[#242424] dark:hover:bg-zinc-850">
                   <TableRow className="hover:bg-transparent border-none">
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
                       TAMAÑO
@@ -782,13 +791,13 @@ export default function AdminPage() {
                   {lockerSizes.map((sizeObj) => (
                     <TableRow
                       key={sizeObj.value}
-                      className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50"
+                      className="border-b border-zinc-200 dark:border-zinc-700 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/50"
                     >
-                      <TableCell className="text-zinc-800 font-bold text-xs py-3">
+                      <TableCell className="text-zinc-800 dark:text-zinc-200 font-bold text-xs py-3">
                         {sizeObj.label}
                       </TableCell>
-                      <TableCell className="text-zinc-800 font-black text-xs py-3">
-                        $ {sizeObj.price.toLocaleString("es-CL")}
+                      <TableCell className="text-zinc-800 dark:text-zinc-200 font-black text-xs py-3">
+                        {formatCurrency(sizeObj.price)}
                       </TableCell>
                       <TableCell className="text-right py-3">
                         <div className="flex items-center justify-end gap-2">
@@ -796,7 +805,7 @@ export default function AdminPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => openEditPriceDialog(sizeObj)}
-                            className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100"
+                            className="h-7 text-[10px] uppercase font-bold bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                           >
                             <Pencil className="h-3 w-3 mr-1" />
                             Modificar
@@ -811,11 +820,11 @@ export default function AdminPage() {
                               });
                               setShowDeletePriceDialog(true);
                             }}
-                            className="h-7 text-[10px] uppercase font-bold bg-white text-red-600 border-red-200 hover:bg-red-50 hover:text-red-600"
+                            className="h-7 text-[10px] uppercase font-bold bg-white dark:bg-zinc-800 text-red-600 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600"
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
                             Eliminar
-                          </Button>
+</Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -827,14 +836,14 @@ export default function AdminPage() {
 
           {/* ── Cash Register Supervision / Session History Section ── */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2">
-              <History className="h-4 w-4" />
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2 transition-colors duration-300">
+              <History className="h-4 w-4 text-[#00c5ff]" />
               <span>Historial de Turnos y Cajas</span>
             </div>
 
-            <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+            <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
               <Table>
-                <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                <TableHeader className="bg-[#242424] dark:bg-zinc-855 hover:bg-[#242424] dark:hover:bg-zinc-855">
                   <TableRow className="hover:bg-transparent border-none">
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
                       CAJERO
@@ -928,59 +937,56 @@ export default function AdminPage() {
                       return (
                         <TableRow
                           key={register.id}
-                          className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50"
+                          className="border-b border-zinc-205 dark:border-zinc-700 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/50"
                         >
-                          <TableCell className="text-zinc-800 font-bold text-xs py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-bold text-xs py-3">
                             {register.openedBy || "desconocido"}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-semibold text-[10px] py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-350 font-semibold text-[10px] py-3">
                             {formatDateTime(register.openedAt)}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-semibold text-[10px] py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-350 font-semibold text-[10px] py-3">
                             {register.closedAt ? (
                               formatDateTime(register.closedAt)
                             ) : (
-                              <span className="text-emerald-600 font-bold uppercase text-[9px]">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[9px]">
                                 Activo ahora
                               </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-medium text-xs text-right py-3">
-                            $ {register.openingAmount.toLocaleString()}
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-medium text-xs text-right py-3">
+                            {formatCurrency(register.openingAmount)}
                           </TableCell>
-                          <TableCell className="text-amber-600 font-semibold text-xs text-right py-3">
-                            $ {ingresosEfectivo.toLocaleString()}
+                          <TableCell className="text-amber-600 dark:text-amber-400 font-semibold text-xs text-right py-3">
+                            {formatCurrency(ingresosEfectivo)}
                           </TableCell>
-                          <TableCell className="text-blue-600 font-semibold text-xs text-right py-3">
-                            $ {ingresosTarjeta.toLocaleString()}
+                          <TableCell className="text-blue-600 dark:text-blue-400 font-semibold text-xs text-right py-3">
+                            {formatCurrency(ingresosTarjeta)}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-extrabold text-xs text-right py-3">
-                            ${" "}
-                            {(
-                              ingresosEfectivo + ingresosTarjeta
-                            ).toLocaleString()}
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-extrabold text-xs text-right py-3">
+                            {formatCurrency(ingresosEfectivo + ingresosTarjeta)}
                           </TableCell>
-                          <TableCell className="text-red-650 font-medium text-xs text-right py-3">
-                            $ {gastosEfectivo.toLocaleString()}
+                          <TableCell className="text-red-650 dark:text-red-400 font-medium text-xs text-right py-3">
+                            {formatCurrency(gastosEfectivo)}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-black text-xs text-right py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-black text-xs text-right py-3">
                             {register.closingAmount !== null
-                              ? `$ ${register.closingAmount.toLocaleString()}`
+                              ? formatCurrency(register.closingAmount)
                               : "-"}
                           </TableCell>
                           <TableCell className="text-right py-3">
                             {diferenciaCaja !== null ? (
                               <span
-                                className={`text-[10px] font-black ${diferenciaCaja === 0 ? "text-emerald-600" : diferenciaCaja > 0 ? "text-blue-600" : "text-red-600"}`}
+                                className={`text-[10px] font-black ${diferenciaCaja === 0 ? "text-emerald-600 dark:text-emerald-400" : diferenciaCaja > 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}
                               >
                                 {diferenciaCaja === 0
                                   ? "Cuadrada"
                                   : diferenciaCaja > 0
-                                    ? `Sobrante: +$ ${diferenciaCaja.toLocaleString()}`
-                                    : `Faltante: -$ ${Math.abs(diferenciaCaja).toLocaleString()}`}
+                                    ? `Sobrante: +${formatCurrency(diferenciaCaja)}`
+                                    : `Faltante: -${formatCurrency(Math.abs(diferenciaCaja))}`}
                               </span>
                             ) : (
-                              <span className="text-zinc-500 font-semibold">
+                              <span className="text-zinc-500 dark:text-zinc-400 font-semibold">
                                 -
                               </span>
                             )}
@@ -989,8 +995,8 @@ export default function AdminPage() {
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                                 register.status === "open"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-zinc-100 text-zinc-500"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
+                                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
                               }`}
                             >
                               {register.status === "open"
@@ -999,7 +1005,7 @@ export default function AdminPage() {
                             </span>
                           </TableCell>
                           <TableCell
-                            className="text-zinc-500 font-medium text-xs max-w-[150px] truncate py-3"
+                            className="text-zinc-500 dark:text-zinc-400 font-medium text-xs max-w-[150px] truncate py-3"
                             title={register.notes}
                           >
                             {register.notes || "-"}
@@ -1010,7 +1016,7 @@ export default function AdminPage() {
                   )}
                 </TableBody>
               </Table>
-              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
+              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 font-semibold transition-colors duration-300">
                 <div>
                   Mostrando{" "}
                   {Math.min(
@@ -1032,7 +1038,7 @@ export default function AdminPage() {
                       setCurrentPageRegisters((p) => Math.max(1, p - 1))
                     }
                     disabled={currentPageRegisters === 1}
-                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                    className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
                   >
                     Anterior
                   </Button>
@@ -1048,7 +1054,7 @@ export default function AdminPage() {
                       currentPageRegisters >= totalRegisterPages ||
                       totalRegisterPages === 0
                     }
-                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                    className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
                   >
                     Siguiente
                   </Button>
@@ -1061,19 +1067,19 @@ export default function AdminPage() {
 
       {/* ── Create User Dialog ── */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <Plus className="h-4 w-4" />
+        <DialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <DialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
+              <Plus className="h-4 w-4 text-[#00c5ff]" />
               <span>Crear Nuevo Usuario</span>
             </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
+            <DialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
               Ingrese los datos del nuevo usuario del sistema.
             </DialogDescription>
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
                 Nombre de Usuario
               </Label>
               <Input
@@ -1081,11 +1087,11 @@ export default function AdminPage() {
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 placeholder="ej. cajero2"
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
                 Contraseña
               </Label>
               <Input
@@ -1093,40 +1099,40 @@ export default function AdminPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="••••••••"
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
                 Rol
               </Label>
               <Select value={newRole} onValueChange={setNewRole}>
-                <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]">
+                <SelectTrigger className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="cajero">Cajero</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                <SelectContent className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700">
+                  <SelectItem value="cajero" className="dark:hover:bg-zinc-700">Cajero</SelectItem>
+                  <SelectItem value="supervisor" className="dark:hover:bg-zinc-700">Supervisor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {createError && (
-              <p className="text-xs text-red-600 font-bold">{createError}</p>
+              <p className="text-xs text-red-650 font-bold">{createError}</p>
             )}
           </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+          <DialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
             <Button
               variant="outline"
               onClick={() => setShowCreateDialog(false)}
               disabled={isCreating}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleCreate}
               disabled={isCreating}
-              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
+              className="bg-[#242424] dark:bg-zinc-750 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
             >
               {isCreating ? "Creando..." : "Crear Usuario"}
             </Button>
@@ -1136,31 +1142,31 @@ export default function AdminPage() {
 
       {/* ── Edit User Dialog ── */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <Pencil className="h-4 w-4" />
+        <DialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <DialogHeader className="bg-[#242424] dark:bg-zinc-855 text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
+              <Pencil className="h-4 w-4 text-[#00c5ff]" />
               <span>Editar Usuario</span>
             </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
+            <DialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
               Modifique los datos. Deje la contraseña vacía para mantener la
               actual.
             </DialogDescription>
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-350 font-bold text-xs uppercase tracking-wide">
                 Nombre de Usuario
               </Label>
               <Input
                 type="text"
                 value={editUsername}
                 onChange={(e) => setEditUsername(e.target.value)}
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-350 font-bold text-xs uppercase tracking-wide">
                 Nueva Contraseña (opcional)
               </Label>
               <Input
@@ -1168,40 +1174,40 @@ export default function AdminPage() {
                 value={editPassword}
                 onChange={(e) => setEditPassword(e.target.value)}
                 placeholder="Dejar vacío para no cambiar"
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-350 font-bold text-xs uppercase tracking-wide">
                 Rol
               </Label>
               <Select value={editRole} onValueChange={setEditRole}>
-                <SelectTrigger className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]">
+                <SelectTrigger className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="cajero">Cajero</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                <SelectContent className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700">
+                  <SelectItem value="cajero" className="dark:hover:bg-zinc-700">Cajero</SelectItem>
+                  <SelectItem value="supervisor" className="dark:hover:bg-zinc-700">Supervisor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {editError && (
-              <p className="text-xs text-red-600 font-bold">{editError}</p>
+              <p className="text-xs text-red-650 font-bold">{editError}</p>
             )}
           </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+          <DialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
             <Button
               variant="outline"
               onClick={() => setShowEditDialog(false)}
               disabled={isEditing}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleEdit}
               disabled={isEditing}
-              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
+              className="bg-[#242424] dark:bg-zinc-750 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
             >
               {isEditing ? "Guardando..." : "Guardar Cambios"}
             </Button>
@@ -1211,28 +1217,28 @@ export default function AdminPage() {
 
       {/* ── Delete Confirmation ── */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm">
-          <AlertDialogHeader className="bg-[#242424] text-white p-4">
-            <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+        <AlertDialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <AlertDialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
+            <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
               <Trash2 className="h-4 w-4 text-red-500" />
               <span>Eliminar Usuario</span>
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-300 text-xs mt-1">
+            <AlertDialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
               ¿Está seguro que desea eliminar al usuario{" "}
               <strong className="text-white">{deletingUser?.username}</strong>?
               Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+          <AlertDialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
             <AlertDialogCancel
               disabled={isDeleting}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs uppercase"
+              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs uppercase"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-650 hover:bg-red-750 text-white font-bold h-9 text-xs uppercase"
+              className="bg-red-650 hover:bg-red-750 text-white font-bold h-9 text-xs uppercase transition-colors"
               disabled={isDeleting}
             >
               {isDeleting ? "Eliminando..." : "Eliminar"}
@@ -1243,38 +1249,38 @@ export default function AdminPage() {
 
       {/* ── Edit Price Dialog ── */}
       <Dialog open={showEditPriceDialog} onOpenChange={setShowEditPriceDialog}>
-        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <Pencil className="h-4 w-4" />
+        <DialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <DialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
+              <Pencil className="h-4 w-4 text-[#00c5ff]" />
               <span>Modificar Tamaño y Precio</span>
             </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
+            <DialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
               Edite el nombre o precio para el tamaño{" "}
               <strong className="text-white">{editingSize?.size}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
                 Nombre / Descripción
               </Label>
               <Input
                 type="text"
                 value={editLabel}
                 onChange={(e) => setEditLabel(e.target.value)}
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Precio ($)
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
+                Precio (Gs.)
               </Label>
               <Input
                 type="number"
                 value={editPrice}
                 onChange={(e) => setEditPrice(e.target.value)}
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
+                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
                 min="0"
                 step="100"
               />
@@ -1283,19 +1289,19 @@ export default function AdminPage() {
               <p className="text-xs text-red-600 font-bold">{priceError}</p>
             )}
           </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+          <DialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
             <Button
               variant="outline"
               onClick={() => setShowEditPriceDialog(false)}
               disabled={isSavingPrice}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
+              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleEditPrice}
               disabled={isSavingPrice}
-              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
+              className="bg-[#242424] dark:bg-zinc-750 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
             >
               {isSavingPrice ? "Guardando..." : "Guardar Cambios"}
             </Button>
@@ -1384,29 +1390,28 @@ export default function AdminPage() {
         open={showDeletePriceDialog}
         onOpenChange={setShowDeletePriceDialog}
       >
-        <AlertDialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm">
-          <AlertDialogHeader className="bg-[#242424] text-white p-4">
-            <Trash2 className="h-4 w-4 text-red-500" />
-            <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+        <AlertDialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <AlertDialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
+            <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
+              <Trash2 className="h-4 w-4 text-red-500" />
               <span>Eliminar Tamaño</span>
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-300 text-xs mt-1">
+            <AlertDialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
               ¿Está seguro que desea eliminar el tamaño{" "}
               <strong className="text-white">{deletingSize?.label}</strong>?
-              Esta acción eliminará la tarifa, pero los casilleros existentes no
-              se verán afectados directamente.
+              Esta acción eliminará la tarifa, pero los casilleros existentes no se verán afectados directamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+          <AlertDialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
             <AlertDialogCancel
               disabled={isSavingPrice}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs uppercase"
+              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs uppercase"
             >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeletePrice}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold h-9 text-xs uppercase"
+              className="bg-red-650 hover:bg-red-750 text-white font-bold h-9 text-xs uppercase transition-colors"
               disabled={isSavingPrice}
             >
               {isSavingPrice ? "Eliminando..." : "Eliminar"}
