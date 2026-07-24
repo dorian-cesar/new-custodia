@@ -1,6 +1,7 @@
 "use client";
 
 import React, { forwardRef } from "react";
+import { formatCurrency } from "@/lib/utils";
 
 interface TransbankVoucherProps {
   data: {
@@ -35,7 +36,7 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
 
     const printTime = data.timestamp 
       ? formatTimestamp(data.timestamp) 
-      : new Date().toLocaleString("es-CL");
+      : new Date().toLocaleString("es-PY");
 
     return (
       <div style={{ display: "none" }}>
@@ -89,7 +90,7 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
 
           <div style={{ textAlign: "right", marginBottom: "15px" }}>
             <p style={{ margin: "3px 0", fontSize: "15px", fontWeight: "bold" }}>
-              TOTAL: $ {data.amount.toLocaleString("es-CL")}
+              TOTAL: {formatCurrency(data.amount)}
             </p>
           </div>
 

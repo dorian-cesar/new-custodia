@@ -4,6 +4,7 @@ import React, { forwardRef, useEffect, useRef } from "react";
 import { type CustodyRecord, formatDateTime } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
 import JsBarcode from "jsbarcode";
+import { formatCurrency } from "@/lib/utils";
 
 interface TicketProps {
   record: CustodyRecord | null;
@@ -121,8 +122,8 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(
           <div style={{ textAlign: "right", marginBottom: "15px" }}>
             <p style={{ margin: "3px 0", fontSize: "14px" }}>
               <strong>
-                Pagado ({paymentMethod || "Efectivo"}): ${" "}
-                {record.price.toLocaleString("es-CL")}
+                Pagado ({paymentMethod || "Efectivo"}):{" "}
+                {formatCurrency(record.price)}
               </strong>
             </p>
           </div>

@@ -2,6 +2,7 @@
 
 import React, { forwardRef } from "react";
 import { formatDateTime } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 interface WithdrawalTicketProps {
   data: {
@@ -84,7 +85,7 @@ export const WithdrawalTicket = forwardRef<
               fontWeight: "bold",
             }}
           >
-            ${data.amount.toLocaleString("es-CL")}
+            {formatCurrency(data.amount)}
           </p>
         </div>
 

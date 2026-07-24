@@ -3,6 +3,7 @@
 import React, { forwardRef } from "react";
 import { type CustodyRecord, formatDateTime } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
+import { formatCurrency } from "@/lib/utils";
 
 interface DeliveryTicketProps {
   record: CustodyRecord | null;
@@ -133,7 +134,7 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
 
           <div style={{ textAlign: "right", marginBottom: "5px" }}>
             <p style={{ margin: "3px 0", fontSize: "12px" }}>
-              Base Pagada: $ {record.price.toLocaleString("es-CL")}
+              Base Pagada: {formatCurrency(record.price)}
             </p>
             {extraAmount > 0 && (
               <>
@@ -147,7 +148,7 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
                     fontWeight: "bold",
                   }}
                 >
-                  Recargo: $ {extraAmount.toLocaleString("es-CL")}
+                  Recargo: {formatCurrency(extraAmount)}
                 </p>
               </>
             )}

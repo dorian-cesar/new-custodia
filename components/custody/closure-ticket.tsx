@@ -2,6 +2,7 @@
 
 import React, { forwardRef } from "react";
 import { formatDateTime } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 interface ClosureTicketProps {
   data: {
@@ -27,8 +28,8 @@ export const ClosureTicket = forwardRef<HTMLDivElement, ClosureTicketProps>(
       data.difference === 0
         ? "CUADRADA ✓"
         : data.difference > 0
-          ? `SOBRANTE: +$${data.difference.toLocaleString("es-CL")}`
-          : `FALTANTE: -$${Math.abs(data.difference).toLocaleString("es-CL")}`;
+          ? `SOBRANTE: +${formatCurrency(data.difference)}`
+          : `FALTANTE: -${formatCurrency(Math.abs(data.difference))}`;
 
     const diffColor =
       data.difference === 0 ? "black" : data.difference > 0 ? "blue" : "red";
@@ -86,16 +87,16 @@ export const ClosureTicket = forwardRef<HTMLDivElement, ClosureTicketProps>(
 
           <div style={{ marginBottom: "10px" }}>
             <p style={{ margin: "3px 0" }}>
-              Monto Inicial: ${data.openingAmount.toLocaleString("es-CL")}
+              Monto Inicial: {formatCurrency(data.openingAmount)}
             </p>
             <p style={{ margin: "3px 0" }}>
-              Ventas Efectivo: ${data.salesCash.toLocaleString("es-CL")}
+              Ventas Efectivo: {formatCurrency(data.salesCash)}
             </p>
             <p style={{ margin: "3px 0" }}>
-              Ventas Tarjeta: ${data.salesCard.toLocaleString("es-CL")}
+              Ventas Tarjeta: {formatCurrency(data.salesCard)}
             </p>
             <p style={{ margin: "3px 0" }}>
-              Retiros: -${data.withdrawals.toLocaleString("es-CL")}
+              Retiros: -{formatCurrency(data.withdrawals)}
             </p>
           </div>
 
@@ -105,12 +106,10 @@ export const ClosureTicket = forwardRef<HTMLDivElement, ClosureTicketProps>(
 
           <div style={{ marginBottom: "10px" }}>
             <p style={{ margin: "3px 0" }}>
-              <strong>Monto Esperado:</strong> $
-              {data.expectedAmount.toLocaleString("es-CL")}
+              <strong>Monto Esperado:</strong> {formatCurrency(data.expectedAmount)}
             </p>
             <p style={{ margin: "3px 0" }}>
-              <strong>Monto Declarado:</strong> $
-              {data.declaredAmount.toLocaleString("es-CL")}
+              <strong>Monto Declarado:</strong> {formatCurrency(data.declaredAmount)}
             </p>
             <p style={{ margin: "3px 0", color: diffColor }}>
               <strong>Diferencia:</strong> {diffText}
