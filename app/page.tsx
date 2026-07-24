@@ -204,12 +204,6 @@ export default function CustodyPage() {
           {/* General Stats */}
           <div className="flex items-center gap-3.5 w-full lg:w-auto justify-center lg:justify-start">
             <div className="flex items-center gap-1.5">
-              <Package className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-              <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Ocupados:</span>
-              <span className="text-sm font-black text-[#242424] dark:text-zinc-100">{lockers.filter((l) => l.isOccupied).length}</span>
-            </div>
-            <div className="h-3.5 w-px bg-zinc-300 dark:bg-zinc-700" />
-            <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-extrabold text-[#00c5ff] uppercase tracking-wider">Libres:</span>
               <span className="text-sm font-black text-[#00c5ff]">{lockers.filter((l) => !l.isOccupied).length}</span>
             </div>
