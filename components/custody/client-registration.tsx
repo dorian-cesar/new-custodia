@@ -390,7 +390,8 @@ export function ClientRegistration({
             title: "Copia Cliente",
             text: `Confirme para imprimir la copia del cliente (${lockerDisplay}).`,
             confirmButtonText: "Imprimir Copia Cliente",
-            showCancelButton: false,
+            showCancelButton: true,
+            cancelButtonText: "No Imprimir",
             allowOutsideClick: false,
           });
 
@@ -409,7 +410,8 @@ export function ClientRegistration({
             title: "Copia Administración",
             text: `Retire la copia del cliente y confirme para imprimir la copia de administración (${lockerDisplay}).`,
             confirmButtonText: "Imprimir Copia Administración",
-            showCancelButton: false,
+            showCancelButton: true,
+            cancelButtonText: "No Imprimir",
             allowOutsideClick: false,
           });
 
@@ -429,7 +431,8 @@ export function ClientRegistration({
               title: "Comprobante de Pago",
               text: "Retire la copia de administración y confirme para imprimir el comprobante de pago.",
               confirmButtonText: "Imprimir Comprobante",
-              showCancelButton: false,
+              showCancelButton: true,
+              cancelButtonText: "No Imprimir",
               allowOutsideClick: false,
             });
             if (okVoucher) {
@@ -463,7 +466,8 @@ export function ClientRegistration({
                 title: "Comprobante de Pago",
                 text: "Retire la copia de administración y confirme para imprimir el comprobante.",
                 confirmButtonText: "Imprimir Comprobante",
-                showCancelButton: false,
+                showCancelButton: true,
+                cancelButtonText: "No Imprimir",
                 allowOutsideClick: false,
               }).then(({ isConfirmed }) => {
                 if (isConfirmed) handlePrintVoucher();
@@ -490,7 +494,8 @@ export function ClientRegistration({
               title: "Copia Administración",
               text: `Retire la copia del cliente y confirme para imprimir la copia de administración (${lockerDisplay}).`,
               confirmButtonText: "Imprimir Copia Administración",
-              showCancelButton: false,
+              showCancelButton: true,
+              cancelButtonText: "No Imprimir",
               allowOutsideClick: false,
             }).then(({ isConfirmed }) => {
               if (isConfirmed) handlePrintCopy();
@@ -504,7 +509,8 @@ export function ClientRegistration({
             title: "Copia Cliente",
             text: `Confirme para imprimir la copia del cliente (${lockerDisplay}).`,
             confirmButtonText: "Imprimir Copia Cliente",
-            showCancelButton: false,
+            showCancelButton: true,
+            cancelButtonText: "No Imprimir",
             allowOutsideClick: false,
           }).then(({ isConfirmed }) => {
             if (isConfirmed) handlePrint();
