@@ -354,6 +354,9 @@ export function ClientRegistration({
     }
   }, [currentRecords, lastPrintedId, setLastPrintedId]);
 
+  // Guardar referencia del ticket activo en procesamiento para evitar ejecuciones duplicadas
+  const processingRecordIdRef = useRef<string | number | null>(null);
+
   useEffect(() => {
     if (printQueue.length > 0 && !isPrinting) {
       console.log("ClientRegistration: Setting activePrintRecord to", printQueue[0]);
@@ -365,35 +368,33 @@ export function ClientRegistration({
 
   useEffect(() => {
     if (activePrintRecord && isPrinting) {
-      console.log("ClientRegistration: Triggering printing effect for activePrintRecord", activePrintRecord, "isNative:", printerService.isNative());
-      if (printerService.isNative()) {
-        const sizeLabel =
-          lockerSizes.find((s) => s.value === activePrintRecord.size)?.label ||
-          activePrintRecord.size;
-        const locker = lockers.find((l) => l.id === activePrintRecord.lockerId);
-        const lockerDisplay = locker
-          ? `${locker.col}${locker.row}`
-          : activePrintRecord.lockerId.toString();
-        const printNativeTicket = async () => {
-          // Imprimir copia cliente
-          await printerService.printEntryTicket(
-            activePrintRecord,
-            sizeLabel,
-            lockerDisplay,
-            entryPaymentMethod,
-          );
+      if (processingRecordIdRef.current === activePrintRecord.id) {
+        return;
+      }
+      processingRecordIdRef.current = activePrintRecord.id;
 
-          // Pausa: pedir confirmación antes de imprimir copia administración
-          const { isConfirmed: okCopy } = await Swal.fire({
+      console.log("ClientRegistration: Triggering printing effect for activePrintRecord", activePrintRecord, "isNative:", printerService.isNative());
+      const sizeLabel =
+        lockerSizes.find((s) => s.value === activePrintRecord.size)?.label ||
+        activePrintRecord.size;
+      const locker = lockers.find((l) => l.id === activePrintRecord.lockerId);
+      const lockerDisplay = locker
+        ? `${locker.col}${locker.row}`
+        : activePrintRecord.lockerId.toString();
+
+      if (printerService.isNative()) {
+        const printNativeTicket = async () => {
+          // 1. Permiso Copia Cliente
+          const { isConfirmed: okClient } = await Swal.fire({
             icon: "info",
-            title: "Copia Administración",
-            text: "Retire el primer ticket y confirme para imprimir la copia de administración.",
-            confirmButtonText: "Imprimir Copia",
+            title: "Copia Cliente",
+            text: `Confirme para imprimir la copia del cliente (${lockerDisplay}).`,
+            confirmButtonText: "Imprimir Copia Cliente",
             showCancelButton: false,
             allowOutsideClick: false,
           });
 
-          if (okCopy) {
+          if (okClient) {
             await printerService.printEntryTicket(
               activePrintRecord,
               sizeLabel,
@@ -402,8 +403,27 @@ export function ClientRegistration({
             );
           }
 
-          if (voucherData) {
-            // Pausa: pedir confirmación antes de imprimir voucher de pago
+          // 2. Permiso Copia Administración
+          const { isConfirmed: okAdmin } = await Swal.fire({
+            icon: "info",
+            title: "Copia Administración",
+            text: `Retire la copia del cliente y confirme para imprimir la copia de administración (${lockerDisplay}).`,
+            confirmButtonText: "Imprimir Copia Administración",
+            showCancelButton: false,
+            allowOutsideClick: false,
+          });
+
+          if (okAdmin) {
+            await printerService.printEntryTicket(
+              activePrintRecord,
+              sizeLabel,
+              lockerDisplay,
+              entryPaymentMethod,
+            );
+          }
+
+          // 3. Permiso Voucher (se imprime al finalizar el último ticket de la cola)
+          if (printQueue.length === 1 && voucherDataRef.current) {
             const { isConfirmed: okVoucher } = await Swal.fire({
               icon: "info",
               title: "Comprobante de Pago",
@@ -413,11 +433,12 @@ export function ClientRegistration({
               allowOutsideClick: false,
             });
             if (okVoucher) {
-              await (printerService as any).printTransbankVoucher(voucherData);
+              await (printerService as any).printTransbankVoucher(voucherDataRef.current);
               setVoucherData(null);
             }
           }
 
+          processingRecordIdRef.current = null;
           setPrintQueue((prev) => prev.slice(1));
           setIsPrinting(false);
           setActivePrintRecord(null);
@@ -428,11 +449,11 @@ export function ClientRegistration({
         printTimersRef.current = [];
 
         const t1 = setTimeout(() => {
-          let printVoucherAction: (() => void) | null = null;
-          if (voucherDataRef.current) {
-            printVoucherAction = () => {
+          const finishOrVoucherAction = () => {
+            if (printQueue.length === 1 && voucherDataRef.current) {
               nextPrintActionRef.current = () => {
                 setVoucherData(null);
+                processingRecordIdRef.current = null;
                 setPrintQueue((prev) => prev.slice(1));
                 setIsPrinting(false);
                 setActivePrintRecord(null);
@@ -448,38 +469,48 @@ export function ClientRegistration({
                 if (isConfirmed) handlePrintVoucher();
                 else {
                   setVoucherData(null);
+                  processingRecordIdRef.current = null;
                   setPrintQueue((prev) => prev.slice(1));
                   setIsPrinting(false);
                   setActivePrintRecord(null);
                 }
               });
-            };
-          } else {
-            printVoucherAction = () => {
+            } else {
+              processingRecordIdRef.current = null;
               setPrintQueue((prev) => prev.slice(1));
               setIsPrinting(false);
               setActivePrintRecord(null);
-            };
-          }
+            }
+          };
 
-          const printCopyAction = () => {
-            nextPrintActionRef.current = printVoucherAction;
+          const promptAdminCopyAction = () => {
+            nextPrintActionRef.current = finishOrVoucherAction;
             Swal.fire({
               icon: "info",
               title: "Copia Administración",
-              text: "Retire el primer ticket y confirme para imprimir la copia de administración.",
-              confirmButtonText: "Imprimir Copia",
+              text: `Retire la copia del cliente y confirme para imprimir la copia de administración (${lockerDisplay}).`,
+              confirmButtonText: "Imprimir Copia Administración",
               showCancelButton: false,
               allowOutsideClick: false,
             }).then(({ isConfirmed }) => {
               if (isConfirmed) handlePrintCopy();
-              else printVoucherAction?.();
+              else finishOrVoucherAction();
             });
           };
 
-          nextPrintActionRef.current = printCopyAction;
-          handlePrint();
-        }, 800);
+          nextPrintActionRef.current = promptAdminCopyAction;
+          Swal.fire({
+            icon: "info",
+            title: "Copia Cliente",
+            text: `Confirme para imprimir la copia del cliente (${lockerDisplay}).`,
+            confirmButtonText: "Imprimir Copia Cliente",
+            showCancelButton: false,
+            allowOutsideClick: false,
+          }).then(({ isConfirmed }) => {
+            if (isConfirmed) handlePrint();
+            else promptAdminCopyAction();
+          });
+        }, 500);
         printTimersRef.current.push(t1);
       }
     }
@@ -492,6 +523,7 @@ export function ClientRegistration({
     handlePrint,
     handlePrintCopy,
     handlePrintVoucher,
+    printQueue.length,
   ]);
 
   const handleGenerateBarcode = () => {
