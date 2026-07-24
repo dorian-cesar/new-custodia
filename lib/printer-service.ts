@@ -511,6 +511,19 @@ export const printerService = {
       await writeText(`N° Operacion:${data.operationNumber}\n`);
       await writeText(`Cod. Autoriz:${data.authorizationCode}\n`);
       await writeText("--------------------------------\n\n");
+
+      if (data.items && data.items.length > 0) {
+        await writeBytes(ESC_ALIGN_LEFT);
+        await writeText("DETALLE DE CARGOS:\n");
+        for (const item of data.items) {
+          const itemText = ` - Casillero ${item.position} (${item.size})`;
+          const priceText = formatCurrency(item.price);
+          const spaces = 32 - itemText.length - priceText.length;
+          const pad = spaces > 0 ? " ".repeat(spaces) : " ";
+          await writeText(`${itemText}${pad}${priceText}\n`);
+        }
+        await writeText("--------------------------------\n\n");
+      }
       
       await writeBytes(ESC_ALIGN_RIGHT);
       await writeBytes(ESC_BOLD_ON);

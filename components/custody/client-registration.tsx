@@ -490,6 +490,11 @@ export function ClientRegistration({
         cardBrand: "Tarjeta",
         cardType: "Manual",
         timestamp: new Date().toISOString(),
+        items: itemsWithPrice.map((i) => ({
+          position: i.position,
+          size: i.label,
+          price: i.price,
+        })),
       });
       // Cerrar el modal de pago
       setIsEntryModalOpen(false);
@@ -600,6 +605,24 @@ export function ClientRegistration({
         cardBrand: cardBrandVal,
         cardType: cardTypeVal,
         timestamp: new Date().toISOString(),
+        items: pendingDeliverRecords.map((r) => {
+          const sizeLabel = lockerSizes.find((s) => s.value === r.size)?.label || r.size;
+          const locker = lockers.find((l) => l.id === r.lockerId);
+          const position = locker ? `${locker.col}${locker.row}` : r.lockerId.toString();
+          
+          const diffMs = Date.now() - new Date(r.entryTime).getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          let recordExtraAmount = 0;
+          if (diffHours > 24) {
+            const extraH = diffHours - 24;
+            recordExtraAmount = Math.ceil(extraH / 24) * r.price;
+          }
+          return {
+            position,
+            size: sizeLabel,
+            price: recordExtraAmount,
+          };
+        }),
       });
     }
 

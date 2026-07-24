@@ -86,6 +86,18 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
             </p>
           </div>
 
+          {data.items && data.items.length > 0 && (
+            <div style={{ fontSize: "10px", margin: "10px 0", textAlign: "left" }}>
+              <p style={{ margin: "0 0 5px 0", fontWeight: "bold", fontSize: "11px" }}>DETALLE DE CARGOS:</p>
+              {data.items.map((item: any, idx: number) => (
+                <div key={idx} style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
+                  <span>- Casillero {item.position} ({item.size})</span>
+                  <span>{formatCurrency(item.price)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ borderBottom: "1px dashed black", margin: "10px 0" }}></div>
 
           <div style={{ textAlign: "right", marginBottom: "15px" }}>
