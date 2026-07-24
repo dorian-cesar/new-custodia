@@ -290,7 +290,7 @@ export function ClientRegistration({
             extraFolioState
           );
           
-          if (paymentMethod === "Tarjeta" && voucherData) {
+          if (voucherData) {
             await (printerService as any).printTransbankVoucher(voucherData);
             setVoucherData(null);
           }
@@ -387,7 +387,7 @@ export function ClientRegistration({
           );
           console.log("ClientRegistration: printEntryTicket local copy finished, success:", ok2);
 
-          if (entryPaymentMethod === "Tarjeta" && voucherData) {
+          if (voucherData) {
             await (printerService as any).printTransbankVoucher(voucherData);
             setVoucherData(null);
           }
@@ -403,7 +403,7 @@ export function ClientRegistration({
 
         const t1 = setTimeout(() => {
           let printVoucherAction: (() => void) | null = null;
-          if (entryPaymentMethod === "Tarjeta" && voucherData) {
+          if (voucherData) {
             printVoucherAction = () => {
               nextPrintActionRef.current = () => {
                 setVoucherData(null);
@@ -477,6 +477,23 @@ export function ClientRegistration({
         showToast("El efectivo recibido es menor al monto a cobrar.", "error");
         return;
       }
+      setVoucherData({
+        amount: totalPrice,
+        ticketNumber: clientDocument || "0",
+        authorizationCode: "EFECTIVO",
+        operationNumber: "0000",
+        cardNumber: "N/A",
+        cardBrand: "Efectivo",
+        cardType: "Efectivo",
+        timestamp: new Date().toISOString(),
+        items: itemsWithPrice.map((i) => ({
+          position: i.position,
+          size: i.label,
+          price: i.price,
+        })),
+        cashReceived: entryCashReceived,
+        change: entryCashReceived - totalPrice,
+      });
       setIsEntryModalOpen(false);
       await onGenerateBarcode(entryPaymentMethod);
     } else if (entryPaymentMethod === "Tarjeta") {
@@ -627,6 +644,37 @@ export function ClientRegistration({
     }
 
     if (method === "Efectivo" && extraCharge > 0) {
+      setVoucherData({
+        amount: extraCharge,
+        ticketNumber: codes[0] || "",
+        authorizationCode: "EFECTIVO",
+        operationNumber: "0000",
+        cardNumber: "N/A",
+        cardBrand: "Efectivo",
+        cardType: "Efectivo",
+        timestamp: new Date().toISOString(),
+        items: pendingDeliverRecords.map((r) => {
+          const sizeLabel = lockerSizes.find((s) => s.value === r.size)?.label || r.size;
+          const locker = lockers.find((l) => l.id === r.lockerId);
+          const position = locker ? `${locker.col}${locker.row}` : r.lockerId.toString();
+          
+          const diffMs = Date.now() - new Date(r.entryTime).getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          let recordExtraAmount = 0;
+          if (diffHours > 24) {
+            const extraH = diffHours - 24;
+            recordExtraAmount = Math.ceil(extraH / 24) * r.price;
+          }
+          return {
+            position,
+            size: sizeLabel,
+            price: recordExtraAmount,
+          };
+        }),
+        cashReceived: cashReceived,
+        change: cashReceived - extraCharge,
+      });
+
       try {
         const boletaRes = await sendBoleta("Recargo Custodia", extraCharge);
         if (boletaRes.success && boletaRes.data) {

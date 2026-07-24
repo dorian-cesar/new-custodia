@@ -1,8 +1,8 @@
 "use client";
-
+ 
 import React, { forwardRef } from "react";
 import { formatCurrency } from "@/lib/utils";
-
+ 
 interface TransbankVoucherProps {
   data: {
     amount: number;
@@ -13,13 +13,16 @@ interface TransbankVoucherProps {
     cardBrand?: string | null;
     cardType?: string | null;
     timestamp?: string | null;
+    items?: any[] | null;
+    cashReceived?: number;
+    change?: number;
   } | null;
 }
-
+ 
 export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps>(
   ({ data }, ref) => {
     if (!data) return null;
-
+ 
     const formatTimestamp = (ts: string) => {
       // Si el formato es DDMMYYYY HHMMSS (ej: "13072026 104753")
       if (/^\d{8}\s\d{6}$/.test(ts)) {
@@ -33,38 +36,40 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
       }
       return ts;
     };
-
+ 
     const printTime = data.timestamp 
       ? formatTimestamp(data.timestamp) 
       : new Date().toLocaleString("es-PY");
-
+ 
+    const isCash = data.authorizationCode === "EFECTIVO";
+ 
     return (
       <div style={{ display: "none" }}>
         <div
           ref={ref}
           style={{
             width: "100%",
-            maxWidth: "58mm",
+            maxWidth: "80mm",
             margin: "0 auto",
-            padding: "2mm",
+            padding: "4mm",
             background: "white",
             color: "black",
             fontFamily: "monospace",
-            fontSize: "12px",
-            lineHeight: "1.2",
+            fontSize: "13px",
+            lineHeight: "1.3",
           }}
           className="print-ticket"
         >
           <div style={{ textAlign: "center", marginBottom: "10px" }}>
-            <h2 style={{ fontSize: "15px", fontWeight: "bold", margin: "0 0 2px 0" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: "bold", margin: "0 0 2px 0" }}>
               COMPROBANTE DE PAGO
             </h2>
-            <h3 style={{ fontSize: "13px", fontWeight: "bold", margin: "0 0 5px 0" }}>
-              TRANSBANK POS
+            <h3 style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 5px 0" }}>
+              {isCash ? "VENTA EFECTIVO" : "VENTA TARJETA / POS"}
             </h3>
             <div style={{ borderBottom: "1px dashed black", margin: "5px 0" }}></div>
           </div>
-
+ 
           <div style={{ marginBottom: "10px" }}>
             <p style={{ margin: "3px 0" }}>
               <strong>Comercio:</strong> Custodia Equipaje
@@ -75,20 +80,28 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
             <p style={{ margin: "3px 0" }}>
               <strong>Fecha/Hora:</strong> {printTime}
             </p>
-
+ 
             <div style={{ borderBottom: "1px dashed black", margin: "5px 0" }}></div>
-
-            <p style={{ margin: "3px 0" }}>
-              <strong>N° Operación:</strong> {data.operationNumber}
-            </p>
-            <p style={{ margin: "3px 0" }}>
-              <strong>Cód. Autorización:</strong> {data.authorizationCode}
-            </p>
+ 
+            {isCash ? (
+              <p style={{ margin: "3px 0" }}>
+                <strong>Medio Pago:</strong> EFECTIVO
+              </p>
+            ) : (
+              <>
+                <p style={{ margin: "3px 0" }}>
+                  <strong>N° Operación:</strong> {data.operationNumber}
+                </p>
+                <p style={{ margin: "3px 0" }}>
+                  <strong>Cód. Autorización:</strong> {data.authorizationCode}
+                </p>
+              </>
+            )}
           </div>
-
+ 
           {data.items && data.items.length > 0 && (
-            <div style={{ fontSize: "10px", margin: "10px 0", textAlign: "left" }}>
-              <p style={{ margin: "0 0 5px 0", fontWeight: "bold", fontSize: "11px" }}>DETALLE DE CARGOS:</p>
+            <div style={{ fontSize: "11px", margin: "10px 0", textAlign: "left" }}>
+              <p style={{ margin: "0 0 5px 0", fontWeight: "bold", fontSize: "12px" }}>DETALLE DE CARGOS:</p>
               {data.items.map((item: any, idx: number) => (
                 <div key={idx} style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
                   <span>- Casillero {item.position} ({item.size})</span>
@@ -97,20 +110,30 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
               ))}
             </div>
           )}
-
+ 
           <div style={{ borderBottom: "1px dashed black", margin: "10px 0" }}></div>
-
+ 
           <div style={{ textAlign: "right", marginBottom: "15px" }}>
-            <p style={{ margin: "3px 0", fontSize: "15px", fontWeight: "bold" }}>
+            <p style={{ margin: "3px 0", fontSize: "16px", fontWeight: "bold" }}>
               TOTAL: {formatCurrency(data.amount)}
             </p>
+            {isCash && data.cashReceived !== undefined && (
+              <>
+                <p style={{ margin: "2px 0", fontSize: "12px" }}>
+                  Efectivo Recibido: {formatCurrency(data.cashReceived)}
+                </p>
+                <p style={{ margin: "2px 0", fontSize: "12px", fontWeight: "bold" }}>
+                  Vuelto: {formatCurrency(data.change || 0)}
+                </p>
+              </>
+            )}
           </div>
-
+ 
           <div style={{ textAlign: "center", marginTop: "10px" }}>
-            <p style={{ margin: "0 0 5px 0", fontSize: "11px", fontWeight: "bold" }}>
-              TRANSACCIÓN APROBADA
+            <p style={{ margin: "0 0 5px 0", fontSize: "12px", fontWeight: "bold" }}>
+              PAGO PROCESADO CON ÉXITO
             </p>
-            <p style={{ margin: 0, fontSize: "9px" }}>
+            <p style={{ margin: 0, fontSize: "10px" }}>
               Copia Cliente
             </p>
           </div>
@@ -119,5 +142,5 @@ export const TransbankVoucher = forwardRef<HTMLDivElement, TransbankVoucherProps
     );
   }
 );
-
+ 
 TransbankVoucher.displayName = "TransbankVoucher";

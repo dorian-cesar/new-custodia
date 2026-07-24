@@ -254,11 +254,7 @@ export const printerService = {
     lockerDisplay: string,
     paymentMethod: string,
   ): Promise<boolean> {
-    console.log("printerService: printEntryTicket called with", { record, sizeLabel, lockerDisplay, paymentMethod, connectedDeviceId });
-    if (!connectedDeviceId) {
-      console.warn("printerService: printEntryTicket failed - connectedDeviceId is null!");
-      return false;
-    }
+    if (!connectedDeviceId) return false;
     try {
       const formattedDate = new Date(record.entryTime).toLocaleString("es-PY");
       
@@ -269,11 +265,11 @@ export const printerService = {
       await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n");
+      await writeText("------------------------------------------------\n");
       await writeBytes(ESC_BOLD_ON);
       await writeText("TICKET DE INGRESO\n");
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n\n");
+      await writeText("------------------------------------------------\n\n");
       
       await writeBytes(ESC_ALIGN_LEFT);
       await writeText(`CODIGO:      ${record.code}\n`);
@@ -284,9 +280,9 @@ export const printerService = {
       await writeBytes(ESC_BOLD_ON);
       await writeText(`TOTAL PAGADO:${formatCurrency(record.price)}\n\n`);
       await writeBytes(ESC_BOLD_OFF);
-
+      
       await writeBytes(ESC_ALIGN_CENTER);
-      await writeText("--------------------------------\n");
+      await writeText("------------------------------------------------\n");
       await writeText("Guarde este ticket para\nretirar su equipaje.\n");
       await writeText("¡Muchas gracias!\n");
       await writeBytes(ESC_CUT);
@@ -306,11 +302,7 @@ export const printerService = {
     extraAmount: number,
     extraFolio?: number | null,
   ): Promise<boolean> {
-    console.log("printerService: printDeliveryTicket called with", { record, sizeLabel, lockerDisplay, paymentMethod, extraHours, extraAmount, extraFolio, connectedDeviceId });
-    if (!connectedDeviceId) {
-      console.warn("printerService: printDeliveryTicket failed - connectedDeviceId is null!");
-      return false;
-    }
+    if (!connectedDeviceId) return false;
     try {
       const entryDate = new Date(record.entryTime).toLocaleString("es-PY");
       const exitDate = new Date().toLocaleString("es-PY");
@@ -322,11 +314,11 @@ export const printerService = {
       await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n");
+      await writeText("------------------------------------------------\n");
       await writeBytes(ESC_BOLD_ON);
       await writeText("COMPROBANTE DE RETIRO\n");
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n\n");
+      await writeText("------------------------------------------------\n\n");
       
       await writeBytes(ESC_ALIGN_LEFT);
       await writeText(`CODIGO:      ${record.code}\n`);
@@ -350,7 +342,7 @@ export const printerService = {
       await writeText("\n");
 
       await writeBytes(ESC_ALIGN_CENTER);
-      await writeText("--------------------------------\n");
+      await writeText("------------------------------------------------\n");
       await writeText("Equipaje retirado a conformidad\n");
       await writeText("¡Gracias por su visita!\n");
       await writeBytes(ESC_CUT);
@@ -364,9 +356,12 @@ export const printerService = {
   async printClosureTicket(data: any): Promise<boolean> {
     if (!connectedDeviceId) return false;
     try {
-      const openedStr = new Date(data.openedAt).toLocaleString("es-PY");
-      const closedStr = new Date(data.closedAt).toLocaleString("es-PY");
-      
+      const timeStr = new Date().toLocaleString("es-PY");
+      const diff = data.difference || 0;
+      const diffText = diff >= 0 
+        ? `SOBRANTE: +${formatCurrency(diff)}`
+        : `FALTANTE: -${formatCurrency(Math.abs(diff))}`;
+ 
       await writeBytes(ESC_INIT);
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
@@ -374,55 +369,42 @@ export const printerService = {
       await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n");
+      await writeText("------------------------------------------------\n");
       await writeBytes(ESC_BOLD_ON);
-      await writeText("CIERRE DE CAJA\n");
+      await writeText("RESUMEN DE CIERRE DE CAJA\n");
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n\n");
+      await writeText("------------------------------------------------\n\n");
       
       await writeBytes(ESC_ALIGN_LEFT);
-      await writeText(`CAJERO:      ${data.cajero}\n`);
-      await writeText(`SUPERVISOR:  ${data.supervisor}\n`);
-      await writeText(`APERTURA:    ${openedStr}\n`);
-      await writeText(`CIERRE:      ${closedStr}\n`);
-      await writeText("--------------------------------\n");
-      
+      await writeText(`FECHA/HORA:  ${timeStr}\n`);
+      await writeText(`CAJERO:      ${data.openedBy || "N/A"}\n`);
+      await writeText("------------------------------------------------\n");
       await writeText(`MONTO APERT.:${formatCurrency(data.openingAmount)}\n`);
       await writeText(`INGR. EFECT.:${formatCurrency(data.ingresosEfectivo)}\n`);
       await writeText(`INGR. TARJ.: ${formatCurrency(data.ingresosTarjeta)}\n`);
       await writeText(`EGRESOS EF.: ${formatCurrency(data.gastosEfectivo)}\n`);
-      await writeText("--------------------------------\n");
-      
+      await writeText("------------------------------------------------\n");
       await writeBytes(ESC_BOLD_ON);
       await writeText(`SALDO ESP.:  ${formatCurrency(data.expectedAmount)}\n`);
       await writeText(`SALDO DECL.: ${formatCurrency(data.declaredAmount)}\n`);
-      
-      const diff = data.difference;
-      if (diff === 0) {
-        await writeText("DIFERENCIA:  CAJA CUADRADA\n");
-      } else if (diff > 0) {
-        await writeText(`DIFERENCIA:  +${formatCurrency(diff)} (SOBRANTE)\n`);
-      } else {
-        await writeText(`DIFERENCIA:  -${formatCurrency(Math.abs(diff))} (FALTANTE)\n`);
-      }
+      await writeText(`${diffText}\n`);
       await writeBytes(ESC_BOLD_OFF);
+      await writeText("------------------------------------------------\n\n");
       
-      if (data.notes) {
-        await writeText(`\nNOTAS:\n${data.notes}\n`);
-      }
-      
-      if (data.withdrawals && data.withdrawals.length > 0) {
-        await writeText("\nRETIROS DE CAJA:\n");
-        for (const w of data.withdrawals) {
-          const wTime = new Date(w.timestamp).toLocaleTimeString("es-PY");
+      if (data.withdrawalsList && data.withdrawalsList.length > 0) {
+        await writeBytes(ESC_ALIGN_LEFT);
+        await writeBytes(ESC_BOLD_ON);
+        await writeText("DETALLE DE RETIROS DE CAJA:\n");
+        await writeBytes(ESC_BOLD_OFF);
+        for (const w of data.withdrawalsList) {
+          const wTime = new Date(w.timestamp).toLocaleTimeString("es-PY", { hour: '2-digit', minute: '2-digit' });
           await writeText(`- [${wTime}] ${formatCurrency(w.amount)}\n  Motivo: ${w.description}\n`);
         }
+        await writeText("------------------------------------------------\n\n");
       }
-      
-      await writeText("\n");
+ 
       await writeBytes(ESC_ALIGN_CENTER);
-      await writeText("--------------------------------\n");
-      await writeText("Firma Cajero      Firma Superv.\n\n\n\n");
+      await writeText("Cierre de caja realizado con éxito\n");
       await writeBytes(ESC_CUT);
       return true;
     } catch (err) {
@@ -431,17 +413,10 @@ export const printerService = {
     }
   },
 
-  async printWithdrawalTicket(
-    amount: number,
-    cajero: string,
-    supervisor: string,
-    reason: string,
-    timestamp: string,
-  ): Promise<boolean> {
+  async printWithdrawalTicket(amount: number, description: string, cashierName: string): Promise<boolean> {
     if (!connectedDeviceId) return false;
     try {
-      const timeStr = new Date(timestamp).toLocaleString("es-PY");
-      
+      const timeStr = new Date().toLocaleString("es-PY");
       await writeBytes(ESC_INIT);
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
@@ -449,24 +424,23 @@ export const printerService = {
       await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n");
+      await writeText("------------------------------------------------\n");
       await writeBytes(ESC_BOLD_ON);
-      await writeText("VALE DE RETIRO DE CAJA\n");
+      await writeText("COMPROBANTE DE RETIRO DE CAJA\n");
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n\n");
+      await writeText("------------------------------------------------\n\n");
       
       await writeBytes(ESC_ALIGN_LEFT);
       await writeText(`FECHA/HORA:  ${timeStr}\n`);
-      await writeText(`CAJERO:      ${cajero}\n`);
-      await writeText(`SUPERVISOR:  ${supervisor}\n`);
+      await writeText(`CAJERO:      ${cashierName}\n`);
+      await writeText(`MOTIVO:      ${description}\n`);
       await writeBytes(ESC_BOLD_ON);
       await writeText(`MONTO RET.:  ${formatCurrency(amount)}\n\n`);
       await writeBytes(ESC_BOLD_OFF);
-      await writeText(`MOTIVO:\n${reason}\n\n`);
-      
+ 
       await writeBytes(ESC_ALIGN_CENTER);
+      await writeText("Firma Cajero\n\n\n\n");
       await writeText("--------------------------------\n");
-      await writeText("Firma Cajero      Firma Superv.\n\n\n\n");
       await writeBytes(ESC_CUT);
       return true;
     } catch (err) {
@@ -490,49 +464,62 @@ export const printerService = {
         }
         return ts;
       };
-
+ 
       const printTime = data.timestamp 
         ? formatTimestamp(data.timestamp) 
         : new Date().toLocaleString("es-PY");
-
+ 
+      const isCash = data.authorizationCode === "EFECTIVO";
+ 
       await writeBytes(ESC_INIT);
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_BOLD_ON);
       await writeText("COMPROBANTE DE PAGO\n");
-      await writeText("TRANSBANK POS\n");
+      await writeText(isCash ? "VENTA EFECTIVO\n" : "VENTA TARJETA / POS\n");
       await writeBytes(ESC_BOLD_OFF);
-      await writeText("--------------------------------\n\n");
+      await writeText("------------------------------------------------\n\n");
       
       await writeBytes(ESC_ALIGN_LEFT);
       await writeText(`Comercio:    Custodia Equipaje\n`);
       await writeText(`Ticket/Doc:  ${data.ticketNumber}\n`);
       await writeText(`Fecha/Hora:  ${printTime}\n`);
-      await writeText("--------------------------------\n");
-      await writeText(`N° Operacion:${data.operationNumber}\n`);
-      await writeText(`Cod. Autoriz:${data.authorizationCode}\n`);
-      await writeText("--------------------------------\n\n");
-
+      await writeText("------------------------------------------------\n");
+      
+      if (isCash) {
+        await writeText(`Medio Pago:  EFECTIVO\n`);
+      } else {
+        await writeText(`N° Operacion:${data.operationNumber}\n`);
+        await writeText(`Cod. Autoriz:${data.authorizationCode}\n`);
+      }
+      await writeText("------------------------------------------------\n\n");
+ 
       if (data.items && data.items.length > 0) {
         await writeBytes(ESC_ALIGN_LEFT);
         await writeText("DETALLE DE CARGOS:\n");
         for (const item of data.items) {
           const itemText = ` - Casillero ${item.position} (${item.size})`;
           const priceText = formatCurrency(item.price);
-          const spaces = 32 - itemText.length - priceText.length;
+          const spaces = 48 - itemText.length - priceText.length;
           const pad = spaces > 0 ? " ".repeat(spaces) : " ";
           await writeText(`${itemText}${pad}${priceText}\n`);
         }
-        await writeText("--------------------------------\n\n");
+        await writeText("------------------------------------------------\n\n");
       }
       
       await writeBytes(ESC_ALIGN_RIGHT);
       await writeBytes(ESC_BOLD_ON);
-      await writeText(`TOTAL: ${formatCurrency(data.amount)}\n\n`);
+      await writeText(`TOTAL: ${formatCurrency(data.amount)}\n`);
       await writeBytes(ESC_BOLD_OFF);
+ 
+      if (isCash && data.cashReceived !== undefined) {
+        await writeText(`EFECTIVO RECIBIDO: ${formatCurrency(data.cashReceived)}\n`);
+        await writeText(`VUELTO ENTREGADO:  ${formatCurrency(data.change)}\n`);
+      }
+      await writeText("\n");
       
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_BOLD_ON);
-      await writeText("TRANSACCION APROBADA\n");
+      await writeText("PAGO PROCESADO CON EXITO\n");
       await writeBytes(ESC_BOLD_OFF);
       await writeText("Copia Cliente\n");
       await writeBytes(ESC_CUT);
