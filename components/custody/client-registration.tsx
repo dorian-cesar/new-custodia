@@ -471,89 +471,28 @@ export function ClientRegistration({
       setIsEntryModalOpen(false);
       await onGenerateBarcode(entryPaymentMethod);
     } else if (entryPaymentMethod === "Tarjeta") {
-      setIsProcessingCard(true);
-      Swal.fire({
-        title: "Procesando pago con tarjeta",
-        text: "Por favor, siga las instrucciones en el terminal POS.",
-        icon: "info",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
+      // Direct payment confirmation without POS terminal
+      setVoucherData({
+        amount: totalPrice,
+        ticketNumber: clientDocument || "0",
+        authorizationCode: "MANUAL",
+        operationNumber: "0000",
+        cardNumber: "xxxx-xxxx-xxxx-xxxx",
+        cardBrand: "Tarjeta",
+        cardType: "Manual",
+        timestamp: new Date().toISOString(),
       });
-
-      try {
-        const response = await fetch("https://localhost:3000/api/payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            amount: Math.round(totalPrice * PYG_RATE),
-            ticketNumber: clientDocument || "0",
-          }),
-        });
-
-        const result = await response.json();
-        Swal.close();
-        setIsProcessingCard(false);
-
-        if (
-          response.ok &&
-          result.success &&
-          result.data &&
-          result.data.approved
-        ) {
-          // Armar el voucher primero para tener la data lista en render
-          setVoucherData({
-            amount: totalPrice,
-            ticketNumber: clientDocument || "0",
-            authorizationCode: result.data.authorizationCode,
-            operationNumber: result.data.operationNumber
-              ? String(result.data.operationNumber)
-              : "",
-            cardNumber: result.data.cardNumber,
-            cardBrand: result.data.cardBrand,
-            cardType: result.data.cardType,
-            timestamp: result.data.timestamp,
-          });
-          // Cerrar el modal de pago
-          setIsEntryModalOpen(false);
-          // Luego crear el registro, lo cual gatillará el useEffect de impresión
-          await onGenerateBarcode(
-            "Tarjeta",
-            result.data.authorizationCode,
-            result.data.operationNumber
-              ? String(result.data.operationNumber)
-              : null,
-            result.data.cardNumber || null,
-            result.data.cardBrand || null,
-            result.data.cardType || null,
-          );
-        } else {
-          const errMsg =
-            result.error ||
-            "La transacción fue rechazada o cancelada en el POS.";
-          Swal.fire({
-            title: "Pago Fallido",
-            text: errMsg,
-            icon: "error",
-            confirmButtonText: "Entendido",
-          });
-        }
-      } catch (error) {
-        Swal.close();
-        setIsProcessingCard(false);
-        console.error("Error al comunicarse con el POS:", error);
-        Swal.fire({
-          title: "Error de Conexión",
-          text: "No se pudo conectar con el backend local del POS. Asegúrese de que esté corriendo en el puerto 3000.",
-          icon: "error",
-          confirmButtonText: "Entendido",
-        });
-      }
+      // Cerrar el modal de pago
+      setIsEntryModalOpen(false);
+      // Luego crear el registro, lo cual gatillará el useEffect de impresión
+      await onGenerateBarcode(
+        "Tarjeta",
+        "MANUAL",
+        "0000",
+        "xxxx-xxxx-xxxx-xxxx",
+        "Tarjeta",
+        "Manual",
+      );
     }
   };
 
@@ -635,84 +574,24 @@ export function ClientRegistration({
     let cardTypeVal: string | null = null;
 
     if (method === "Tarjeta" && extraCharge > 0) {
-      setIsProcessingCard(true);
-      Swal.fire({
-        title: "Procesando pago de recargo",
-        text: "Por favor, siga las instrucciones en el terminal POS.",
-        icon: "info",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
+      // Direct payment confirmation without POS terminal
+      authCodeVal = "MANUAL";
+      opNumberVal = "0000";
+      cardNumberVal = "xxxx-xxxx-xxxx-xxxx";
+      cardBrandVal = "Tarjeta";
+      cardTypeVal = "Manual";
+      setExitAuthCode(authCodeVal);
+      setExitOpNumber(opNumberVal);
+      setVoucherData({
+        amount: extraCharge,
+        ticketNumber: codes[0] || "",
+        authorizationCode: authCodeVal || "",
+        operationNumber: opNumberVal || "",
+        cardNumber: cardNumberVal,
+        cardBrand: cardBrandVal,
+        cardType: cardTypeVal,
+        timestamp: new Date().toISOString(),
       });
-
-      try {
-        const response = await fetch("https://localhost:3000/api/payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            amount: Math.round(extraCharge * PYG_RATE),
-            ticketNumber: codes.join(", "),
-          }),
-        });
-
-        const result = await response.json();
-        Swal.close();
-        setIsProcessingCard(false);
-
-        if (
-          response.ok &&
-          result.success &&
-          result.data &&
-          result.data.approved
-        ) {
-          authCodeVal = result.data.authorizationCode;
-          opNumberVal = result.data.operationNumber
-            ? String(result.data.operationNumber)
-            : null;
-          cardNumberVal = result.data.cardNumber || null;
-          cardBrandVal = result.data.cardBrand || null;
-          cardTypeVal = result.data.cardType || null;
-          setExitAuthCode(authCodeVal);
-          setExitOpNumber(opNumberVal);
-          setVoucherData({
-            amount: extraCharge,
-            ticketNumber: codes[0] || "",
-            authorizationCode: authCodeVal || "",
-            operationNumber: opNumberVal || "",
-            cardNumber: result.data.cardNumber,
-            cardBrand: result.data.cardBrand,
-            cardType: result.data.cardType,
-            timestamp: result.data.timestamp,
-          });
-        } else {
-          const errMsg =
-            result.error ||
-            "La transacción fue rechazada o cancelada en el POS.";
-          Swal.fire({
-            title: "Pago Fallido",
-            text: errMsg,
-            icon: "error",
-            confirmButtonText: "Entendido",
-          });
-          return;
-        }
-      } catch (error) {
-        Swal.close();
-        setIsProcessingCard(false);
-        console.error("Error al comunicarse con el POS:", error);
-        Swal.fire({
-          title: "Error de Conexión",
-          text: "No se pudo conectar con el backend local del POS. Asegúrese de que esté corriendo en el puerto 3000.",
-          icon: "error",
-          confirmButtonText: "Entendido",
-        });
-        return;
-      }
     }
 
     if (method === "Efectivo" && extraCharge > 0) {
