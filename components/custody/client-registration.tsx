@@ -30,7 +30,7 @@ import {
 import { type CustodyRecord, type LockerSize } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
 import { sendBoleta } from "@/app/actions/db-actions";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, PYG_RATE } from "@/lib/utils";
 
 interface ClientRegistrationProps {
   selectedItems: { lockerId: number; size: LockerSize }[];
@@ -464,7 +464,7 @@ export function ClientRegistration({
         );
         return;
       }
-      if (entryCashReceived < totalPrice) {
+      if (entryCashReceived < Math.round(totalPrice * PYG_RATE)) {
         showToast("El efectivo recibido es menor al monto a cobrar.", "error");
         return;
       }
@@ -491,7 +491,7 @@ export function ClientRegistration({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: totalPrice,
+            amount: Math.round(totalPrice * PYG_RATE),
             ticketNumber: clientDocument || "0",
           }),
         });
@@ -618,7 +618,7 @@ export function ClientRegistration({
         );
         return;
       }
-      if (cashReceived < extraCharge) {
+      if (cashReceived < Math.round(extraCharge * PYG_RATE)) {
         showToast(
           "El efectivo recibido es menor al recargo a cobrar.",
           "error",
@@ -655,7 +655,7 @@ export function ClientRegistration({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: extraCharge,
+            amount: Math.round(extraCharge * PYG_RATE),
             ticketNumber: codes.join(", "),
           }),
         });
@@ -1017,10 +1017,10 @@ export function ClientRegistration({
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-zinc-300 text-xs font-semibold">
                       <span className="text-zinc-500">Vuelto a entregar:</span>
                       <span
-                        className={`text-sm font-bold ${entryCashReceived - totalPrice >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                        className={`text-sm font-bold ${entryCashReceived - Math.round(totalPrice * PYG_RATE) >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                       >
-                        {entryCashReceived - totalPrice >= 0
-                          ? `${formatCurrency(entryCashReceived - totalPrice)}`
+                        {entryCashReceived - Math.round(totalPrice * PYG_RATE) >= 0
+                          ? formatCurrency((entryCashReceived / PYG_RATE) - totalPrice)
                           : "Monto insuficiente"}
                       </span>
                     </div>
@@ -1226,10 +1226,10 @@ export function ClientRegistration({
                           Vuelto a entregar:
                         </span>
                         <span
-                          className={`text-sm font-bold ${cashReceived - extraAmount >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                          className={`text-sm font-bold ${cashReceived - Math.round(extraAmount * PYG_RATE) >= 0 ? "text-emerald-600" : "text-rose-600"}`}
                         >
-                          {cashReceived - extraAmount >= 0
-                            ? `${formatCurrency(cashReceived - extraAmount)}`
+                          {cashReceived - Math.round(extraAmount * PYG_RATE) >= 0
+                            ? formatCurrency((cashReceived / PYG_RATE) - extraAmount)
                             : "Monto insuficiente"}
                         </span>
                       </div>

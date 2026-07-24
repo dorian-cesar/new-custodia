@@ -40,7 +40,7 @@ import {
 import { useCustodyStore } from "@/lib/custody-store";
 import { formatDateTime } from "@/lib/types";
 import { verifySupervisor } from "@/app/actions/db-actions";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, toOriginalCurrency } from "@/lib/utils";
 
 export default function CajaPage() {
   const {
@@ -192,7 +192,7 @@ export default function CajaPage() {
 
   const montoContado = parseFloat(closingAmount);
   const diferenciaCaja = !isNaN(montoContado)
-    ? montoContado - saldoEsperadoEfectivo
+    ? toOriginalCurrency(montoContado) - saldoEsperadoEfectivo
     : null;
 
   const handleOpenCash = () => {
@@ -202,7 +202,7 @@ export default function CajaPage() {
       setError("Ingrese un monto valido");
       return;
     }
-    openCashRegister(amount, notes);
+    openCashRegister(toOriginalCurrency(amount), notes);
     setOpeningAmount("");
     setNotes("");
     setShowOpenDialog(false);
@@ -243,9 +243,10 @@ export default function CajaPage() {
 
       // Instead of closing immediately, we show the confirmation dialog
       const expected = stats.balance;
-      const difference = amount - expected;
+      const amountClp = toOriginalCurrency(amount);
+      const difference = amountClp - expected;
 
-      setCloseSummary({ expected, declared: amount, difference });
+      setCloseSummary({ expected, declared: amountClp, difference });
       setShowCloseDialog(false);
       setShowConfirmCloseDialog(true);
     } catch (err) {
@@ -326,7 +327,7 @@ export default function CajaPage() {
       return;
     }
 
-    if (amount > stats.balance) {
+    if (toOriginalCurrency(amount) > stats.balance) {
       setError("El monto a retirar no puede superar el saldo total de la caja");
       return;
     }
@@ -352,13 +353,13 @@ export default function CajaPage() {
 
       await addTransaction(
         "expense",
-        amount,
+        toOriginalCurrency(amount),
         `Retiro de Caja: ${giroReason.trim()}`,
       );
 
       const timestamp = new Date().toISOString();
       const data = {
-        amount,
+        amount: toOriginalCurrency(amount),
         cajero: currentCashRegister?.openedBy || "desconocido",
         supervisor: supervisorUsername,
         reason: giroReason.trim(),
@@ -368,7 +369,7 @@ export default function CajaPage() {
 
       if (printerService.isNative()) {
         await printerService.printWithdrawalTicket(
-          amount,
+          toOriginalCurrency(amount),
           data.cajero,
           data.supervisor,
           data.reason,
@@ -590,8 +591,8 @@ export default function CajaPage() {
                                 : "text-red-600"
                             }`}
                           >
-                            {tx.type === "income" ? "+" : "-"}$
-                            {tx.amount.toLocaleString()}
+                            {tx.type === "income" ? "+" : "-"}
+                            {formatCurrency(tx.amount)}
                           </TableCell>
                         </TableRow>
                       );
