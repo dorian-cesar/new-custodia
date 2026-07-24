@@ -2,7 +2,7 @@
 
 import { DollarSign, AlertTriangle, TrendingUp, Receipt } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface CashStatusBannerProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export function CashStatusBanner({
         <div className="text-zinc-400 font-medium">
           Ventas Totales:{" "}
           <span className="font-bold text-zinc-600">
-            $ {totalSales.toLocaleString("es-CL")}
+            {formatCurrency(totalSales)}
           </span>
         </div>
         <div className="text-zinc-400 font-medium">
@@ -38,7 +38,7 @@ export function CashStatusBanner({
           <span className="font-bold text-zinc-600">{transactions}</span>
         </div>
         <div className="text-zinc-900">
-          Saldo: $ {balance.toLocaleString("es-CL")}
+          Saldo: {formatCurrency(balance)}
         </div>
       </div>
     </div>

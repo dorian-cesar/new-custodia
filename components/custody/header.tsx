@@ -9,6 +9,8 @@ import {
   LogOut,
   Printer,
   RotateCcw,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCustodyStore } from "@/lib/custody-store";
@@ -68,6 +70,24 @@ export function Header({
   showShutdown = false,
 }: HeaderProps) {
   const { currentUser, logout } = useCustodyStore();
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+    setTheme(nextTheme);
+  };
 
   const [isBackendOnline, setIsBackendOnline] = useState(false);
 
@@ -196,17 +216,17 @@ export function Header({
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-4 bg-white border-b-2 border-zinc-300">
+      <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
         {/* Left: Logo 'nodo' */}
         <div className="flex items-center gap-2">
           <div className="flex items-center">
             <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
-              <span className="text-[#0a354c] leading-none">n</span>
+              <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">n</span>
               <span
                 className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
                 style={{ borderWidth: "3.5px" }}
               />
-              <span className="text-[#0a354c] leading-none">d</span>
+              <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">d</span>
               <span
                 className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
                 style={{ borderWidth: "3.5px" }}
@@ -217,7 +237,7 @@ export function Header({
 
         {/* Center: Title & Subtitle */}
         <div className="text-center flex-1">
-          <h1 className="text-2xl font-bold tracking-wider text-[#242424] leading-tight font-sans">
+          <h1 className="text-2xl font-bold tracking-wider text-[#242424] dark:text-zinc-100 leading-tight font-sans">
             CUSTODIA
           </h1>
           <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
@@ -276,7 +296,7 @@ export function Header({
           )}
 
           <div
-            className="flex items-center gap-1.5 bg-white border border-zinc-300 rounded-full h-7 px-3 text-[10px] font-medium"
+            className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-full h-7 px-3 text-[10px] font-medium"
             title={isBackendOnline ? "Backend Conectado" : "Backend Desconectado"}
           >
             <div
@@ -284,14 +304,29 @@ export function Header({
                 isBackendOnline ? "bg-green-500 shadow-green-500/50" : "bg-red-500 shadow-red-500/50"
               }`}
             />
-            <span className="text-zinc-600 hidden sm:inline-block">
+            <span className="text-zinc-600 dark:text-zinc-400 hidden sm:inline-block">
               {isBackendOnline ? "Online" : "Offline"}
             </span>
           </div>
 
+          {/* Botón de alternar tema */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            className="h-7 w-7 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full"
+            title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-3.5 w-3.5" />
+            ) : (
+              <Moon className="h-3.5 w-3.5" />
+            )}
+          </Button>
+
           {currentUser && (
-            <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-zinc-300">
-              <span className="text-[11px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-full capitalize">
+            <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-zinc-300 dark:border-zinc-700">
+              <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full capitalize">
                 {currentUser.username}
               </span>
               <Button
