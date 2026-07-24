@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { type Locker, type LockerSize } from "@/lib/types";
+import { useCustodyStore } from "@/lib/custody-store";
 
 interface LockerGridProps {
   lockers: Locker[];
@@ -16,6 +17,7 @@ export function LockerGrid({
   onSelectLocker,
   selectedSize,
 }: LockerGridProps) {
+  const records = useCustodyStore((state) => state.records);
   if (!selectedSize) {
     return (
       <div className="bg-white/50 backdrop-blur-sm p-8 rounded-xl border border-dashed border-zinc-400 text-center select-none my-2 flex-1 flex flex-col justify-center items-center">
@@ -79,12 +81,21 @@ export function LockerGrid({
                   const isSelected = selectedItems.some((item) => item.lockerId === locker.id);
                   const label = `${locker.col}${locker.row}`;
 
+                  const currentRecord = records.find((r) => r.id === locker.currentRecordId);
+                  const clientDoc = currentRecord?.clientDocument || "Desconocido";
+                  const entryTimeStr = currentRecord 
+                    ? new Date(currentRecord.entryTime).toLocaleString("es-PY") 
+                    : "N/A";
+                  const tooltipText = isOccupied
+                    ? `Locker ${label}\nCliente: ${clientDoc}\nCódigo: ${currentRecord?.code || ""}\nFecha de Ingreso: ${entryTimeStr}`
+                    : `Locker ${label} (Disponible)`;
+
                   return (
                     <button
                       key={locker.id}
                       type="button"
                       onClick={() => !isOccupied && onSelectLocker(locker.id)}
-                      disabled={isOccupied}
+                      tabIndex={isOccupied ? -1 : 0}
                       className={cn(
                         "aspect-square w-full rounded-lg font-black text-xs md:text-sm transition-all duration-200 flex items-center justify-center border shadow-sm select-none",
                         isOccupied
@@ -93,7 +104,7 @@ export function LockerGrid({
                             ? "bg-[#00c5ff] border-[#00b4eb] text-white ring-4 ring-[#00c5ff]/20 scale-[1.05] shadow-md z-10 cursor-pointer"
                             : "bg-[#cef3ff]/20 hover:bg-[#cef3ff]/55 dark:bg-zinc-800 dark:hover:bg-zinc-800/80 border-[#aee2ff] dark:border-zinc-700 text-[#0a354c] dark:text-[#00c5ff] hover:scale-[1.02] cursor-pointer",
                       )}
-                      title={`Locker ${label}`}
+                      title={tooltipText}
                     >
                       {label}
                     </button>
