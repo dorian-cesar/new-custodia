@@ -231,7 +231,7 @@ export const printerService = {
       await writeBytes(ESC_INIT);
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
-      await writeText("NODO CUSTODIA\n");
+      await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeText("==============================\n");
       await writeBytes(ESC_ALIGN_LEFT);
@@ -266,7 +266,7 @@ export const printerService = {
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
       await writeBytes(ESC_BOLD_ON);
-      await writeText("NODO CUSTODIA\n");
+      await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
       await writeText("--------------------------------\n");
@@ -319,7 +319,7 @@ export const printerService = {
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
       await writeBytes(ESC_BOLD_ON);
-      await writeText("NODO CUSTODIA\n");
+      await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
       await writeText("--------------------------------\n");
@@ -371,7 +371,7 @@ export const printerService = {
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
       await writeBytes(ESC_BOLD_ON);
-      await writeText("NODO CUSTODIA\n");
+      await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
       await writeText("--------------------------------\n");
@@ -446,7 +446,7 @@ export const printerService = {
       await writeBytes(ESC_ALIGN_CENTER);
       await writeBytes(ESC_DOUBLE_SIZE_ON);
       await writeBytes(ESC_BOLD_ON);
-      await writeText("NODO CUSTODIA\n");
+      await writeText("CUSTODIA\n");
       await writeBytes(ESC_DOUBLE_SIZE_OFF);
       await writeBytes(ESC_BOLD_OFF);
       await writeText("--------------------------------\n");

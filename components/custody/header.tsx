@@ -217,29 +217,15 @@ export function Header({
   return (
     <>
       <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
-        {/* Left: Logo 'nodo' */}
+        {/* Left: Logo 'CUSTODIA' */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center">
-            <span className="text-3xl font-extrabold tracking-tight select-none flex items-center">
-              <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">n</span>
-              <span
-                className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
-                style={{ borderWidth: "3.5px" }}
-              />
-              <span className="text-[#0a354c] dark:text-[#00c5ff] leading-none">d</span>
-              <span
-                className="inline-block w-4.5 h-4.5 rounded-full border-4 border-[#1588b3] mx-0.5 align-middle"
-                style={{ borderWidth: "3.5px" }}
-              />
-            </span>
-          </div>
+          <span className="text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none">
+            CUSTODIA
+          </span>
         </div>
 
-        {/* Center: Title & Subtitle */}
+        {/* Center: Subtitle */}
         <div className="text-center flex-1">
-          <h1 className="text-2xl font-bold tracking-wider text-[#242424] dark:text-zinc-100 leading-tight font-sans">
-            CUSTODIA
-          </h1>
           <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
             Sistema de Control de Casilleros
           </p>
