@@ -201,7 +201,13 @@ export function ClientRegistration({
     cardBrand?: string | null;
     cardType?: string | null;
     timestamp?: string | null;
+    items?: any[] | null;
+    cashReceived?: number;
+    change?: number;
   } | null>(null);
+  // Ref espejo para leer voucherData dentro del useEffect sin hacerlo dependencia
+  const voucherDataRef = useRef(voucherData);
+  useEffect(() => { voucherDataRef.current = voucherData; }, [voucherData]);
 
   // Guardar referencias de los timeouts para que los re-renders no los limpien,
   // pero sí se limpien al desmontar el componente.
@@ -403,7 +409,7 @@ export function ClientRegistration({
 
         const t1 = setTimeout(() => {
           let printVoucherAction: (() => void) | null = null;
-          if (voucherData) {
+          if (voucherDataRef.current) {
             printVoucherAction = () => {
               nextPrintActionRef.current = () => {
                 setVoucherData(null);
@@ -436,7 +442,6 @@ export function ClientRegistration({
     activePrintRecord,
     isPrinting,
     entryPaymentMethod,
-    voucherData,
     lockers,
     lockerSizes,
     handlePrint,
