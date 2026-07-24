@@ -295,7 +295,7 @@ export function Header({
         </div>
 
         {/* Row 3: Status, theme toggle, profile & logout (on mobile/tablet, aligned below Row 2) */}
-        <div className="flex items-center justify-end w-full lg:w-auto gap-2 border-t lg:border-t-0 border-zinc-100 dark:border-zinc-800 pt-2.5 lg:pt-0">
+        <div className="flex items-center justify-start lg:justify-end w-full lg:w-auto gap-2 border-t lg:border-t-0 border-zinc-100 dark:border-zinc-800 pt-2.5 lg:pt-0">
           {/* Navigation buttons: Impresora, Caja, Historial, Volver (Visible on desktop here) */}
           <div className="hidden lg:flex items-center gap-2 mr-2">
             {isNative && (
