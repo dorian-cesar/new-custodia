@@ -292,6 +292,7 @@ export function ClientRegistration({
           
           if (paymentMethod === "Tarjeta" && voucherData) {
             await (printerService as any).printTransbankVoucher(voucherData);
+            setVoucherData(null);
           }
 
           setActiveDeliveryPrintRecord(null);
@@ -388,6 +389,7 @@ export function ClientRegistration({
 
           if (entryPaymentMethod === "Tarjeta" && voucherData) {
             await (printerService as any).printTransbankVoucher(voucherData);
+            setVoucherData(null);
           }
 
           setPrintQueue((prev) => prev.slice(1));
@@ -404,6 +406,7 @@ export function ClientRegistration({
           if (entryPaymentMethod === "Tarjeta" && voucherData) {
             printVoucherAction = () => {
               nextPrintActionRef.current = () => {
+                setVoucherData(null);
                 setPrintQueue((prev) => prev.slice(1));
                 setIsPrinting(false);
                 setActivePrintRecord(null);
