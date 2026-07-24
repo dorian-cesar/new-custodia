@@ -40,6 +40,7 @@ import {
 import { useCustodyStore } from "@/lib/custody-store";
 import { formatDateTime } from "@/lib/types";
 import { verifySupervisor } from "@/app/actions/db-actions";
+import { formatCurrency } from "@/lib/utils";
 
 export default function CajaPage() {
   const {
@@ -389,16 +390,16 @@ export default function CajaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
-      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden transition-colors duration-300">
+      <div className="w-full max-w-[960px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4 transition-colors duration-300">
         <Header showBack />
 
         <main className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto min-h-0">
           {/* Current Cash Register Status */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center justify-between">
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center justify-between transition-colors duration-300">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
+                <DollarSign className="h-4 w-4 text-[#00c5ff]" />
                 <span>Estado de Caja</span>
               </div>
               {isCashOpen ? (
@@ -409,7 +410,7 @@ export default function CajaPage() {
                       setShowGiroDialog(true);
                     }}
                     variant="outline"
-                    className="h-7 text-[10px] uppercase font-bold border-amber-500/50 text-amber-600 bg-white hover:bg-amber-50"
+                    className="h-7 text-[10px] uppercase font-bold border-amber-500/50 text-amber-600 bg-white dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-zinc-700"
                   >
                     <TrendingDown className="h-3 w-3 mr-1" />
                     Retiro de Caja
@@ -439,67 +440,66 @@ export default function CajaPage() {
 
             {isCashOpen ? (
               <div className="grid sm:grid-cols-4 gap-4">
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mb-1">
                     <Clock className="h-4 w-4" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
                       Apertura
                     </span>
                   </div>
-                  <p className="text-zinc-800 font-extrabold text-sm">
+                  <p className="text-zinc-800 dark:text-zinc-200 font-extrabold text-sm">
                     {currentCashRegister &&
                       formatDateTime(currentCashRegister.openedAt)}
                   </p>
-                  <p className="text-[11px] text-zinc-500 font-bold mt-1">
-                    Monto inicial: $
-                    {currentCashRegister?.openingAmount.toLocaleString()}
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-bold mt-1">
+                    Monto inicial: {formatCurrency(currentCashRegister?.openingAmount || 0)}
                   </p>
                 </div>
 
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                    <TrendingUp className="h-4 w-4 text-[#0a354c]" />
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mb-1">
+                    <TrendingUp className="h-4 w-4 text-[#0a354c] dark:text-[#00c5ff]" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
                       Ventas
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-[#0a354c]">
-                    ${stats.totalSales.toLocaleString()}
+                  <p className="text-2xl font-black text-[#0a354c] dark:text-[#00c5ff]">
+                    {formatCurrency(stats.totalSales)}
                   </p>
                 </div>
 
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                    <Receipt className="h-4 w-4 text-zinc-600" />
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mb-1">
+                    <Receipt className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
                       Transacciones
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-zinc-800">
+                  <p className="text-2xl font-black text-zinc-800 dark:text-zinc-200">
                     {stats.totalTransactions}
                   </p>
                 </div>
 
-                <div className="bg-white border border-zinc-300 rounded-xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                    <DollarSign className="h-4 w-4 text-[#1588b3]" />
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mb-1">
+                    <DollarSign className="h-4 w-4 text-[#1588b3] dark:text-[#00c5ff]" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
                       Saldo Actual
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-[#1588b3]">
-                    ${stats.balance.toLocaleString()}
+                  <p className="text-2xl font-black text-[#1588b3] dark:text-[#00c5ff]">
+                    {formatCurrency(stats.balance)}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-3 p-5 bg-white border border-zinc-300 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3 p-5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm transition-colors duration-300">
                 <AlertCircle className="h-6 w-6 text-red-600" />
                 <div>
-                  <p className="font-extrabold text-[#242424]">
+                  <p className="font-extrabold text-[#242424] dark:text-zinc-200">
                     La caja está cerrada
                   </p>
-                  <p className="text-xs text-zinc-500 font-medium">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
                     Debe abrir la caja para comenzar a registrar custodias.
                   </p>
                 </div>
@@ -510,13 +510,13 @@ export default function CajaPage() {
           {/* Current Session Transactions */}
           {isCashOpen && currentTransactions.length > 0 && (
             <div>
-              <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center gap-2">
-                <Receipt className="h-4 w-4" />
+              <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center gap-2 transition-colors duration-300">
+                <Receipt className="h-4 w-4 text-[#00c5ff]" />
                 <span>Transacciones de la Sesión Actual</span>
               </div>
-              <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+              <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
                 <Table>
-                  <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                  <TableHeader className="bg-[#242424] dark:bg-zinc-850 hover:bg-[#242424] dark:hover:bg-zinc-850">
                     <TableRow className="hover:bg-transparent border-none">
                       <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
                         HORA
@@ -600,7 +600,7 @@ export default function CajaPage() {
                 </Table>
 
                 {currentTransactions.length > 0 && (
-                  <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
+                  <div className="flex items-center justify-between p-4 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 font-semibold">
                     <div>
                       Mostrando{" "}
                       {Math.min(
@@ -622,7 +622,7 @@ export default function CajaPage() {
                           setCurrentTxPage((p) => Math.max(1, p - 1))
                         }
                         disabled={currentTxPage === 1}
-                        className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                        className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold"
                       >
                         Anterior
                       </Button>
@@ -635,7 +635,7 @@ export default function CajaPage() {
                         disabled={
                           currentTxPage >= totalTxPages || totalTxPages === 0
                         }
-                        className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                        className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold"
                       >
                         Siguiente
                       </Button>
@@ -648,13 +648,13 @@ export default function CajaPage() {
 
           {/* Cash Register History */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center gap-2">
-              <History className="h-4 w-4" />
+            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-3 rounded-md flex items-center gap-2 transition-colors duration-300">
+              <History className="h-4 w-4 text-[#00c5ff]" />
               <span>Historial de Cajas</span>
             </div>
-            <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+            <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
               <Table>
-                <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                <TableHeader className="bg-[#242424] dark:bg-zinc-850 hover:bg-[#242424] dark:hover:bg-zinc-850">
                   <TableRow className="hover:bg-transparent border-none">
                     <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
                       APERTURA
@@ -735,57 +735,56 @@ export default function CajaPage() {
                         register.closingAmount !== null
                           ? register.closingAmount - saldoEsperadoEfectivo
                           : null;
-
                       return (
                         <TableRow
                           key={register.id}
-                          className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50"
+                          className="border-b border-zinc-250 dark:border-zinc-700 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/50"
                         >
-                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-semibold text-xs py-3">
                             {formatDateTime(register.openedAt)}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-semibold text-xs py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-semibold text-xs py-3">
                             {register.closedAt
                               ? formatDateTime(register.closedAt)
                               : "-"}
                           </TableCell>
-                          <TableCell className="text-zinc-800 font-bold text-xs py-3 text-right">
-                            ${register.openingAmount.toLocaleString()}
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-bold text-xs py-3 text-right">
+                            {formatCurrency(register.openingAmount)}
                           </TableCell>
                           <TableCell className="py-3 text-right">
                             <div className="flex flex-col items-end gap-0.5">
-                              <span className="text-amber-600 font-extrabold text-[10px]">
-                                EF: ${ingresosEfectivo.toLocaleString()}
+                              <span className="text-amber-600 dark:text-amber-400 font-extrabold text-[10px]">
+                                EF: {formatCurrency(ingresosEfectivo)}
                               </span>
-                              <span className="text-blue-600 font-extrabold text-[10px]">
-                                TJ: ${ingresosTarjeta.toLocaleString()}
+                              <span className="text-blue-600 dark:text-blue-400 font-extrabold text-[10px]">
+                                TJ: {formatCurrency(ingresosTarjeta)}
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-red-600 text-right font-extrabold text-xs py-3">
-                            ${gastosEfectivo.toLocaleString()}
+                          <TableCell className="text-red-650 dark:text-red-400 text-right font-extrabold text-xs py-3">
+                            {formatCurrency(gastosEfectivo)}
                           </TableCell>
-                          <TableCell className="text-zinc-800 text-right font-extrabold text-xs py-3">
-                            ${saldoEsperadoEfectivo.toLocaleString()}
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 text-right font-extrabold text-xs py-3">
+                            {formatCurrency(saldoEsperadoEfectivo)}
                           </TableCell>
-                          <TableCell className="text-zinc-800 text-right font-black text-xs py-3">
+                          <TableCell className="text-zinc-800 dark:text-zinc-200 text-right font-black text-xs py-3">
                             {register.closingAmount !== null
-                              ? `$${register.closingAmount.toLocaleString()}`
+                              ? formatCurrency(register.closingAmount)
                               : "-"}
                           </TableCell>
                           <TableCell className="text-right py-3">
                             {diferenciaCaja !== null ? (
                               <span
-                                className={`text-[10px] font-black ${diferenciaCaja === 0 ? "text-emerald-600" : diferenciaCaja > 0 ? "text-blue-600" : "text-red-600"}`}
+                                className={`text-[10px] font-black ${diferenciaCaja === 0 ? "text-emerald-600 dark:text-emerald-400" : diferenciaCaja > 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}
                               >
                                 {diferenciaCaja === 0
                                   ? "Cuadrada"
                                   : diferenciaCaja > 0
-                                    ? `Sobrante: +$${diferenciaCaja.toLocaleString()}`
-                                    : `Faltante: -$${Math.abs(diferenciaCaja).toLocaleString()}`}
+                                    ? `Sobrante: +${formatCurrency(diferenciaCaja)}`
+                                    : `Faltante: -${formatCurrency(Math.abs(diferenciaCaja))}`}
                               </span>
                             ) : (
-                              <span className="text-zinc-500 font-semibold">
+                              <span className="text-zinc-500 dark:text-zinc-400 font-semibold">
                                 -
                               </span>
                             )}
@@ -794,8 +793,8 @@ export default function CajaPage() {
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                                 register.status === "open"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-zinc-100 text-zinc-500"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
+                                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
                               }`}
                             >
                               {register.status === "open"
@@ -809,7 +808,7 @@ export default function CajaPage() {
                   )}
                 </TableBody>
               </Table>
-              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 border-t border-zinc-200 bg-zinc-50/50 font-semibold">
+              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 font-semibold transition-colors duration-300">
                 <div>
                   Mostrando{" "}
                   {Math.min(
@@ -831,7 +830,7 @@ export default function CajaPage() {
                       setCurrentPageRegisters((p) => Math.max(1, p - 1))
                     }
                     disabled={currentPageRegisters === 1}
-                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                    className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
                   >
                     Anterior
                   </Button>
@@ -847,7 +846,7 @@ export default function CajaPage() {
                       currentPageRegisters >= totalRegisterPages ||
                       totalRegisterPages === 0
                     }
-                    className="h-7 text-[10px] bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 font-bold"
+                    className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
                   >
                     Siguiente
                   </Button>

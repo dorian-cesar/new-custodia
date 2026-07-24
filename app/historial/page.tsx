@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { useCustodyStore } from "@/lib/custody-store";
 import { formatDateTime, type LockerSize } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 export default function HistorialPage() {
   const { records, lockers, lockerSizes, cashTransactions } = useCustodyStore();
@@ -304,23 +305,28 @@ export default function HistorialPage() {
                     </TableRow>
                   ) : (
                     paginatedRecords.map((record) => {
-                      // Obtener la transaccion de pago si es que ya existe
-                      const txs =
-                        cashTransactions?.filter(
-                          (t) => t.recordId === record.id,
-                        ) || [];
-                      let paymentStr = "-";
-                      if (txs.length > 0) {
-                        const methods = new Set<string>();
-                        txs.forEach((t) => {
-                          if (t.description.includes("Efectivo"))
-                            methods.add("Efectivo");
-                          if (t.description.includes("Tarjeta"))
-                            methods.add("Tarjeta");
-                        });
-                        if (methods.size > 0) {
-                          paymentStr = Array.from(methods).join(" / ");
+                      // Obtener la transaccion de pago si es que ya existe, o usar el campo del registro
+                      let paymentStr = record.entryPaymentMethod || "-";
+                      if (paymentStr === "-") {
+                        const txs =
+                          cashTransactions?.filter(
+                            (t) => t.recordId === record.id,
+                          ) || [];
+                        if (txs.length > 0) {
+                          const methods = new Set<string>();
+                          txs.forEach((t) => {
+                            if (t.description.includes("Efectivo"))
+                              methods.add("Efectivo");
+                            if (t.description.includes("Tarjeta"))
+                              methods.add("Tarjeta");
+                          });
+                          if (methods.size > 0) {
+                            paymentStr = Array.from(methods).join(" / ");
+                          }
                         }
+                      }
+                      if (record.exitPaymentMethod && record.exitPaymentMethod !== paymentStr) {
+                        paymentStr = `${paymentStr} / ${record.exitPaymentMethod}`;
                       }
 
                       return (
@@ -373,7 +379,7 @@ export default function HistorialPage() {
                             </span>
                           </TableCell>
                           <TableCell className="text-zinc-800 font-black text-xs py-3">
-                            $ {record.price.toLocaleString("es-CL")}
+                            {formatCurrency(record.price)}
                           </TableCell>
                           <TableCell className="text-center py-3">
                             <Button
