@@ -8,7 +8,7 @@ import { ClientRegistration } from "@/components/custody/client-registration";
 import { CashStatusBanner } from "@/components/custody/cash-status-banner";
 import { useCustodyStore } from "@/lib/custody-store";
 import { type LockerSize, type CustodyRecord } from "@/lib/types";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Package, Luggage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Swal from "sweetalert2";
 
@@ -19,17 +19,14 @@ export default function CustodyPage() {
     records,
     currentCashRegister,
     currentUser,
-    createRecord,
     deliverRecord,
     getCurrentRegisterStats,
   } = useCustodyStore();
 
-  const [selectedLockerId, setSelectedLockerId] = useState<number | null>(null);
+  const [selectedItems, setSelectedItems] = useState<{ lockerId: number; size: LockerSize }[]>([]);
   const [selectedSize, setSelectedSize] = useState<LockerSize | null>(null);
   const [clientDocument, setClientDocument] = useState("");
-  const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(
-    null,
-  );
+  const [currentRecords, setCurrentRecords] = useState<CustodyRecord[]>([]);
   const [lastPrintedId, setLastPrintedId] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   const [serviceMode, setServiceMode] = useState<"entrega" | "retiro">(
@@ -83,15 +80,15 @@ export default function CustodyPage() {
     cardNumber?: string | null,
     cardBrand?: string | null,
     cardType?: string | null,
-  ): Promise<CustodyRecord | null> => {
-    if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
+  ): Promise<CustodyRecord[] | null> => {
+    if (selectedItems.length === 0 || !clientDocument.trim()) {
       return null;
     }
 
-    const record = await createRecord(
-      selectedLockerId,
+    const { createMultipleRecords } = useCustodyStore.getState();
+    const created = await createMultipleRecords(
+      selectedItems,
       clientDocument.trim(),
-      selectedSize,
       paymentMethod,
       authCode,
       opNumber,
@@ -99,18 +96,19 @@ export default function CustodyPage() {
       cardBrand,
       cardType,
     );
-    if (record) {
-      setCurrentRecord(record);
+
+    if (created && created.length > 0) {
+      setCurrentRecords(created);
       // Retrasar la limpieza de los campos de entrada de la UI por 4 segundos.
       // Esto evita que el DOM del ticket se destruya o cambie antes de que
-      // react-to-print termine de enviar las 2 copias (y el voucher) a la cola de Windows.
+      // react-to-print termine de enviar las copias a la cola.
       setTimeout(() => {
-        setSelectedLockerId(null);
+        setSelectedItems([]);
         setSelectedSize(null);
         setClientDocument("");
       }, 4000);
     }
-    return record;
+    return created;
   };
 
   const handleDeliver = async (
@@ -141,6 +139,43 @@ export default function CustodyPage() {
     );
   };
 
+  const handleDeliverMultiple = async (
+    recordIds: number[],
+    extraCharge?: number,
+    paymentMethod?: string,
+    extraFolio?: number | null,
+    authCode?: string | null,
+    opNumber?: string | null,
+    cardNumber?: string | null,
+    cardBrand?: string | null,
+    cardType?: string | null,
+  ): Promise<boolean> => {
+    const { deliverMultipleRecords } = useCustodyStore.getState();
+    return await deliverMultipleRecords(
+      recordIds,
+      extraCharge,
+      paymentMethod,
+      extraFolio,
+      authCode,
+      opNumber,
+      cardNumber,
+      cardBrand,
+      cardType,
+    );
+  };
+
+  const handleSelectLocker = (lockerId: number) => {
+    if (!selectedSize) return;
+    setSelectedItems((prev) => {
+      const exists = prev.find((item) => item.lockerId === lockerId);
+      if (exists) {
+        return prev.filter((item) => item.lockerId !== lockerId);
+      } else {
+        return [...prev, { lockerId, size: selectedSize }];
+      }
+    });
+  };
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
@@ -150,9 +185,9 @@ export default function CustodyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex flex-col items-center py-3 lg:py-4 px-4 lg:overflow-hidden">
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex flex-col items-center py-3 md:py-4 px-3 md:px-4 md:overflow-hidden transition-colors duration-300">
       {/* Main Cashier Card */}
-      <div className="w-full max-w-[720px] lg:max-w-[1330px] lg:h-[calc(100vh-32px)] bg-[#d7d7d8] border border-zinc-400 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4">
+      <div className="w-full max-w-[720px] md:max-w-[1330px] md:h-[calc(100vh-32px)] bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 shadow-xl rounded-lg overflow-hidden flex flex-col pb-4 transition-colors duration-300">
         {/* Header inside Card */}
         <Header showHistory showCash />
 
@@ -163,6 +198,24 @@ export default function CustodyPage() {
           totalSales={stats.totalSales}
           transactions={stats.totalTransactions}
         />
+
+        {/* Inventory Stats Bar */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-800 border-b border-zinc-300 dark:border-zinc-700 transition-colors duration-300">
+          <div className="flex items-center gap-1.5 flex-1 justify-center">
+            <Package className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+            <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Ocupados</span>
+            <span className="text-sm font-black text-[#242424] dark:text-zinc-100 ml-1">{lockers.filter((l) => l.isOccupied).length}</span>
+            <span className="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
+            <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Libres</span>
+            <span className="text-sm font-black text-[#00c5ff] ml-1">{lockers.filter((l) => !l.isOccupied).length}</span>
+          </div>
+          <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-600" />
+          <div className="flex items-center gap-1.5 flex-1 justify-center">
+            <Luggage className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Equipajes en custodia</span>
+            <span className="text-sm font-black text-amber-500 ml-1">{records.filter((r) => r.status === "Activo").length}</span>
+          </div>
+        </div>
 
         {/* Content Area */}
         <div className="flex-1 flex flex-col gap-2.5 py-2.5 overflow-y-auto min-h-0">
@@ -230,25 +283,22 @@ export default function CustodyPage() {
           {serviceMode === "entrega" ? (
             <LockerSelection
               lockers={lockers}
-              selectedLockerId={selectedLockerId}
-              onSelectLocker={(id) =>
-                setSelectedLockerId(selectedLockerId === id ? null : id)
-              }
+              selectedItems={selectedItems}
+              onSelectLocker={handleSelectLocker}
               selectedSize={selectedSize}
               onSelectSize={(size) => {
                 setSelectedSize(size);
-                setSelectedLockerId(null);
               }}
               clientDocument={clientDocument}
               onChangeDocument={setClientDocument}
             >
               <ClientRegistration
-                selectedLockerId={selectedLockerId}
-                selectedSize={selectedSize}
+                selectedItems={selectedItems}
                 clientDocument={clientDocument}
                 onGenerateBarcode={handleGenerateBarcode}
                 onDeliver={handleDeliver}
-                currentRecord={currentRecord}
+                onDeliverMultiple={handleDeliverMultiple}
+                currentRecords={currentRecords}
                 isCashOpen={isCashOpen}
                 mode={serviceMode}
                 lastPrintedId={lastPrintedId}
@@ -257,12 +307,12 @@ export default function CustodyPage() {
             </LockerSelection>
           ) : (
             <ClientRegistration
-              selectedLockerId={selectedLockerId}
-              selectedSize={selectedSize}
+              selectedItems={[]}
               clientDocument={clientDocument}
-              onGenerateBarcode={handleGenerateBarcode}
+              onGenerateBarcode={async () => null}
               onDeliver={handleDeliver}
-              currentRecord={currentRecord}
+              onDeliverMultiple={handleDeliverMultiple}
+              currentRecords={[]}
               isCashOpen={isCashOpen}
               mode={serviceMode}
               lastPrintedId={lastPrintedId}
