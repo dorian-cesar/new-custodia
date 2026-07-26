@@ -1,5 +1,18 @@
 "use server";
 
+import fs from "fs";
+import path from "path";
+
+function logDebug(message: string) {
+  try {
+    const logPath = path.join(process.cwd(), "debug-db.log");
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
+  } catch (e) {
+    console.error("Failed to write to debug-db.log", e);
+  }
+}
+
 import {
   LockerModel,
   CustodyRecordModel,
@@ -65,9 +78,13 @@ export async function dbUpdateSetting(key: string, value: string) {
 
 
 export async function getInitialState() {
+  logDebug("getInitialState called");
   try {
-    return { success: true, data: await initDbAndFetch() };
+    const data = await initDbAndFetch();
+    logDebug("getInitialState succeeded");
+    return { success: true, data };
   } catch (error: any) {
+    logDebug(`getInitialState failed: ${error.message}\n${error.stack}`);
     console.error("Error fetching initial DB state:", error);
     return { success: false, error: error.message };
   }
@@ -226,63 +243,84 @@ export async function verifySupervisor(username: string, passwordHash: string) {
 
 // ── Admin: login universal (cajero + supervisor) ──
 export async function loginUser(username: string, passwordHash: string) {
-  await syncDatabase();
-
-  const user = await UserModel.findOne({ where: { username } });
-  if (
-    !user ||
-    !(await bcrypt.compare(passwordHash, (user as any).passwordHash))
-  ) {
-    return { success: false, error: "Usuario o contraseña incorrectos" };
-  }
-
-  const openRegister = await CashRegisterModel.findOne({
-    where: { status: "open" },
-  });
-  if (openRegister) {
-    const plainRegister = openRegister.get({ plain: true }) as any;
-    if (
-      plainRegister.openedBy &&
-      plainRegister.openedBy !== user.username &&
-      user.role !== "supervisor"
-    ) {
-      return {
-        success: false,
-        error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.`,
-      };
-    }
-  }
-
-  // Fetch API token behind the scenes using fixed credentials
-  let apiToken = "";
+  logDebug(`loginUser called: username="${username}"`);
   try {
-    const response = await fetch(
-      "https://new-backend-banos.dev-wit.com/api/auth/loginUser",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
-      },
-    );
-    const data = await response.json();
-    if (response.ok && data.token) {
-      apiToken = data.token;
-    }
-  } catch (error) {
-    console.error("Failed to fetch API token behind the scenes:", error);
-  }
+    await syncDatabase();
+    logDebug("loginUser: DB synced");
 
-  return {
-    success: true,
-    user: {
-      id: user.id,
-      username: user.username,
-      role: user.role === "supervisor" ? "supervisor" : "cajero",
-      token: apiToken,
-    },
-  };
+    const user = await UserModel.findOne({ where: { username } });
+    if (!user) {
+      logDebug(`loginUser: user "${username}" not found in DB`);
+      return { success: false, error: "Usuario o contraseña incorrectos" };
+    }
+    logDebug(`loginUser: user found, role="${user.role}", comparing password...`);
+
+    const isMatch = await bcrypt.compare(passwordHash, (user as any).passwordHash);
+    logDebug(`loginUser: password match result = ${isMatch}`);
+    if (!isMatch) {
+      return { success: false, error: "Usuario o contraseña incorrectos" };
+    }
+
+    const openRegister = await CashRegisterModel.findOne({
+      where: { status: "open" },
+    });
+    if (openRegister) {
+      const plainRegister = openRegister.get({ plain: true }) as any;
+      logDebug(`loginUser: open register found, openedBy="${plainRegister.openedBy}"`);
+      if (
+        plainRegister.openedBy &&
+        plainRegister.openedBy !== user.username &&
+        user.role !== "supervisor"
+      ) {
+        logDebug(`loginUser: blocked because register opened by another user`);
+        return {
+          success: false,
+          error: `Hay un turno abierto por ${plainRegister.openedBy}. Se debe cerrar ese turno antes de ingresar con otra cuenta.`,
+        };
+      }
+    }
+
+    // Fetch API token behind the scenes using fixed credentials
+    let apiToken = "";
+    try {
+      logDebug("loginUser: fetching API token from external server...");
+      const response = await fetch(
+        "https://new-backend-banos.dev-wit.com/api/auth/loginUser",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: "dfarias@wit.la", password: "wit321" }),
+        },
+      );
+      logDebug(`loginUser: API token fetch status = ${response.status}`);
+      const data = await response.json();
+      if (response.ok && data.token) {
+        apiToken = data.token;
+        logDebug("loginUser: API token fetched successfully");
+      } else {
+        logDebug(`loginUser: API token fetch did not return token. Data: ${JSON.stringify(data)}`);
+      }
+    } catch (error: any) {
+      logDebug(`loginUser: API token fetch failed with error: ${error.message}`);
+      console.error("Failed to fetch API token behind the scenes:", error);
+    }
+
+    logDebug("loginUser: returning success");
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role === "supervisor" ? "supervisor" : "cajero",
+        token: apiToken,
+      },
+    };
+  } catch (error: any) {
+    logDebug(`loginUser critical error: ${error.message}\n${error.stack}`);
+    throw error;
+  }
 }
 
 // ── Admin: CRUD de usuarios ──
@@ -455,4 +493,9 @@ export async function sendBoleta(nombre: string, precio: number) {
       error: "Error de conexión con el servidor de facturación",
     };
   }
+}
+
+export async function logClientError(message: string, stack: string) {
+  logDebug(`[CLIENT ERROR] ${message}\nStack: ${stack}`);
+  return true;
 }

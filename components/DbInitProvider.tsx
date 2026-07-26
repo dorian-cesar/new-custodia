@@ -2,11 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useCustodyStore } from "@/lib/custody-store";
-import { getInitialState } from "@/app/actions/db-actions";
+import { getInitialState, logClientError } from "@/app/actions/db-actions";
 
 export function DbInitProvider({ children }: { children: React.ReactNode }) {
   const hydrateState = useCustodyStore((state) => state.hydrateState);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const handleError = (event: ErrorEvent) => {
+        logClientError(event.message, event.error?.stack || "");
+      };
+      const handleRejection = (event: PromiseRejectionEvent) => {
+        logClientError(event.reason?.message || String(event.reason), event.reason?.stack || "");
+      };
+      window.addEventListener("error", handleError);
+      window.addEventListener("unhandledrejection", handleRejection);
+      return () => {
+        window.removeEventListener("error", handleError);
+        window.removeEventListener("unhandledrejection", handleRejection);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     getInitialState().then((res) => {

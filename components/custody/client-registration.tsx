@@ -245,6 +245,19 @@ export function ClientRegistration({
     },
   });
 
+  const handlePrintVoucher = useReactToPrint({
+    contentRef: voucherRef,
+    documentTitle: "Voucher_Transbank",
+    suppressErrors: true,
+    onAfterPrint: () => {
+      if (nextPrintActionRef.current) {
+        const nextAction = nextPrintActionRef.current;
+        nextPrintActionRef.current = null;
+        setTimeout(nextAction, 500);
+      }
+    },
+  });
+
   // Queue controller for Delivery/Exit Tickets
   useEffect(() => {
     if (deliveryPrintQueue.length > 0 && !activeDeliveryPrintRecord && !isDeliveryPrinting) {
@@ -398,18 +411,7 @@ export function ClientRegistration({
     }
   }, [activeDeliveryPrintRecord, isDeliveryPrinting, lockers, lockerSizes, paymentMethod, extraFolioState, handlePrintDelivery, handlePrintVoucher]);
 
-  const handlePrintVoucher = useReactToPrint({
-    contentRef: voucherRef,
-    documentTitle: "Voucher_Transbank",
-    suppressErrors: true,
-    onAfterPrint: () => {
-      if (nextPrintActionRef.current) {
-        const nextAction = nextPrintActionRef.current;
-        nextPrintActionRef.current = null;
-        setTimeout(nextAction, 500);
-      }
-    },
-  });
+
 
 
   // Calcular precios acumulados del carrito
