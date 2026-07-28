@@ -46,7 +46,7 @@ export function LayoutConfigurator() {
   const [editLabel, setEditLabel] = useState("");
   const [editPrice, setEditPrice] = useState("");
 
-  const [deletingSize, setDeletingSize] = useState<{ size: string; label: string } | null>(null);
+  const [deletingSize, setDeletingSize] = useState<{ size: string; label: string; shelfId: string } | null>(null);
   const [priceError, setPriceError] = useState("");
   const [isSavingPrice, setIsSavingPrice] = useState(false);
 
@@ -172,6 +172,20 @@ export function LayoutConfigurator() {
     }
   };
 
+  const handleRemoveFromShelf = () => {
+    if (!deletingSize) return;
+    handleSizeCountChange(deletingSize.shelfId, deletingSize.size, "0");
+    setShowDeletePriceDialog(false);
+    setDeletingSize(null);
+    Swal.fire({
+      title: "Medida Removida del Sector",
+      text: `La medida ${deletingSize.label} se ha establecido en 0 casilleros para el Sector ${deletingSize.shelfId}. Presione "Guardar Layout" para aplicar los cambios en el sistema.`,
+      icon: "info",
+      confirmButtonText: "Entendido",
+      confirmButtonColor: "#00c5ff",
+    });
+  };
+
   const handleDeletePrice = async () => {
     if (!deletingSize) return;
     setIsSavingPrice(true);
@@ -181,6 +195,7 @@ export function LayoutConfigurator() {
         setShowDeletePriceDialog(false);
         setDeletingSize(null);
         await refreshState();
+        Swal.fire("Eliminada", `La medida ${deletingSize.label} ha sido eliminada de todos los sectores.`, "success");
       } else {
         setPriceError(result.error || "Error al eliminar medida");
       }
@@ -264,11 +279,12 @@ export function LayoutConfigurator() {
                           </button>
                           <button
                             onClick={() => {
-                              setDeletingSize({ size: ls.value, label: ls.label });
+                              setDeletingSize({ size: ls.value, label: ls.label, shelfId: shelf.id });
+                              setPriceError("");
                               setShowDeletePriceDialog(true);
                             }}
                             className="p-1 text-zinc-500 hover:text-red-500 bg-zinc-100 dark:bg-zinc-800 rounded"
-                            title="Eliminar medida"
+                            title="Quitar / Eliminar medida"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -409,23 +425,63 @@ export function LayoutConfigurator() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Price Confirmation ── */}
+      {/* ── Delete / Remove Price Confirmation ── */}
       <AlertDialog open={showDeletePriceDialog} onOpenChange={setShowDeletePriceDialog}>
-        <AlertDialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm">
+        <AlertDialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
           <AlertDialogHeader className="bg-[#242424] text-white p-4">
             <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
               <Trash2 className="h-4 w-4 text-red-500" />
-              <span>Eliminar Medida</span>
+              <span>Quitar o Eliminar Medida</span>
             </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-300 text-xs mt-1">
-              ¿Eliminar la medida <strong>{deletingSize?.label}</strong>? Esto la quitará de todos los estantes.
+              ¿Cómo desea proceder con la medida <strong>{deletingSize?.label}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
-            <AlertDialogCancel disabled={isSavingPrice} className="h-9 text-xs font-bold">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeletePrice} className="bg-red-600 hover:bg-red-700 text-white font-bold h-9 text-xs" disabled={isSavingPrice}>
-              {isSavingPrice ? "Eliminando..." : "Eliminar"}
-            </AlertDialogAction>
+
+          <div className="p-4 space-y-3">
+            <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-3 rounded-lg flex flex-col gap-1">
+              <span className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase">
+                1. Quitar solo del Sector {deletingSize?.shelfId}
+              </span>
+              <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                Establece la cantidad en 0 casilleros para este sector. La medida seguirá disponible en los demás sectores.
+              </p>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-3 rounded-lg flex flex-col gap-1">
+              <span className="text-xs font-bold text-red-900 dark:text-red-200 uppercase">
+                2. Eliminar de TODOS los sectores (Global)
+              </span>
+              <p className="text-[11px] text-red-700 dark:text-red-300">
+                Borra la medida por completo del sistema y de todos los estantes.
+              </p>
+            </div>
+
+            {priceError && <p className="text-xs text-red-600 font-bold">{priceError}</p>}
+          </div>
+
+          <AlertDialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex flex-col sm:flex-row justify-end gap-2">
+            <AlertDialogCancel disabled={isSavingPrice} className="h-9 text-xs font-bold sm:mr-auto">
+              Cancelar
+            </AlertDialogCancel>
+
+            <Button
+              type="button"
+              onClick={handleRemoveFromShelf}
+              disabled={isSavingPrice}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-9 text-xs"
+            >
+              Quitar de Sector {deletingSize?.shelfId}
+            </Button>
+
+            <Button
+              type="button"
+              onClick={handleDeletePrice}
+              disabled={isSavingPrice}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold h-9 text-xs"
+            >
+              {isSavingPrice ? "Eliminando..." : "Eliminar de Todos"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
