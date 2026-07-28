@@ -173,7 +173,10 @@ SettingModel.init(
   { sequelize, modelName: 'Setting', tableName: 'settings', timestamps: false }
 );
 
+let isSynced = false;
+
 export const syncDatabase = async () => {
+  if (isSynced) return;
   await sequelize.sync();
   await SettingModel.sync();
 
@@ -246,4 +249,5 @@ export const syncDatabase = async () => {
       // Ignore error if column already exists
     }
   }
+  isSynced = true;
 };

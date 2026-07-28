@@ -31,3 +31,17 @@ Stack: ReferenceError: Cannot access 'eq' before initialization
     at MessagePort.O (http://localhost:3000/_next/static/chunks/11z01sfi8en7p.js:1:8658)
 [2026-07-26T01:01:35.655Z] getInitialState called
 [2026-07-26T01:01:43.132Z] getInitialState succeeded
+[2026-07-28T16:05:01.201Z] getInitialState called
+[2026-07-28T16:05:22.253Z] getInitialState succeeded
+[2026-07-28T16:05:33.159Z] getInitialState called
+[2026-07-28T16:06:02.141Z] getInitialState succeeded
+[2026-07-28T16:06:17.437Z] loginUser called: username="admin"
+[2026-07-28T16:06:34.095Z] loginUser: DB synced
+[2026-07-28T16:06:35.577Z] loginUser: user found, role="supervisor", comparing password...
+[2026-07-28T16:06:35.659Z] loginUser: password match result = true
+[2026-07-28T16:06:36.481Z] loginUser: open register found, openedBy="cajero"
+[2026-07-28T16:06:36.481Z] loginUser: fetching API token from external server...
+[2026-07-28T16:06:47.083Z] loginUser: API token fetch failed with error: fetch failed
+[2026-07-28T16:06:47.542Z] loginUser: returning success
+[2026-07-28T16:10:07.083Z] getInitialState called
+[2026-07-28T16:10:19.998Z] getInitialState succeeded

@@ -20,7 +20,16 @@ export const sequelize =
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '3306', 10),
         dialect: 'mysql',
-        logging: false, // Set to console.log to see SQL queries
+        logging: false,
+        dialectOptions: {
+          connectTimeout: 10000,
+        },
+        pool: {
+          max: 10,
+          min: 0,
+          acquire: 20000,
+          idle: 10000,
+        },
       }));
 
 if (process.env.NODE_ENV !== 'production') globalForSequelize.sequelize = sequelize;
