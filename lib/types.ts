@@ -1,4 +1,4 @@
-export type LockerSize = "S" | "M" | "L" | "XL" | "XXL";
+export type LockerSize = string;
 
 export interface LockerSizeOption {
   value: LockerSize;
@@ -6,6 +6,7 @@ export interface LockerSizeOption {
   price: number;
 }
 
+// Estos serán los tamaños iniciales si la DB está vacía, pero ahora son dinámicos
 export const LOCKER_SIZES: LockerSizeOption[] = [
   { value: "S", label: "S Bolso Pequeno", price: 2500 },
   { value: "M", label: "M Maleta Mediana", price: 3500 },
@@ -74,34 +75,41 @@ export interface CashTransaction {
 export const LOCKER_COLS: string[] = [];
 export const LOCKER_ROWS: number[] = [];
 
-export function generateLockers(): Omit<Locker, "id">[] {
+export interface ShelfConfig {
+  id: string; // e.g. "A"
+  sizes: {
+    size: LockerSize; // e.g. "S", "Mini"
+    count: number;    // e.g. 12
+  }[];
+}
+
+export interface LayoutConfig {
+  shelves: ShelfConfig[];
+}
+
+export const DEFAULT_LAYOUT: LayoutConfig = {
+  shelves: [
+    { id: "A", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
+    { id: "B", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }, { size: "XXL", count: 12 }] },
+    { id: "C", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
+    { id: "D", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
+  ]
+};
+
+export function generateLockers(config: LayoutConfig = DEFAULT_LAYOUT): Omit<Locker, "id">[] {
   const lockers: Omit<Locker, "id">[] = [];
 
-  // Sectores A, B, C, D: 12 casilleros de cada tamaño S, M, L, XL
-  const sectors = ["A", "B", "C", "D"];
-  const sizes = ["S", "M", "L", "XL"];
-
-  for (const sector of sectors) {
-    for (const size of sizes) {
-      for (let i = 1; i <= 12; i++) {
+  for (const shelf of config.shelves) {
+    for (const sizeConfig of shelf.sizes) {
+      for (let i = 1; i <= sizeConfig.count; i++) {
         lockers.push({
           row: i,
-          col: `${sector}${size}`,
+          col: `${shelf.id}${sizeConfig.size}`,
           isOccupied: false,
           currentRecordId: null,
         });
       }
     }
-  }
-
-  // Sector B también tiene 12 casilleros XXL (sacos / fardos)
-  for (let i = 1; i <= 12; i++) {
-    lockers.push({
-      row: i,
-      col: "BXXL",
-      isOccupied: false,
-      currentRecordId: null,
-    });
   }
 
   return lockers;

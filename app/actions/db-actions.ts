@@ -14,33 +14,49 @@ function logDebug(message: string) {
 }
 
 import {
+  UserModel,
   LockerModel,
   CustodyRecordModel,
   CashRegisterModel,
   CashTransactionModel,
-  UserModel,
   PriceModel,
   SettingModel,
   syncDatabase,
 } from "@/lib/db/models";
+import { sequelize } from "@/lib/db/config";
 import { generateLockers } from "@/lib/types";
 import type {
   Locker,
   CustodyRecord,
   CashRegister,
   CashTransaction,
+  LayoutConfig,
+  LockerSizeOption,
 } from "@/lib/types";
+import { DEFAULT_LAYOUT } from "@/lib/types";
 import bcrypt from "bcryptjs";
 
 // Ensure DB is synced before any operations
 const initDbAndFetch = async () => {
   await syncDatabase();
 
+  // Cargar configuración de layout actual
+  let layoutSetting = await SettingModel.findOne({ where: { key: "layout_config" } });
+  let currentLayout = DEFAULT_LAYOUT;
+  if (layoutSetting) {
+    try {
+      currentLayout = JSON.parse((layoutSetting as any).value) as LayoutConfig;
+    } catch(e) {
+      console.error("Error parsing layout config", e);
+    }
+  } else {
+    await SettingModel.create({ key: "layout_config", value: JSON.stringify(DEFAULT_LAYOUT) } as any);
+  }
+
   // Solo crear casilleros si la tabla está vacía.
-  // Para migrar o resetear casilleros, usar: npm run migrate:lockers
   const lockerCount = await LockerModel.count();
   if (lockerCount === 0) {
-    const defaultLockers = generateLockers();
+    const defaultLockers = generateLockers(currentLayout);
     await LockerModel.bulkCreate(defaultLockers as any[]);
   }
 
@@ -68,6 +84,7 @@ const initDbAndFetch = async () => {
       return { value: pData.size, label: pData.label, price: pData.price };
     }) as any[],
     settings: rawSettings.map((s) => s.get({ plain: true })) as any[],
+    layoutConfig: currentLayout,
   };
 };
 
@@ -498,4 +515,62 @@ export async function sendBoleta(nombre: string, precio: number) {
 export async function logClientError(message: string, stack: string) {
   logDebug(`[CLIENT ERROR] ${message}\nStack: ${stack}`);
   return true;
+}
+
+export async function dbSyncLayout(newLayout: LayoutConfig, newSizes: LockerSizeOption[]) {
+  await syncDatabase();
+  
+  const rawLockers = await LockerModel.findAll();
+  const currentLockers = rawLockers.map(l => l.get({ plain: true })) as Locker[];
+  
+  const { generateLockers } = await import("@/lib/types");
+  const desiredLockers = generateLockers(newLayout);
+  
+  const toDelete = currentLockers.filter(cl => !desiredLockers.find(dl => dl.col === cl.col && dl.row === cl.row));
+  
+  for (const locker of toDelete) {
+    if (locker.isOccupied || locker.currentRecordId !== null) {
+      return { success: false, error: `No se puede guardar: El casillero ${locker.col}${locker.row} está actualmente ocupado. Por favor entréguelo antes de eliminar su espacio.` };
+    }
+  }
+  
+  const toCreate = desiredLockers.filter(dl => !currentLockers.find(cl => cl.col === dl.col && cl.row === cl.row));
+  
+  const t = await sequelize.transaction();
+  try {
+    for (const locker of toDelete) {
+      await LockerModel.destroy({ where: { id: locker.id }, transaction: t });
+    }
+    
+    if (toCreate.length > 0) {
+      await LockerModel.bulkCreate(toCreate as any[], { transaction: t });
+    }
+    
+    const currentSizes = await PriceModel.findAll();
+    const sizesToDelete = currentSizes.filter(cs => !newSizes.find(ns => ns.value === cs.size));
+    for (const size of sizesToDelete) {
+      await PriceModel.destroy({ where: { size: size.size }, transaction: t });
+    }
+    for (const ns of newSizes) {
+      const exists = currentSizes.find(cs => cs.size === ns.value);
+      if (exists) {
+        await PriceModel.update({ label: ns.label, price: ns.price } as any, { where: { size: ns.value }, transaction: t });
+      } else {
+        await PriceModel.create({ size: ns.value, label: ns.label, price: ns.price } as any, { transaction: t });
+      }
+    }
+    
+    const existingLayout = await SettingModel.findOne({ where: { key: "layout_config" } });
+    if (existingLayout) {
+      await SettingModel.update({ value: JSON.stringify(newLayout) } as any, { where: { key: "layout_config" }, transaction: t });
+    } else {
+      await SettingModel.create({ key: "layout_config", value: JSON.stringify(newLayout) } as any, { transaction: t });
+    }
+    
+    await t.commit();
+    return { success: true };
+  } catch (err: any) {
+    await t.rollback();
+    return { success: false, error: "Error de base de datos: " + err.message };
+  }
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/custody/header";
+import { LayoutConfigurator } from "@/components/admin/layout-configurator";
 import {
   Users,
   Plus,
@@ -149,20 +150,6 @@ export default function AdminPage() {
       });
     }
   };
-  const [showEditPriceDialog, setShowEditPriceDialog] = useState(false);
-  const [editingSize, setEditingSize] = useState<{
-    size: string;
-    label: string;
-  } | null>(null);
-  const [editPrice, setEditPrice] = useState<string>("");
-  const [editLabel, setEditLabel] = useState<string>("");
-  const [priceError, setPriceError] = useState("");
-  const [isSavingPrice, setIsSavingPrice] = useState(false);
-
-  const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
-  const [newSizeCode, setNewSizeCode] = useState("");
-  const [newSizeLabel, setNewSizeLabel] = useState("");
-  const [newSizePrice, setNewSizePrice] = useState("");
 
   const [showDeletePriceDialog, setShowDeletePriceDialog] = useState(false);
   const [deletingSize, setDeletingSize] = useState<{
@@ -349,114 +336,6 @@ export default function AdminPage() {
   const handleLogout = () => {
     logout();
     router.push("/");
-  };
-
-  // ── Price Handlers ──
-  const openEditPriceDialog = (sizeObj: {
-    value: string;
-    label: string;
-    price: number;
-  }) => {
-    setEditingSize({ size: sizeObj.value, label: sizeObj.label });
-    setEditPrice(sizeObj.price.toString());
-    setEditLabel(sizeObj.label);
-    setPriceError("");
-    setShowEditPriceDialog(true);
-  };
-
-  const handleEditPrice = async () => {
-    if (!editingSize) return;
-    const newPrice = parseInt(editPrice, 10);
-    if (isNaN(newPrice) || newPrice <= 0) {
-      setPriceError("Ingrese un precio válido");
-      return;
-    }
-    if (!editLabel.trim()) {
-      setPriceError("El nombre no puede estar vacío");
-      return;
-    }
-
-    setIsSavingPrice(true);
-    try {
-      const result = await updatePrice(
-        editingSize.size,
-        newPrice,
-        editLabel.trim(),
-      );
-      if (result.success) {
-        setShowEditPriceDialog(false);
-        setEditingSize(null);
-        // Refresh full DB state to update store
-        const res = await getInitialState();
-        if (res.success && res.data) hydrateState(res.data);
-      } else {
-        setPriceError(result.error || "Error al actualizar precio");
-      }
-    } catch (err) {
-      console.error(err);
-      setPriceError("Error inesperado");
-    } finally {
-      setIsSavingPrice(false);
-    }
-  };
-
-  const handleCreatePrice = async () => {
-    const newPrice = parseInt(newSizePrice, 10);
-    if (!newSizeCode.trim()) {
-      setPriceError("El código (tamaño) es requerido");
-      return;
-    }
-    if (!newSizeLabel.trim()) {
-      setPriceError("El nombre es requerido");
-      return;
-    }
-    if (isNaN(newPrice) || newPrice <= 0) {
-      setPriceError("Ingrese un precio válido");
-      return;
-    }
-
-    setIsSavingPrice(true);
-    try {
-      const result = await createPrice(
-        newSizeCode.trim().toUpperCase(),
-        newSizeLabel.trim(),
-        newPrice,
-      );
-      if (result.success) {
-        setShowCreatePriceDialog(false);
-        setNewSizeCode("");
-        setNewSizeLabel("");
-        setNewSizePrice("");
-        const res = await getInitialState();
-        if (res.success && res.data) hydrateState(res.data);
-      } else {
-        setPriceError(result.error || "Error al crear tamaño");
-      }
-    } catch (err) {
-      setPriceError("Error inesperado");
-    } finally {
-      setIsSavingPrice(false);
-    }
-  };
-
-  const handleDeletePrice = async () => {
-    if (!deletingSize) return;
-    setIsSavingPrice(true);
-    try {
-      const result = await deletePrice(deletingSize.size);
-      if (result.success) {
-        setShowDeletePriceDialog(false);
-        setDeletingSize(null);
-        const res = await getInitialState();
-        if (res.success && res.data) hydrateState(res.data);
-      } else {
-        setPriceError(result.error || "Error al eliminar tamaño");
-      }
-    } catch (err) {
-      setPriceError("Error inesperado");
-    } finally {
-      setIsSavingPrice(false);
-    }
   };
 
   // ── Render ──
@@ -763,114 +642,37 @@ export default function AdminPage() {
             )}
           </div>
 
-          {/* ── Prices Section ── */}
-          <div>
-            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between transition-colors duration-300">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-[#00c5ff]" />
-                <span>Precios de Casilleros</span>
-              </div>
+          {/* ── Currency Selector Section ── */}
+          <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-300">
+            <div className="flex flex-col gap-1">
+              <span className="font-extrabold text-sm text-[#0a354c] dark:text-[#00c5ff]">
+                Moneda del Sistema
+              </span>
+              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+                Define el símbolo y formato de los cobros
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
               <Button
-                onClick={() => {
-                  setPriceError("");
-                  setShowCreatePriceDialog(true);
-                }}
-                className="h-7 text-[10px] uppercase font-bold bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                onClick={() => handleUpdateCurrency("CLP")}
+                variant={currentCurrency === "CLP" ? "default" : "outline"}
+                className="h-8 text-xs font-bold px-4 rounded-full"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Nuevo Tamaño
+                Pesos (CLP / $)
+              </Button>
+              <Button
+                onClick={() => handleUpdateCurrency("PYG")}
+                variant={currentCurrency === "PYG" ? "default" : "outline"}
+                className="h-8 text-xs font-bold px-4 rounded-full"
+              >
+                Guaraníes (PYG / Gs.)
               </Button>
             </div>
-
-            {/* Currency Selector Card */}
-            <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-300">
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold text-sm text-[#0a354c] dark:text-[#00c5ff]">
-                  Moneda del Sistema
-                </span>
-                <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
-                  Define el símbolo y formato de los cobros
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => handleUpdateCurrency("CLP")}
-                  variant={currentCurrency === "CLP" ? "default" : "outline"}
-                  className="h-8 text-xs font-bold px-4 rounded-full"
-                >
-                  Pesos (CLP / $)
-                </Button>
-                <Button
-                  onClick={() => handleUpdateCurrency("PYG")}
-                  variant={currentCurrency === "PYG" ? "default" : "outline"}
-                  className="h-8 text-xs font-bold px-4 rounded-full"
-                >
-                  Guaraníes (PYG / Gs.)
-                </Button>
-              </div>
-            </div>
-
-            <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
-              <Table>
-                <TableHeader className="bg-[#242424] dark:bg-zinc-850 hover:bg-[#242424] dark:hover:bg-zinc-850">
-                  <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
-                      TAMAÑO
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
-                      PRECIO ACTUAL
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-right">
-                      ACCIONES
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lockerSizes.map((sizeObj) => (
-                    <TableRow
-                      key={sizeObj.value}
-                      className="border-b border-zinc-200 dark:border-zinc-700 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/50"
-                    >
-                      <TableCell className="text-zinc-800 dark:text-zinc-200 font-bold text-xs py-3">
-                        {sizeObj.label}
-                      </TableCell>
-                      <TableCell className="text-zinc-800 dark:text-zinc-200 font-black text-xs py-3">
-                        {formatCurrency(sizeObj.price)}
-                      </TableCell>
-                      <TableCell className="text-right py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditPriceDialog(sizeObj)}
-                            className="h-7 text-[10px] uppercase font-bold bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                          >
-                            <Pencil className="h-3 w-3 mr-1" />
-                            Modificar
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setDeletingSize({
-                                size: sizeObj.value,
-                                label: sizeObj.label,
-                              });
-                              setShowDeletePriceDialog(true);
-                            }}
-                            className="h-7 text-[10px] uppercase font-bold bg-white dark:bg-zinc-800 text-red-600 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600"
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Eliminar
-</Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
           </div>
+
+          {/* ── Layout Configuration Section ── */}
+          <LayoutConfigurator />
+
 
           {/* ── Cash Register Supervision / Session History Section ── */}
           <div>
@@ -1285,178 +1087,6 @@ export default function AdminPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Edit Price Dialog ── */}
-      <Dialog open={showEditPriceDialog} onOpenChange={setShowEditPriceDialog}>
-        <DialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-          <DialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
-              <Pencil className="h-4 w-4 text-[#00c5ff]" />
-              <span>Modificar Tamaño y Precio</span>
-            </DialogTitle>
-            <DialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
-              Edite el nombre o precio para el tamaño{" "}
-              <strong className="text-white">{editingSize?.size}</strong>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
-                Nombre / Descripción
-              </Label>
-              <Input
-                type="text"
-                value={editLabel}
-                onChange={(e) => setEditLabel(e.target.value)}
-                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
-                Precio (Gs.)
-              </Label>
-              <Input
-                type="number"
-                value={editPrice}
-                onChange={(e) => setEditPrice(e.target.value)}
-                className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-semibold focus-visible:ring-[#00c5ff]"
-                min="0"
-                step="100"
-              />
-            </div>
-            {priceError && (
-              <p className="text-xs text-red-600 font-bold">{priceError}</p>
-            )}
-          </div>
-          <DialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
-            <Button
-              variant="outline"
-              onClick={() => setShowEditPriceDialog(false)}
-              disabled={isSavingPrice}
-              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleEditPrice}
-              disabled={isSavingPrice}
-              className="bg-[#242424] dark:bg-zinc-750 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 font-bold h-9 text-xs"
-            >
-              {isSavingPrice ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Create Price Dialog ── */}
-      <Dialog
-        open={showCreatePriceDialog}
-        onOpenChange={setShowCreatePriceDialog}
-      >
-        <DialogContent className="bg-[#d7d7d8] border border-zinc-400 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
-          <DialogHeader className="bg-[#242424] text-white p-4">
-            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
-              <Plus className="h-4 w-4" />
-              <span>Nuevo Tamaño de Casillero</span>
-            </DialogTitle>
-            <DialogDescription className="text-zinc-300 text-xs mt-1">
-              Agregue un nuevo tamaño y su precio asociado.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Código / Tamaño (ej. XXXL)
-              </Label>
-              <Input
-                type="text"
-                value={newSizeCode}
-                onChange={(e) => setNewSizeCode(e.target.value.toUpperCase())}
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424] uppercase"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Nombre / Descripción
-              </Label>
-              <Input
-                type="text"
-                value={newSizeLabel}
-                onChange={(e) => setNewSizeLabel(e.target.value)}
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
-                placeholder="ej. XXXL Equipaje Especial"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-700 font-bold text-xs uppercase tracking-wide">
-                Precio ($)
-              </Label>
-              <Input
-                type="number"
-                value={newSizePrice}
-                onChange={(e) => setNewSizePrice(e.target.value)}
-                className="bg-white border border-zinc-300 text-zinc-900 font-semibold focus-visible:ring-[#242424]"
-                min="0"
-                step="100"
-              />
-            </div>
-            {priceError && (
-              <p className="text-xs text-red-600 font-bold">{priceError}</p>
-            )}
-          </div>
-          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowCreatePriceDialog(false)}
-              disabled={isSavingPrice}
-              className="bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-bold h-9 text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleCreatePrice}
-              disabled={isSavingPrice}
-              className="bg-[#242424] text-white hover:bg-zinc-800 font-bold h-9 text-xs"
-            >
-              {isSavingPrice ? "Creando..." : "Crear Tamaño"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Delete Price Confirmation ── */}
-      <AlertDialog
-        open={showDeletePriceDialog}
-        onOpenChange={setShowDeletePriceDialog}
-      >
-        <AlertDialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-          <AlertDialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
-            <AlertDialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-white">
-              <Trash2 className="h-4 w-4 text-red-500" />
-              <span>Eliminar Tamaño</span>
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-300 dark:text-zinc-400 text-xs mt-1">
-              ¿Está seguro que desea eliminar el tamaño{" "}
-              <strong className="text-white">{deletingSize?.label}</strong>?
-              Esta acción eliminará la tarifa, pero los casilleros existentes no se verán afectados directamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="bg-zinc-200/50 dark:bg-zinc-900/50 p-4 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors">
-            <AlertDialogCancel
-              disabled={isSavingPrice}
-              className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-bold h-9 text-xs uppercase"
-            >
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePrice}
-              className="bg-red-650 hover:bg-red-750 text-white font-bold h-9 text-xs uppercase transition-colors"
-              disabled={isSavingPrice}
-            >
-              {isSavingPrice ? "Eliminando..." : "Eliminar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

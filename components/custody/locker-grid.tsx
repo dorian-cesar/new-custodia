@@ -19,6 +19,7 @@ export function LockerGrid({
   selectedSize,
 }: LockerGridProps) {
   const records = useCustodyStore((state) => state.records);
+  const layoutConfig = useCustodyStore((state) => state.layoutConfig);
   const [activeTooltipLockerId, setActiveTooltipLockerId] = useState<number | null>(null);
 
   if (!selectedSize) {
@@ -34,24 +35,17 @@ export function LockerGrid({
     );
   }
 
-  const allSectors = [
-    { label: "Sector A", key: "A" },
-    { label: "Sector B", key: "B" },
-    { label: "Sector C", key: "C" },
-    { label: "Sector D", key: "D" },
-  ];
-
-  // Si es XXL, solo mostrar el Sector B (es el único que tiene XXL en la base de datos)
-  const sectors = selectedSize === "XXL"
-    ? allSectors.filter((s) => s.key === "B")
-    : allSectors;
+  // Filtrar estantes que tienen casilleros configurados para la medida seleccionada
+  const sectors = layoutConfig?.shelves
+    .filter(shelf => shelf.sizes.some(s => s.size === selectedSize && s.count > 0))
+    .map(shelf => ({ label: `Sector ${shelf.id}`, key: shelf.id })) || [];
 
   return (
     <div onClick={() => setActiveTooltipLockerId(null)} className="bg-[#e6e6e7] dark:bg-zinc-900 p-2 flex flex-col items-center w-full lg:flex-1 lg:h-full lg:min-h-0 gap-2 transition-colors duration-300">
       {/* Grid de Sectores */}
       <div className={cn(
         "w-full grid gap-3 max-w-none lg:flex-1 lg:h-full lg:min-h-0",
-        selectedSize === "XXL" ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
+        sectors.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
       )}>
         {sectors.map((sector) => {
           const colCode = `${sector.key}${selectedSize}`;

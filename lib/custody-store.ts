@@ -11,6 +11,8 @@ import {
   generateCode,
   LOCKER_SIZES,
   type LockerSizeOption,
+  type LayoutConfig,
+  DEFAULT_LAYOUT,
 } from "./types";
 
 import {
@@ -41,6 +43,7 @@ interface CustodyState {
   currentCashRegister: CashRegister | null;
   currentUser: User | null;
   lockerSizes: LockerSizeOption[];
+  layoutConfig: LayoutConfig;
   settings: { key: string; value: string }[];
   getSetting: (key: string) => string;
   updateSetting: (key: string, value: string) => Promise<void>;
@@ -52,9 +55,11 @@ interface CustodyState {
     cashRegisters: CashRegister[];
     cashTransactions: CashTransaction[];
     lockerSizes?: LockerSizeOption[];
+    layoutConfig?: LayoutConfig;
     settings?: { key: string; value: string }[];
   }) => void;
   setLockerSizes: (sizes: LockerSizeOption[]) => void;
+  setLayoutConfig: (config: LayoutConfig) => void;
 
   // Auth actions
   login: (user: User) => void;
@@ -143,6 +148,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
   currentCashRegister: null,
   currentUser: null,
   lockerSizes: LOCKER_SIZES,
+  layoutConfig: DEFAULT_LAYOUT,
   settings: [],
 
   getSetting: (key) => {
@@ -186,6 +192,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
       cashRegisters: dbState.cashRegisters,
       cashTransactions: dbState.cashTransactions,
       lockerSizes: dbState.lockerSizes || get().lockerSizes,
+      layoutConfig: dbState.layoutConfig || get().layoutConfig,
       settings: dbState.settings || get().settings,
       currentCashRegister:
         dbState.cashRegisters.find((r) => r.status === "open") || null,
@@ -193,6 +200,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
   },
 
   setLockerSizes: (sizes) => set({ lockerSizes: sizes }),
+  setLayoutConfig: (config) => set({ layoutConfig: config }),
 
   occupyLocker: async (lockerId, recordId) => {
     // Sync to DB

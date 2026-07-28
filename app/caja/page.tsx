@@ -370,10 +370,8 @@ export default function CajaPage() {
       if (printerService.isNative()) {
         await printerService.printWithdrawalTicket(
           toOriginalCurrency(amount),
-          data.cajero,
-          data.supervisor,
           data.reason,
-          timestamp,
+          data.cajero
         );
       }
 
