@@ -135,8 +135,9 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
             <h1 className="text-xl font-bold tracking-wider text-[#242424] leading-tight">
               CUSTODIA
             </h1>
-            <p className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">
-              Sistema de Control de Casilleros
+            <p className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider flex items-center justify-center gap-2">
+              <span>Sistema de Control de Casilleros</span>
+              <span className="bg-[#1588b3]/10 text-[#1588b3] px-1.5 py-0.5 rounded text-[8px] font-bold border border-[#1588b3]/20">v1.2</span>
             </p>
           </div>
 
