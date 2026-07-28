@@ -342,16 +342,21 @@ export async function loginUser(username: string, passwordHash: string) {
 
 // ── Admin: CRUD de usuarios ──
 export async function getUsers() {
-  await syncDatabase();
-  const users = await UserModel.findAll({ order: [["id", "ASC"]] });
-  return users.map((u) => {
-    const plain = u.get({ plain: true }) as any;
-    return {
-      id: plain.id as number,
-      username: plain.username as string,
-      role: plain.role as string,
-    };
-  });
+  try {
+    await syncDatabase();
+    const users = await UserModel.findAll({ order: [["id", "ASC"]] });
+    return users.map((u) => {
+      const plain = u.get({ plain: true }) as any;
+      return {
+        id: plain.id as number,
+        username: plain.username as string,
+        role: plain.role as string,
+      };
+    });
+  } catch (error: any) {
+    console.error("getUsers error:", error);
+    return [];
+  }
 }
 
 export async function createUser(
@@ -359,8 +364,8 @@ export async function createUser(
   passwordHash: string,
   role: "cajero" | "supervisor",
 ) {
-  await syncDatabase();
   try {
+    await syncDatabase();
     const existing = await UserModel.findOne({ where: { username } });
     if (existing)
       return { success: false, error: "El nombre de usuario ya existe" };
@@ -376,7 +381,7 @@ export async function createUser(
       user: { id: plain.id, username: plain.username, role: plain.role },
     };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Error al crear usuario" };
   }
 }
 
@@ -384,8 +389,8 @@ export async function updateUser(
   id: number,
   data: { username?: string; passwordHash?: string; role?: string },
 ) {
-  await syncDatabase();
   try {
+    await syncDatabase();
     const existing = await UserModel.findByPk(id);
     if (!existing) return { success: false, error: "Usuario no encontrado" };
     if (data.username && data.username !== existing.username) {
@@ -409,31 +414,36 @@ export async function updateUser(
       user: { id: plain.id, username: plain.username, role: plain.role },
     };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Error al actualizar usuario" };
   }
 }
 
 export async function deleteUser(id: number) {
-  await syncDatabase();
   try {
+    await syncDatabase();
     const user = await UserModel.findByPk(id);
     if (!user) return { success: false, error: "Usuario no encontrado" };
     await UserModel.destroy({ where: { id } });
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Error al eliminar usuario" };
   }
 }
 
 // ── Prices: get and update ──
 export async function getPrices() {
-  await syncDatabase();
-  const prices = await PriceModel.findAll({ order: [["price", "ASC"]] });
-  return prices.map((p) => p.get({ plain: true })) as {
-    size: string;
-    label: string;
-    price: number;
-  }[];
+  try {
+    await syncDatabase();
+    const prices = await PriceModel.findAll({ order: [["price", "ASC"]] });
+    return prices.map((p) => p.get({ plain: true })) as {
+      size: string;
+      label: string;
+      price: number;
+    }[];
+  } catch (error: any) {
+    console.error("getPrices error:", error);
+    return [];
+  }
 }
 
 export async function updatePrice(
@@ -441,8 +451,8 @@ export async function updatePrice(
   newPrice: number,
   newLabel?: string,
 ) {
-  await syncDatabase();
   try {
+    await syncDatabase();
     const priceRecord = await PriceModel.findOne({ where: { size } });
     if (!priceRecord) return { success: false, error: "Tamaño no encontrado" };
 
@@ -452,33 +462,33 @@ export async function updatePrice(
     await PriceModel.update(updateData, { where: { size } });
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Error al actualizar precio" };
   }
 }
 
 export async function createPrice(size: string, label: string, price: number) {
-  await syncDatabase();
   try {
+    await syncDatabase();
     const existing = await PriceModel.findOne({ where: { size } });
     if (existing) return { success: false, error: "El tamaño (ID) ya existe" };
 
     await PriceModel.create({ size, label, price });
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Error al crear precio" };
   }
 }
 
 export async function deletePrice(size: string) {
-  await syncDatabase();
   try {
+    await syncDatabase();
     const record = await PriceModel.findOne({ where: { size } });
     if (!record) return { success: false, error: "Tamaño no encontrado" };
 
     await PriceModel.destroy({ where: { size } });
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Error al eliminar precio" };
   }
 }
 

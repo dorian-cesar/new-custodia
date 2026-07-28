@@ -22,13 +22,16 @@ export const sequelize =
         dialect: 'mysql',
         logging: false,
         dialectOptions: {
-          connectTimeout: 10000,
+          connectTimeout: 20000,
+          enableKeepAlive: true,
+          keepAliveInitialDelay: 10000,
         },
         pool: {
           max: 10,
           min: 0,
-          acquire: 20000,
+          acquire: 30000,
           idle: 10000,
+          evict: 1000,
         },
       }));
 
