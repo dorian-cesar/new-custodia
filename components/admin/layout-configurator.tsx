@@ -7,7 +7,7 @@ import { type LayoutConfig, type ShelfConfig, type LockerSizeOption } from "@/li
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Box, Save, AlertTriangle, Pencil } from "lucide-react";
+import { Plus, Trash2, Box, Save, AlertTriangle, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import Swal from "sweetalert2";
 import {
   Dialog,
@@ -32,6 +32,7 @@ export function LayoutConfigurator() {
   const { layoutConfig, lockerSizes, hydrateState } = useCustodyStore();
   const [editingConfig, setEditingConfig] = useState<LayoutConfig>(layoutConfig);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // States for Modals
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
@@ -207,115 +208,145 @@ export function LayoutConfigurator() {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-6 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-sm font-extrabold flex items-center gap-2 uppercase tracking-wider">
-            <Box className="h-4 w-4 text-[#00c5ff]" />
-            Configuración de Estantes y Medidas
-          </h2>
-          <p className="text-xs text-zinc-500 mt-1">Cree medidas globales y configure su cantidad en cada estante.</p>
+    <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300 overflow-hidden">
+      {/* ── Collapsible Header ── */}
+      <div
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="p-6 flex justify-between items-center cursor-pointer select-none hover:bg-zinc-50 dark:hover:bg-zinc-750/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-sm font-extrabold flex items-center gap-2 uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff]">
+              <Box className="h-4 w-4 text-[#00c5ff]" />
+              Configuración de Estantes y Medidas
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              Cree medidas globales y configure su cantidad en cada estante.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleAddShelf} variant="outline" className="h-8 text-[10px] uppercase font-bold">
-            <Plus className="h-3 w-3 mr-1" /> Nuevo Estante
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving} className="h-8 text-[10px] uppercase font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white">
-            <Save className="h-3 w-3 mr-1" /> {isSaving ? "Guardando..." : "Guardar Layout"}
+
+        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+          {isExpanded && (
+            <div className="flex gap-2">
+              <Button onClick={handleAddShelf} variant="outline" className="h-8 text-[10px] uppercase font-bold">
+                <Plus className="h-3 w-3 mr-1" /> Nuevo Estante
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving} className="h-8 text-[10px] uppercase font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white">
+                <Save className="h-3 w-3 mr-1" /> {isSaving ? "Guardando..." : "Guardar Layout"}
+              </Button>
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="h-8 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center gap-1.5 px-2"
+          >
+            <span className="text-[11px] uppercase tracking-wider">{isExpanded ? "Ocultar" : "Mostrar"}</span>
+            {isExpanded ? <ChevronUp className="h-4 w-4 text-[#00c5ff]" /> : <ChevronDown className="h-4 w-4 text-[#00c5ff]" />}
           </Button>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {editingConfig.shelves.length === 0 ? (
-          <div className="text-center py-8 text-zinc-500 text-sm font-bold">No hay estantes configurados.</div>
-        ) : (
-          editingConfig.shelves.map(shelf => (
-            <div key={shelf.id} className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-850">
-              <div className="flex justify-between items-center mb-4 border-b border-zinc-200 dark:border-zinc-700 pb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff]">
-                  Sector {shelf.id}
-                </h3>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => {
-                      setPriceError("");
-                      setShowCreatePriceDialog(true);
-                    }} 
-                    variant="outline" size="sm" 
-                    className="h-6 text-[10px] font-bold px-2 py-0 border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700"
-                  >
-                    <Plus className="h-3 w-3 mr-1" /> Crear Medida
-                  </Button>
-                  <Button onClick={() => handleRemoveShelf(shelf.id)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {lockerSizes.map(ls => {
-                  const currentSizeConfig = shelf.sizes.find(s => s.size === ls.value);
-                  const count = currentSizeConfig ? currentSizeConfig.count : 0;
-                  return (
-                    <div key={ls.value} className="flex flex-col gap-1.5 p-3 border border-zinc-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 shadow-sm relative group">
-                      <div className="flex justify-between items-start">
-                        <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase leading-tight truncate pr-14">
-                          {ls.label} <span className="text-zinc-400 font-medium lowercase ml-1">(Gs. {ls.price})</span>
-                        </label>
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => {
-                              setEditingSize({ size: ls.value, label: ls.label });
-                              setEditPrice(ls.price.toString());
-                              setEditLabel(ls.label);
-                              setPriceError("");
-                              setShowEditPriceDialog(true);
-                            }}
-                            className="p-1 text-zinc-500 hover:text-blue-500 bg-zinc-100 dark:bg-zinc-800 rounded"
-                            title="Editar medida"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDeletingSize({ size: ls.value, label: ls.label, shelfId: shelf.id });
-                              setPriceError("");
-                              setShowDeletePriceDialog(true);
-                            }}
-                            className="p-1 text-zinc-500 hover:text-red-500 bg-zinc-100 dark:bg-zinc-800 rounded"
-                            title="Quitar / Eliminar medida"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 mt-1">
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          value={count} 
-                          onChange={(e) => handleSizeCountChange(shelf.id, ls.value, e.target.value)}
-                          className="h-7 w-20 text-xs font-mono font-bold"
-                        />
-                        <span className="text-[10px] text-zinc-500 font-semibold uppercase">casilleros asignados</span>
-                      </div>
+      {/* ── Collapsible Body ── */}
+      {isExpanded && (
+        <div className="p-6 pt-0 border-t border-zinc-200 dark:border-zinc-700 mt-2">
+          <div className="space-y-6 mt-4">
+            {editingConfig.shelves.length === 0 ? (
+              <div className="text-center py-8 text-zinc-500 text-sm font-bold">No hay estantes configurados.</div>
+            ) : (
+              editingConfig.shelves.map((shelf) => (
+                <div key={shelf.id} className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-850">
+                  <div className="flex justify-between items-center mb-4 border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff]">
+                      Sector {shelf.id}
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setPriceError("");
+                          setShowCreatePriceDialog(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px] font-bold px-2 py-0 border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700"
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Crear Medida
+                      </Button>
+                      <Button onClick={() => handleRemoveShelf(shelf.id)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      
-      <div className="mt-6 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
-        <AlertTriangle className="h-5 w-5 shrink-0" />
-        <p className="text-[10px] font-bold">
-          Advertencia: Si reduce la cantidad de casilleros o elimina un estante que actualmente tiene equipaje guardado (estado ocupado), el sistema bloqueará la acción para evitar la pérdida de datos.
-        </p>
-      </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {lockerSizes.map((ls) => {
+                      const currentSizeConfig = shelf.sizes.find((s) => s.size === ls.value);
+                      const count = currentSizeConfig ? currentSizeConfig.count : 0;
+                      return (
+                        <div key={ls.value} className="flex flex-col gap-1.5 p-3 border border-zinc-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 shadow-sm relative group">
+                          <div className="flex justify-between items-start">
+                            <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase leading-tight truncate pr-14">
+                              {ls.label} <span className="text-zinc-400 font-medium lowercase ml-1">(Gs. {ls.price})</span>
+                            </label>
+                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => {
+                                  setEditingSize({ size: ls.value, label: ls.label });
+                                  setEditPrice(ls.price.toString());
+                                  setEditLabel(ls.label);
+                                  setPriceError("");
+                                  setShowEditPriceDialog(true);
+                                }}
+                                className="p-1 text-zinc-500 hover:text-blue-500 bg-zinc-100 dark:bg-zinc-800 rounded"
+                                title="Editar medida"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeletingSize({ size: ls.value, label: ls.label, shelfId: shelf.id });
+                                  setPriceError("");
+                                  setShowDeletePriceDialog(true);
+                                }}
+                                className="p-1 text-zinc-500 hover:text-red-500 bg-zinc-100 dark:bg-zinc-800 rounded"
+                                title="Quitar / Eliminar medida"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={count}
+                              onChange={(e) => handleSizeCountChange(shelf.id, ls.value, e.target.value)}
+                              className="h-7 w-20 text-xs font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-zinc-500 font-semibold uppercase">casilleros asignados</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-6 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <p className="text-[10px] font-bold">
+              Advertencia: Si reduce la cantidad de casilleros o elimina un estante que actualmente tiene equipaje guardado (estado ocupado), el sistema bloqueará la acción para evitar la pérdida de datos.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Create Price Dialog ── */}
       <Dialog open={showCreatePriceDialog} onOpenChange={setShowCreatePriceDialog}>
