@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCustodyStore } from "@/lib/custody-store";
+import { useCustodyStore, notifyStateChange } from "@/lib/custody-store";
 import { dbSyncLayout, createPrice, updatePrice, deletePrice } from "@/app/actions/db-actions";
 import { type LayoutConfig, type ShelfConfig, type LockerSizeOption } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,10 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function LayoutConfigurator() {
-  const { layoutConfig, lockerSizes, hydrateState } = useCustodyStore();
+  const { layoutConfig, lockerSizes, lockers, hydrateState } = useCustodyStore();
   const [editingConfig, setEditingConfig] = useState<LayoutConfig>(layoutConfig);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // States for Modals
   const [showCreatePriceDialog, setShowCreatePriceDialog] = useState(false);
@@ -61,11 +61,11 @@ export function LayoutConfigurator() {
   };
 
   const handleAddShelf = () => {
-    const newId = prompt("Ingrese el nombre/letra del nuevo estante (ej. E):");
+    const newId = prompt("Ingrese el nombre/letra del nuevo sector (ej. E):");
     if (!newId) return;
     const id = newId.trim().toUpperCase();
     if (editingConfig.shelves.some(s => s.id === id)) {
-      alert("El estante ya existe.");
+      alert("El sector ya existe.");
       return;
     }
     const newShelf: ShelfConfig = {
@@ -79,9 +79,23 @@ export function LayoutConfigurator() {
   };
 
   const handleRemoveShelf = (id: string) => {
+    const occupiedInShelf = lockers.filter(
+      (l) => l.col.startsWith(id) && (l.isOccupied || l.currentRecordId !== null),
+    );
+    if (occupiedInShelf.length > 0) {
+      const labels = occupiedInShelf.map((l) => `${l.col}${l.row}`).join(", ");
+      Swal.fire({
+        icon: "warning",
+        title: `No se puede eliminar el Sector ${id}`,
+        text: `El Sector ${id} tiene equipaje guardado actualmente en los casilleros [ ${labels} ]. Debe retirar o entregar dicho equipaje en la pantalla de Cajero antes de eliminar el sector.`,
+        confirmButtonColor: "#00c5ff",
+      });
+      return;
+    }
+
     setEditingConfig({
       ...editingConfig,
-      shelves: editingConfig.shelves.filter(s => s.id !== id),
+      shelves: editingConfig.shelves.filter((s) => s.id !== id),
     });
   };
 
@@ -89,9 +103,9 @@ export function LayoutConfigurator() {
     const count = parseInt(countStr) || 0;
     setEditingConfig({
       ...editingConfig,
-      shelves: editingConfig.shelves.map(shelf => {
+      shelves: editingConfig.shelves.map((shelf) => {
         if (shelf.id === shelfId) {
-          const sizeIndex = shelf.sizes.findIndex(s => s.size === sizeValue);
+          const sizeIndex = shelf.sizes.findIndex((s) => s.size === sizeValue);
           const newSizes = [...shelf.sizes];
           if (sizeIndex >= 0) {
             newSizes[sizeIndex] = { ...newSizes[sizeIndex], count };
@@ -112,8 +126,15 @@ export function LayoutConfigurator() {
       if (result.success) {
         Swal.fire("Éxito", "Layout actualizado correctamente", "success");
         await refreshState();
+        notifyStateChange();
       } else {
-        Swal.fire("Error", result.error || "No se pudo actualizar el layout", "error");
+        Swal.fire({
+          icon: "warning",
+          title: "Acción Bloqueada por Equipaje Ocupado",
+          text: result.error || "No se pudo actualizar el layout",
+          confirmButtonColor: "#00c5ff",
+          confirmButtonText: "Entendido",
+        });
       }
     } catch (err: any) {
       Swal.fire("Error", err.message, "error");
@@ -173,14 +194,76 @@ export function LayoutConfigurator() {
     }
   };
 
+  // State for assigning an existing global size to a shelf
+  const [showAddSizeToShelfDialog, setShowAddSizeToShelfDialog] = useState(false);
+  const [targetShelfForAdd, setTargetShelfForAdd] = useState<string | null>(null);
+  const [selectedSizeForAdd, setSelectedSizeForAdd] = useState<string>("");
+  const [countForAdd, setCountForAdd] = useState<string>("12");
+
+  const openAddSizeToShelf = (shelfId: string) => {
+    setTargetShelfForAdd(shelfId);
+    const currentShelf = editingConfig.shelves.find((s) => s.id === shelfId);
+    const activeSizes = currentShelf ? currentShelf.sizes.filter((s) => s.count > 0).map((s) => s.size) : [];
+    const available = lockerSizes.filter((ls) => !activeSizes.includes(ls.value));
+
+    if (available.length > 0) {
+      setSelectedSizeForAdd(available[0].value);
+    } else if (lockerSizes.length > 0) {
+      setSelectedSizeForAdd(lockerSizes[0].value);
+    }
+    setCountForAdd("12");
+    setShowAddSizeToShelfDialog(true);
+  };
+
+  const handleConfirmAddSizeToShelf = () => {
+    if (!targetShelfForAdd || !selectedSizeForAdd) return;
+    const count = parseInt(countForAdd) || 1;
+    handleSizeCountChange(targetShelfForAdd, selectedSizeForAdd, count.toString());
+    setShowAddSizeToShelfDialog(false);
+  };
+
   const handleRemoveFromShelf = () => {
     if (!deletingSize) return;
-    handleSizeCountChange(deletingSize.shelfId, deletingSize.size, "0");
+    const targetShelfId = deletingSize.shelfId;
+    const targetSize = deletingSize.size;
+    const targetLabel = deletingSize.label;
+
+    const colCode = `${targetShelfId}${targetSize}`;
+    const occupiedInSize = lockers.filter(
+      (l) => l.col === colCode && (l.isOccupied || l.currentRecordId !== null),
+    );
+
+    if (occupiedInSize.length > 0) {
+      const labels = occupiedInSize.map((l) => `${l.col}${l.row}`).join(", ");
+      setShowDeletePriceDialog(false);
+      setDeletingSize(null);
+      Swal.fire({
+        icon: "warning",
+        title: `No se puede quitar la medida ${targetLabel}`,
+        text: `El Sector ${targetShelfId} tiene equipaje guardado actualmente en los casilleros [ ${labels} ]. Debe retirar o entregar el equipaje en la pantalla de Cajero antes de quitar esta medida del sector.`,
+        confirmButtonColor: "#00c5ff",
+      });
+      return;
+    }
+
+    setEditingConfig((prev) => ({
+      ...prev,
+      shelves: prev.shelves.map((shelf) => {
+        if (shelf.id === targetShelfId) {
+          return {
+            ...shelf,
+            sizes: shelf.sizes.filter((s) => s.size !== targetSize),
+          };
+        }
+        return shelf;
+      }),
+    }));
+
     setShowDeletePriceDialog(false);
     setDeletingSize(null);
     Swal.fire({
       title: "Medida Removida del Sector",
-      text: `La medida ${deletingSize.label} se ha establecido en 0 casilleros para el Sector ${deletingSize.shelfId}. Presione "Guardar Layout" para aplicar los cambios en el sistema.`,
+      text: `La medida ${targetLabel} ha sido quitada del Sector ${targetShelfId}. Presione "Guardar Layout" para aplicar los cambios en el sistema.`,
       icon: "info",
       confirmButtonText: "Entendido",
       confirmButtonColor: "#00c5ff",
@@ -193,6 +276,13 @@ export function LayoutConfigurator() {
     try {
       const result = await deletePrice(deletingSize.size);
       if (result.success) {
+        setEditingConfig((prev) => ({
+          ...prev,
+          shelves: prev.shelves.map((shelf) => ({
+            ...shelf,
+            sizes: shelf.sizes.filter((s) => s.size !== deletingSize.size),
+          })),
+        }));
         setShowDeletePriceDialog(false);
         setDeletingSize(null);
         await refreshState();
@@ -208,32 +298,27 @@ export function LayoutConfigurator() {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300 overflow-hidden">
-      {/* ── Collapsible Header ── */}
+    <div className="flex flex-col gap-3">
+      {/* ── Collapsible Header (Matching admin dark section bars) ── */}
       <div
         onClick={() => setIsExpanded((prev) => !prev)}
-        className="p-6 flex justify-between items-center cursor-pointer select-none hover:bg-zinc-50 dark:hover:bg-zinc-750/50 transition-colors"
+        className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider rounded-md flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-zinc-800"
       >
-        <div className="flex items-center gap-3">
-          <div>
-            <h2 className="text-sm font-extrabold flex items-center gap-2 uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff]">
-              <Box className="h-4 w-4 text-[#00c5ff]" />
-              Configuración de Estantes y Medidas
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-              Cree medidas globales y configure su cantidad en cada estante.
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <Box className="h-4 w-4 text-[#00c5ff]" />
+          <span>Configuración de Sectores y Medidas</span>
         </div>
 
-        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {isExpanded && (
-            <div className="flex gap-2">
-              <Button onClick={handleAddShelf} variant="outline" className="h-8 text-[10px] uppercase font-bold">
-                <Plus className="h-3 w-3 mr-1" /> Nuevo Estante
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving} className="h-8 text-[10px] uppercase font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white">
-                <Save className="h-3 w-3 mr-1" /> {isSaving ? "Guardando..." : "Guardar Layout"}
+            <div className="flex gap-2 mr-2">
+              <Button
+                type="button"
+                onClick={handleAddShelf}
+                variant="outline"
+                className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Nuevo Sector
               </Button>
             </div>
           )}
@@ -243,107 +328,158 @@ export function LayoutConfigurator() {
             variant="ghost"
             size="sm"
             onClick={() => setIsExpanded((prev) => !prev)}
-            className="h-8 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center gap-1.5 px-2"
+            className="h-7 text-[10px] font-bold text-white hover:bg-zinc-700 flex items-center gap-1.5 px-2 uppercase"
           >
-            <span className="text-[11px] uppercase tracking-wider">{isExpanded ? "Ocultar" : "Mostrar"}</span>
-            {isExpanded ? <ChevronUp className="h-4 w-4 text-[#00c5ff]" /> : <ChevronDown className="h-4 w-4 text-[#00c5ff]" />}
+            <span>{isExpanded ? "Ocultar" : "Mostrar"}</span>
+            {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-[#00c5ff]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#00c5ff]" />}
           </Button>
         </div>
       </div>
 
       {/* ── Collapsible Body ── */}
       {isExpanded && (
-        <div className="p-6 pt-0 border-t border-zinc-200 dark:border-zinc-700 mt-2">
-          <div className="space-y-6 mt-4">
+        <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-6 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6 font-semibold">
+            Cree medidas globales y configure su cantidad en cada sector.
+          </p>
+
+          <div className="space-y-6">
             {editingConfig.shelves.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500 text-sm font-bold">No hay estantes configurados.</div>
+              <div className="text-center py-8 text-zinc-500 text-sm font-bold">No hay sectores configurados.</div>
             ) : (
-              editingConfig.shelves.map((shelf) => (
-                <div key={shelf.id} className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-850">
-                  <div className="flex justify-between items-center mb-4 border-b border-zinc-200 dark:border-zinc-700 pb-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff]">
-                      Sector {shelf.id}
-                    </h3>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setPriceError("");
-                          setShowCreatePriceDialog(true);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="h-6 text-[10px] font-bold px-2 py-0 border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700"
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> Crear Medida
-                      </Button>
-                      <Button onClick={() => handleRemoveShelf(shelf.id)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+              editingConfig.shelves.map((shelf) => {
+                const activeSizesInShelf = lockerSizes.filter((ls) => {
+                  const cfg = shelf.sizes.find((s) => s.size === ls.value);
+                  return cfg && cfg.count > 0;
+                });
+
+                return (
+                  <div key={shelf.id} className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 bg-zinc-50 dark:bg-zinc-850">
+                    <div className="flex justify-between items-center mb-4 border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff]">
+                        Sector {shelf.id}
+                      </h3>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => openAddSizeToShelf(shelf.id)}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] font-bold px-2 py-0 border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-600"
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Asignar Medida
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setPriceError("");
+                            setShowCreatePriceDialog(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] font-bold px-2 py-0 border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-600"
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Crear Medida
+                        </Button>
+                        <Button onClick={() => handleRemoveShelf(shelf.id)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {lockerSizes.map((ls) => {
-                      const currentSizeConfig = shelf.sizes.find((s) => s.size === ls.value);
-                      const count = currentSizeConfig ? currentSizeConfig.count : 0;
-                      return (
-                        <div key={ls.value} className="flex flex-col gap-1.5 p-3 border border-zinc-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 shadow-sm relative group">
-                          <div className="flex justify-between items-start">
-                            <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase leading-tight truncate pr-14">
-                              {ls.label} <span className="text-zinc-400 font-medium lowercase ml-1">(Gs. {ls.price})</span>
-                            </label>
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => {
-                                  setEditingSize({ size: ls.value, label: ls.label });
-                                  setEditPrice(ls.price.toString());
-                                  setEditLabel(ls.label);
-                                  setPriceError("");
-                                  setShowEditPriceDialog(true);
-                                }}
-                                className="p-1 text-zinc-500 hover:text-blue-500 bg-zinc-100 dark:bg-zinc-800 rounded"
-                                title="Editar medida"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDeletingSize({ size: ls.value, label: ls.label, shelfId: shelf.id });
-                                  setPriceError("");
-                                  setShowDeletePriceDialog(true);
-                                }}
-                                className="p-1 text-zinc-500 hover:text-red-500 bg-zinc-100 dark:bg-zinc-800 rounded"
-                                title="Quitar / Eliminar medida"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
+                    {activeSizesInShelf.length === 0 ? (
+                      <div className="text-center py-6 border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-lg">
+                        <p className="text-xs text-zinc-400 font-bold">No hay medidas asignadas a este sector.</p>
+                        <Button
+                          onClick={() => openAddSizeToShelf(shelf.id)}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100"
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Asignar Medida a Sector {shelf.id}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {activeSizesInShelf.map((ls) => {
+                          const currentSizeConfig = shelf.sizes.find((s) => s.size === ls.value);
+                          const count = currentSizeConfig ? currentSizeConfig.count : 0;
+                          return (
+                            <div key={ls.value} className="flex flex-col gap-1.5 p-3 border border-zinc-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 shadow-sm relative group">
+                              <div className="flex justify-between items-start">
+                                <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase leading-tight truncate pr-14">
+                                  {ls.label} <span className="text-zinc-400 font-medium lowercase ml-1">(Gs. {ls.price})</span>
+                                </label>
+                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => {
+                                      setEditingSize({ size: ls.value, label: ls.label });
+                                      setEditPrice(ls.price.toString());
+                                      setEditLabel(ls.label);
+                                      setPriceError("");
+                                      setShowEditPriceDialog(true);
+                                    }}
+                                    className="p-1 text-zinc-500 hover:text-blue-500 bg-zinc-100 dark:bg-zinc-800 rounded"
+                                    title="Editar medida"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setDeletingSize({ size: ls.value, label: ls.label, shelfId: shelf.id });
+                                      setPriceError("");
+                                      setShowDeletePriceDialog(true);
+                                    }}
+                                    className="p-1 text-zinc-500 hover:text-red-500 bg-zinc-100 dark:bg-zinc-800 rounded"
+                                    title="Quitar / Eliminar medida"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={count}
+                                  onChange={(e) => handleSizeCountChange(shelf.id, ls.value, e.target.value)}
+                                  className="h-7 w-20 text-xs font-mono font-bold"
+                                />
+                                <span className="text-[10px] text-zinc-500 font-semibold uppercase">casilleros asignados</span>
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-1">
-                            <Input
-                              type="number"
-                              min="0"
-                              value={count}
-                              onChange={(e) => handleSizeCountChange(shelf.id, ls.value, e.target.value)}
-                              className="h-7 w-20 text-xs font-mono font-bold"
-                            />
-                            <span className="text-[10px] text-zinc-500 font-semibold uppercase">casilleros asignados</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
-          <div className="mt-6 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50">
-            <AlertTriangle className="h-5 w-5 shrink-0" />
-            <p className="text-[10px] font-bold">
-              Advertencia: Si reduce la cantidad de casilleros o elimina un estante que actualmente tiene equipaje guardado (estado ocupado), el sistema bloqueará la acción para evitar la pérdida de datos.
-            </p>
+          <div className="mt-6 flex items-center gap-3 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 p-4 rounded-xl border border-amber-300 dark:border-amber-900/60 shadow-sm">
+            <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold uppercase tracking-wider">
+                Protección de Seguridad de Equipajes
+              </span>
+              <p className="text-[11px] font-medium leading-relaxed">
+                Si intenta reducir casilleros o eliminar un sector con equipajes ocupados actualmente, el sistema <strong>bloqueará la acción e indicará los casilleros exactos que debe retirar/entregar en la pantalla de Cajero</strong> antes de poder guardar los cambios.
+              </p>
+            </div>
+          </div>
+
+          {/* ── Save Layout Button below the last sector ── */}
+          <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-700 flex justify-end">
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="h-10 px-6 text-xs uppercase font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white shadow-md flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? "Guardando Layout..." : "Guardar Layout"}
+            </Button>
           </div>
         </div>
       )}
@@ -516,6 +652,59 @@ export function LayoutConfigurator() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Assign Size to Sector Dialog ── */}
+      <Dialog open={showAddSizeToShelfDialog} onOpenChange={setShowAddSizeToShelfDialog}>
+        <DialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md">
+          <DialogHeader className="bg-[#242424] text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <Plus className="h-4 w-4 text-[#00c5ff]" />
+              <span>Asignar Medida a Sector {targetShelfForAdd}</span>
+            </DialogTitle>
+            <DialogDescription className="text-zinc-300 text-xs mt-1">
+              Seleccione una medida disponible y defina cuántos casilleros tendrá en el Sector {targetShelfForAdd}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
+                Medida
+              </Label>
+              <select
+                value={selectedSizeForAdd}
+                onChange={(e) => setSelectedSizeForAdd(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-bold text-zinc-800 dark:text-zinc-200"
+              >
+                {lockerSizes.map((ls) => (
+                  <option key={ls.value} value={ls.value}>
+                    {ls.label} (Gs. {ls.price})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
+                Cantidad de Casilleros
+              </Label>
+              <Input
+                type="number"
+                value={countForAdd}
+                onChange={(e) => setCountForAdd(e.target.value)}
+                className="bg-white dark:bg-zinc-800 border-zinc-300"
+                min="1"
+              />
+            </div>
+          </div>
+          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowAddSizeToShelfDialog(false)} className="h-9 text-xs font-bold">
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmAddSizeToShelf} className="h-9 text-xs font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white">
+              Asignar a Sector {targetShelfForAdd}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

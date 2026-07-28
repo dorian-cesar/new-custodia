@@ -6,6 +6,24 @@ export interface LockerSizeOption {
   price: number;
 }
 
+export interface CurrencyOption {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+export const DEFAULT_CURRENCIES: CurrencyOption[] = [
+  { code: "CLP", name: "Pesos Chilenos", symbol: "$" },
+  { code: "PYG", name: "Guaraníes Paraguayos", symbol: "Gs." },
+  { code: "USD", name: "Dólares Estadounidenses", symbol: "US$" },
+  { code: "ARS", name: "Pesos Argentinos", symbol: "ARS $" },
+  { code: "BRL", name: "Reales Brasileños", symbol: "R$" },
+  { code: "EUR", name: "Euros", symbol: "€" },
+  { code: "PEN", name: "Soles Peruanos", symbol: "S/" },
+  { code: "COP", name: "Pesos Colombianos", symbol: "COP $" },
+  { code: "MXN", name: "Pesos Mexicanos", symbol: "MXN $" },
+];
+
 // Estos serán los tamaños iniciales si la DB está vacía, pero ahora son dinámicos
 export const LOCKER_SIZES: LockerSizeOption[] = [
   { value: "S", label: "S Bolso Pequeno", price: 2500 },

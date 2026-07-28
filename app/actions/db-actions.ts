@@ -47,7 +47,11 @@ const initDbAndFetch = async () => {
     try {
       currentLayout = JSON.parse((layoutSetting as any).value) as LayoutConfig;
     } catch(e) {
-      console.error("Error parsing layout config", e);
+      currentLayout = DEFAULT_LAYOUT;
+      await SettingModel.update(
+        { value: JSON.stringify(DEFAULT_LAYOUT) },
+        { where: { key: "layout_config" } }
+      ).catch(() => {});
     }
   } else {
     await SettingModel.create({ key: "layout_config", value: JSON.stringify(DEFAULT_LAYOUT) } as any);
@@ -67,10 +71,38 @@ const initDbAndFetch = async () => {
   const rawPrices = await PriceModel.findAll({ order: [["price", "ASC"]] });
   const rawSettings = await SettingModel.findAll();
 
-  // Convert from Sequelize instances to plain JS objects with correct typings
+  const recordsPlain = rawRecords.map((r) => r.get({ plain: true })) as CustodyRecord[];
+
+  // Auto-sincronización de seguridad para casilleros:
+  // Solo casilleros con un registro en estado "Activo" pueden estar ocupados.
+  const activeRecords = recordsPlain.filter((r) => r.status === "Activo");
+  const activeRecordLockerIds = new Set(activeRecords.map((r) => r.lockerId));
+  const activeRecordMap = new Map(activeRecords.map((r) => [r.lockerId, r.id]));
+
+  const syncedLockers = rawLockers.map((l) => {
+    const lockerPlain = l.get({ plain: true }) as Locker;
+    const shouldBeOccupied = activeRecordLockerIds.has(lockerPlain.id);
+    const expectedRecordId = shouldBeOccupied ? activeRecordMap.get(lockerPlain.id)! : null;
+
+    if (lockerPlain.isOccupied !== shouldBeOccupied || lockerPlain.currentRecordId !== expectedRecordId) {
+      LockerModel.update(
+        { isOccupied: shouldBeOccupied, currentRecordId: expectedRecordId },
+        { where: { id: lockerPlain.id } }
+      ).catch((e) => console.error("Error al corregir estado de casillero:", e));
+
+      return {
+        ...lockerPlain,
+        isOccupied: shouldBeOccupied,
+        currentRecordId: expectedRecordId,
+      };
+    }
+
+    return lockerPlain;
+  });
+
   return {
-    lockers: rawLockers.map((l) => l.get({ plain: true })) as Locker[],
-    records: rawRecords.map((r) => r.get({ plain: true })) as CustodyRecord[],
+    lockers: syncedLockers,
+    records: recordsPlain,
     cashRegisters: rawRegisters.map((r) => ({
       ...r.get({ plain: true }),
       status: r.status as "open" | "closed",
@@ -538,10 +570,13 @@ export async function dbSyncLayout(newLayout: LayoutConfig, newSizes: LockerSize
   
   const toDelete = currentLockers.filter(cl => !desiredLockers.find(dl => dl.col === cl.col && dl.row === cl.row));
   
-  for (const locker of toDelete) {
-    if (locker.isOccupied || locker.currentRecordId !== null) {
-      return { success: false, error: `No se puede guardar: El casillero ${locker.col}${locker.row} está actualmente ocupado. Por favor entréguelo antes de eliminar su espacio.` };
-    }
+  const occupiedToDelete = toDelete.filter((l) => l.isOccupied || l.currentRecordId !== null);
+  if (occupiedToDelete.length > 0) {
+    const occupiedLabels = occupiedToDelete.map((l) => `${l.col}${l.row}`).join(", ");
+    return {
+      success: false,
+      error: `Acción Bloqueada: Los siguientes casilleros tienen equipaje guardado actualmente: [ ${occupiedLabels} ]. Debe retirar o entregar el equipaje de estos casilleros en la vista de Cajero antes de poder modificar o eliminar su capacidad.`,
+    };
   }
   
   const toCreate = desiredLockers.filter(dl => !currentLockers.find(cl => cl.col === dl.col && cl.row === cl.row));

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Briefcase, Backpack, Luggage, Package, Package2 } from "lucide-react";
 import { LockerGrid } from "./locker-grid";
 import { type Locker, type LockerSize } from "@/lib/types";
@@ -28,16 +29,35 @@ export function LockerSelection({
   children,
 }: LockerSelectionProps) {
   const lockerSizes = useCustodyStore((state) => state.lockerSizes);
+  const layoutConfig = useCustodyStore((state) => state.layoutConfig);
 
-  // Mapeamos directamente desde la base de datos (precios configurados por el admin)
-  const sizesToShow = lockerSizes.map((dbSize) => {
-    return {
-      value: dbSize.value,
-      label: dbSize.label,
-      price: dbSize.price,
-      isXXL: dbSize.value.toUpperCase() === "XXL",
-    };
-  });
+  // Medidas verdaderamente configuradas con casilleros activos en el Layout del Admin
+  const configuredSizeCodes = useMemo(() => {
+    if (!layoutConfig?.shelves) return [];
+    const set = new Set<string>();
+    layoutConfig.shelves.forEach((shelf) => {
+      shelf.sizes.forEach((s) => {
+        if (s.count > 0) set.add(s.size);
+      });
+    });
+    return Array.from(set);
+  }, [layoutConfig]);
+
+  // Mapeamos solo las medidas activas según el diseño del Admin
+  const sizesToShow = lockerSizes
+    .filter((dbSize) => configuredSizeCodes.length === 0 || configuredSizeCodes.includes(dbSize.value))
+    .map((dbSize) => {
+      const sizeLockers = lockers.filter((l) => l.col.endsWith(dbSize.value));
+      const availableCount = sizeLockers.filter((l) => !l.isOccupied).length;
+      return {
+        value: dbSize.value,
+        label: dbSize.label,
+        price: dbSize.price,
+        isXXL: dbSize.value.toUpperCase() === "XXL",
+        total: sizeLockers.length,
+        available: availableCount,
+      };
+    });
 
   // Íconos por tamaño (fallback a un ícono genérico si es un tamaño nuevo)
   const getIconForSize = (size: string) => {
@@ -70,7 +90,7 @@ export function LockerSelection({
                   type="button"
                   onClick={() => onSelectSize(size.value as LockerSize)}
                   className={`
-                    relative flex flex-col items-center justify-between p-3 rounded-xl border-2 h-28 transition-all duration-250 cursor-pointer select-none
+                    relative flex flex-col items-center justify-between p-2.5 rounded-xl border-2 h-28 transition-all duration-250 cursor-pointer select-none
                     ${
                       isSelected
                         ? "bg-[#00c5ff] border-[#0089b3] text-white scale-[1.03] shadow-[0_4px_12px_rgba(0,197,255,0.3)] font-black"
@@ -81,12 +101,17 @@ export function LockerSelection({
                   <span className={`absolute top-2 right-3 text-xl font-black leading-none ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-300"}`}>
                     {size.value}
                   </span>
-                  <div className="flex-1 flex items-center justify-center mt-2">
-                    <Icon className={`w-9 h-9 stroke-[1.5] ${isSelected ? "text-white" : "text-[#1588b3] dark:text-zinc-400"}`} />
+                  <div className="flex-1 flex items-center justify-center mt-1">
+                    <Icon className={`w-8 h-8 stroke-[1.5] ${isSelected ? "text-white" : "text-[#1588b3] dark:text-zinc-400"}`} />
                   </div>
-                  <span className={`text-sm font-black mt-1 ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-100"}`}>
-                    {formatCurrency(size.price)}
-                  </span>
+                  <div className="flex flex-col items-center leading-tight">
+                    <span className={`text-xs font-black ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-100"}`}>
+                      {formatCurrency(size.price)}
+                    </span>
+                    <span className={`text-[9px] font-extrabold uppercase mt-0.5 ${isSelected ? "text-white/90" : "text-zinc-500 dark:text-zinc-400"}`}>
+                      Disp: {size.available}/{size.total}
+                    </span>
+                  </div>
                 </button>
               );
             })}

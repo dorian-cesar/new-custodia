@@ -297,44 +297,12 @@ export function ClientRegistration({
         const lockerDisplay = locker ? `${locker.col}${locker.row}` : activeDeliveryPrintRecord.lockerId.toString();
 
         if (printerService.isNative()) {
-          const diffMs = Date.now() - new Date(activeDeliveryPrintRecord.entryTime).getTime();
-          const diffHours = diffMs / (1000 * 60 * 60);
-          let recordExtraHours = 0;
-          let recordExtraAmount = 0;
-          if (diffHours > 24) {
-            recordExtraHours = diffHours - 24;
-            recordExtraAmount = Math.ceil(recordExtraHours / 24) * activeDeliveryPrintRecord.price;
-          }
-
-          // 1. Permiso Comprobante de Retiro
-          const { isConfirmed: okDelivery } = await Swal.fire({
-            icon: "info",
-            title: "Comprobante de Retiro",
-            text: `Confirme para imprimir el comprobante de retiro (${lockerDisplay}).`,
-            confirmButtonText: "Imprimir Comprobante",
-            showCancelButton: true,
-            cancelButtonText: "No Imprimir",
-            allowOutsideClick: false,
-          });
-
-          if (okDelivery) {
-            await printerService.printDeliveryTicket(
-              activeDeliveryPrintRecord,
-              sizeLabel,
-              lockerDisplay,
-              paymentMethod,
-              recordExtraHours,
-              recordExtraAmount,
-              extraFolioState
-            );
-          }
-
-          // 2. Permiso Voucher (si hay comprobante de pago)
+          // Imprimir únicamente el voucher de pago (si hubo pago de recargo)
           if (voucherDataRef.current) {
             const { isConfirmed: okVoucher } = await Swal.fire({
               icon: "info",
               title: "Comprobante de Pago",
-              text: "Retire el comprobante de retiro y confirme para imprimir el comprobante de pago.",
+              text: "Confirme para imprimir el comprobante de pago de recargo.",
               confirmButtonText: "Imprimir Comprobante",
               showCancelButton: true,
               cancelButtonText: "No Imprimir",
@@ -355,54 +323,35 @@ export function ClientRegistration({
           printTimersRef.current = [];
 
           const timer = setTimeout(() => {
-            let printVoucherAction: (() => void) | null = null;
             if (voucherDataRef.current) {
-              printVoucherAction = () => {
-                nextPrintActionRef.current = () => {
-                  setVoucherData(null);
-                  processingDeliveryRecordIdRef.current = null;
-                  setActiveDeliveryPrintRecord(null);
-                  setIsDeliveryPrinting(false);
-                };
-                Swal.fire({
-                  icon: "info",
-                  title: "Comprobante de Pago",
-                  text: "Retire el comprobante de retiro y confirme para imprimir el comprobante.",
-                  confirmButtonText: "Imprimir Comprobante",
-                  showCancelButton: true,
-                  cancelButtonText: "No Imprimir",
-                  allowOutsideClick: false,
-                }).then(({ isConfirmed }) => {
-                  if (isConfirmed) handlePrintVoucher();
-                  else {
-                    setVoucherData(null);
-                    processingDeliveryRecordIdRef.current = null;
-                    setActiveDeliveryPrintRecord(null);
-                    setIsDeliveryPrinting(false);
-                  }
-                });
-              };
-            } else {
-              printVoucherAction = () => {
+              nextPrintActionRef.current = () => {
+                setVoucherData(null);
                 processingDeliveryRecordIdRef.current = null;
                 setActiveDeliveryPrintRecord(null);
                 setIsDeliveryPrinting(false);
               };
+              Swal.fire({
+                icon: "info",
+                title: "Comprobante de Pago",
+                text: "Confirme para imprimir el comprobante de pago de recargo.",
+                confirmButtonText: "Imprimir Comprobante",
+                showCancelButton: true,
+                cancelButtonText: "No Imprimir",
+                allowOutsideClick: false,
+              }).then(({ isConfirmed }) => {
+                if (isConfirmed) handlePrintVoucher();
+                else {
+                  setVoucherData(null);
+                  processingDeliveryRecordIdRef.current = null;
+                  setActiveDeliveryPrintRecord(null);
+                  setIsDeliveryPrinting(false);
+                }
+              });
+            } else {
+              processingDeliveryRecordIdRef.current = null;
+              setActiveDeliveryPrintRecord(null);
+              setIsDeliveryPrinting(false);
             }
-
-            nextPrintActionRef.current = printVoucherAction;
-            Swal.fire({
-              icon: "info",
-              title: "Comprobante de Retiro",
-              text: `Confirme para imprimir el comprobante de retiro (${lockerDisplay}).`,
-              confirmButtonText: "Imprimir Comprobante",
-              showCancelButton: true,
-              cancelButtonText: "No Imprimir",
-              allowOutsideClick: false,
-            }).then(({ isConfirmed }) => {
-              if (isConfirmed) handlePrintDelivery();
-              else printVoucherAction?.();
-            });
           }, 500);
           printTimersRef.current.push(timer);
         }
@@ -1293,38 +1242,39 @@ export function ClientRegistration({
               </div>
             )}
 
-            <div className="space-y-2 pt-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                Medio de Pago
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
-                    paymentMethod === "Efectivo"
-                      ? "bg-[#0a354c] dark:bg-[#00c5ff] text-white dark:text-zinc-900 shadow-md font-black"
-                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
-                  onClick={() => setPaymentMethod("Efectivo")}
-                >
-                  <Coins className="h-5 w-5" />
-                  Efectivo
-                </button>
-                <button
-                  type="button"
-                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
-                    paymentMethod === "Tarjeta"
-                      ? "bg-[#1588b3] dark:bg-zinc-700 text-white shadow-md font-black"
-                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
-                  onClick={() => setPaymentMethod("Tarjeta")}
-                >
-                  <CreditCard className="h-5 w-5" />
-                  Tarjeta
-                </button>
-              </div>
+            {extraAmount > 0 && (
+              <div className="space-y-2 pt-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                  Medio de Pago
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
+                      paymentMethod === "Efectivo"
+                        ? "bg-[#0a354c] dark:bg-[#00c5ff] text-white dark:text-zinc-900 shadow-md font-black"
+                        : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    }`}
+                    onClick={() => setPaymentMethod("Efectivo")}
+                  >
+                    <Coins className="h-5 w-5" />
+                    Efectivo
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
+                      paymentMethod === "Tarjeta"
+                        ? "bg-[#1588b3] dark:bg-zinc-700 text-white shadow-md font-black"
+                        : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    }`}
+                    onClick={() => setPaymentMethod("Tarjeta")}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    Tarjeta
+                  </button>
+                </div>
 
-                {paymentMethod === "Efectivo" && extraAmount > 0 && (
+                {paymentMethod === "Efectivo" && (
                   <div className="space-y-2 mt-3 p-3 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg animate-in fade-in slide-in-from-top-1">
                     <Label
                       htmlFor="cashReceived"
@@ -1370,6 +1320,7 @@ export function ClientRegistration({
                   </div>
                 )}
               </div>
+            )}
           </div>
 
           <div className="px-6 py-4 bg-zinc-200 dark:bg-zinc-900 border-t border-zinc-300 dark:border-zinc-800 flex justify-end gap-3 transition-colors duration-300">

@@ -23,24 +23,39 @@ export function toOriginalCurrency(pygAmount: number): number {
   return pygAmount / PYG_RATE;
 }
 
+import { DEFAULT_CURRENCIES, type CurrencyOption } from "./types";
+
 export function formatCurrency(amount: number): string {
-  let currency = "CLP";
+  let currencyCode = "CLP";
+  let availableCurrencies: CurrencyOption[] = DEFAULT_CURRENCIES;
+
   try {
     const getSetting = useCustodyStore.getState().getSetting;
     if (getSetting) {
-      currency = getSetting("currency") || "CLP";
+      currencyCode = getSetting("currency") || "CLP";
+      const customCurrenciesStr = getSetting("available_currencies");
+      if (customCurrenciesStr) {
+        try {
+          const parsed = JSON.parse(customCurrenciesStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            availableCurrencies = parsed;
+          }
+        } catch (e) {}
+      }
     }
   } catch (err) {
     // Fallback if store is not initialized
   }
 
-  if (currency === "PYG") {
-    // Guaraníes: round to nearest 10
-    const rounded = Math.round(amount / 10) * 10;
-    return `Gs. ${rounded.toLocaleString("es-PY")}`;
-  } else {
-    // Chilean Pesos: round to nearest integer
-    const rounded = Math.round(amount);
-    return `$${rounded.toLocaleString("es-CL")}`;
-  }
+  const activeCurrency = availableCurrencies.find((c) => c.code === currencyCode) ||
+    DEFAULT_CURRENCIES.find((c) => c.code === currencyCode) || {
+      code: currencyCode,
+      name: currencyCode,
+      symbol: "$",
+    };
+
+  const rounded = activeCurrency.code === "PYG" ? Math.round(amount / 10) * 10 : Math.round(amount);
+  const formattedNumber = rounded.toLocaleString("es-CL");
+
+  return `${activeCurrency.symbol} ${formattedNumber}`;
 }

@@ -35,6 +35,19 @@ export default function CustodyPage() {
 
   useEffect(() => {
     setMounted(true);
+    // Sincronizar el layout y casilleros configurados por el administrador
+    const syncLatestLayout = async () => {
+      try {
+        const { getInitialState } = await import("@/app/actions/db-actions");
+        const res = await getInitialState();
+        if (res.success && res.data) {
+          useCustodyStore.getState().hydrateState(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to sync latest layout:", err);
+      }
+    };
+    syncLatestLayout();
   }, []);
 
   // Redirect supervisors to admin panel
@@ -44,31 +57,20 @@ export default function CustodyPage() {
     }
   }, [mounted, currentUser, router]);
 
-  // Show toast alert for overdue lockers when page loads/mounts
-  useEffect(() => {
-    if (mounted && records.length > 0) {
-      const now = Date.now();
-      const count = records.filter((r) => {
-        if (r.status !== "Activo") return false;
-        const diffMs = now - new Date(r.entryTime).getTime();
-        const diffHours = diffMs / (1000 * 60 * 60);
-        return diffHours >= 24;
-      }).length;
+  if (!mounted || currentUser?.role === "supervisor") {
+    return (
+      <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-4 border-[#00c5ff] border-t-transparent animate-spin" />
+          <p className="text-zinc-600 dark:text-zinc-400 font-bold text-xs uppercase tracking-wider">
+            Cargando...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-      if (count > 0) {
-        Swal.fire({
-          toast: true,
-          position: "top-end",
-          showConfirmButton: false,
-          timer: 6000,
-          timerProgressBar: true,
-          icon: "warning",
-          title: "Alerta de Equipaje Excedido",
-          text: `Hay ${count} casillero${count > 1 ? "s" : ""} con más de 24 horas de custodia pendiente de cobro por recargo extra.`,
-        });
-      }
-    }
-  }, [mounted, records]);
+
 
   const isCashOpen = currentCashRegister?.status === "open";
   const stats = getCurrentRegisterStats();

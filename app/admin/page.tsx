@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/custody/header";
 import { LayoutConfigurator } from "@/components/admin/layout-configurator";
+import { DEFAULT_CURRENCIES, type CurrencyOption } from "@/lib/types";
 import {
   Users,
   Plus,
@@ -22,6 +23,8 @@ import {
   Calendar,
   TrendingUp,
   Luggage,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,15 +133,41 @@ export default function AdminPage() {
     updateSetting,
   } = useCustodyStore();
 
-  const currentCurrency = getSetting("currency") || "CLP";
+  // Currency Configuration
+  const currentCurrencyCode = getSetting("currency") || "CLP";
+  const customCurrenciesRaw = getSetting("available_currencies");
 
-  const handleUpdateCurrency = async (currency: "CLP" | "PYG") => {
+  let availableCurrencies: CurrencyOption[] = DEFAULT_CURRENCIES;
+  if (customCurrenciesRaw) {
     try {
-      await updateSetting("currency", currency);
+      const parsed = JSON.parse(customCurrenciesRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        availableCurrencies = parsed;
+      }
+    } catch (e) {}
+  }
+
+  const activeCurrencyObj = availableCurrencies.find((c) => c.code === currentCurrencyCode) ||
+    DEFAULT_CURRENCIES.find((c) => c.code === currentCurrencyCode) || {
+      code: currentCurrencyCode,
+      name: currentCurrencyCode,
+      symbol: "$",
+    };
+
+  const [showAddCurrencyDialog, setShowAddCurrencyDialog] = useState(false);
+  const [newCurrencyCode, setNewCurrencyCode] = useState("");
+  const [newCurrencyName, setNewCurrencyName] = useState("");
+  const [newCurrencySymbol, setNewCurrencySymbol] = useState("");
+  const [currencyError, setCurrencyError] = useState("");
+
+  const handleUpdateCurrency = async (code: string) => {
+    try {
+      await updateSetting("currency", code);
+      const selectedObj = availableCurrencies.find((c) => c.code === code);
       Swal.fire({
         icon: "success",
         title: "Moneda Actualizada",
-        text: `El sistema ahora opera en ${currency === "CLP" ? "Pesos Chilenos (CLP)" : "Guaraníes Paraguayos (PYG)"}.`,
+        text: `El sistema ahora opera en ${selectedObj ? `${selectedObj.name} (${selectedObj.code})` : code}.`,
         timer: 1500,
         showConfirmButton: false,
       });
@@ -151,11 +180,73 @@ export default function AdminPage() {
     }
   };
 
+  const handleCreateCurrency = async () => {
+    const code = newCurrencyCode.trim().toUpperCase();
+    const name = newCurrencyName.trim();
+    const symbol = newCurrencySymbol.trim();
+
+    if (!code || !name || !symbol) {
+      setCurrencyError("Complete todos los campos de la moneda.");
+      return;
+    }
+
+    if (availableCurrencies.some((c) => c.code === code)) {
+      setCurrencyError("Ya existe una moneda registrada con ese código.");
+      return;
+    }
+
+    const updatedCurrencies = [...availableCurrencies, { code, name, symbol }];
+    try {
+      await updateSetting("available_currencies", JSON.stringify(updatedCurrencies));
+      await updateSetting("currency", code);
+      setShowAddCurrencyDialog(false);
+      setNewCurrencyCode("");
+      setNewCurrencyName("");
+      setNewCurrencySymbol("");
+      setCurrencyError("");
+
+      Swal.fire({
+        icon: "success",
+        title: "Moneda Creada y Activada",
+        text: `La moneda ${name} (${code} / ${symbol}) fue agregada exitosamente y activada en el sistema.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err: any) {
+      setCurrencyError(err.message || "Error al guardar moneda");
+    }
+  };
+
+  const handleDeleteCustomCurrency = async (codeToDelete: string) => {
+    if (codeToDelete === "CLP" || codeToDelete === "PYG") {
+      Swal.fire("Información", "Las monedas base (CLP y PYG) no pueden ser eliminadas.", "info");
+      return;
+    }
+
+    const updatedCurrencies = availableCurrencies.filter((c) => c.code !== codeToDelete);
+    try {
+      await updateSetting("available_currencies", JSON.stringify(updatedCurrencies));
+      if (currentCurrencyCode === codeToDelete) {
+        await updateSetting("currency", "CLP");
+      }
+      Swal.fire("Eliminada", `La moneda ${codeToDelete} ha sido eliminada.`, "success");
+    } catch (err: any) {
+      Swal.fire("Error", err.message, "error");
+    }
+  };
+
   const [showDeletePriceDialog, setShowDeletePriceDialog] = useState(false);
   const [deletingSize, setDeletingSize] = useState<{
     size: string;
     label: string;
   } | null>(null);
+
+  // Collapsible section states (Open by default)
+  const [isOccupationExpanded, setIsOccupationExpanded] = useState(true);
+  const [isIncomeExpanded, setIsIncomeExpanded] = useState(true);
+  const [isUsersExpanded, setIsUsersExpanded] = useState(true);
+  const [isCurrencyExpanded, setIsCurrencyExpanded] = useState(true);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
 
   // Pagination for cash registers
   const [currentPageRegisters, setCurrentPageRegisters] = useState(1);
@@ -193,11 +284,14 @@ export default function AdminPage() {
   };
 
   // ── Guards ──
-  if (!mounted) {
+  if (!mounted || !currentUser) {
     return (
-      <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
-        <div className="text-zinc-600 font-bold uppercase tracking-wider text-xs">
-          Cargando...
+      <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-4 border-[#00c5ff] border-t-transparent animate-spin" />
+          <p className="text-zinc-600 dark:text-zinc-400 font-bold text-xs uppercase tracking-wider">
+            Cargando...
+          </p>
         </div>
       </div>
     );
@@ -375,532 +469,673 @@ export default function AdminPage() {
         <Header showBack />
 
         <main className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto min-h-0">
-          {/* ── Supervisor Dashboard ── */}
+          {/* ── Supervisor Dashboard: Ocupación Actual ── */}
           <div>
-            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2 transition-colors duration-300">
-              <Box className="h-4 w-4" />
-              <span>Ocupación Actual</span>
+            <div
+              onClick={() => setIsOccupationExpanded((prev) => !prev)}
+              className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-zinc-800"
+            >
+              <div className="flex items-center gap-2">
+                <Box className="h-4 w-4 text-[#00c5ff]" />
+                <span>Ocupación Actual</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsOccupationExpanded((prev) => !prev)}
+                className="h-7 text-[10px] font-bold text-white hover:bg-zinc-700 flex items-center gap-1.5 px-2 uppercase"
+              >
+                <span>{isOccupationExpanded ? "Ocultar" : "Mostrar"}</span>
+                {isOccupationExpanded ? <ChevronUp className="h-3.5 w-3.5 text-[#00c5ff]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#00c5ff]" />}
+              </Button>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-6 shadow-sm flex flex-col justify-center items-center h-[300px] text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                <h2 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-4 w-full flex items-center gap-2 uppercase tracking-wide">
-                  <Box className="h-4 w-4 text-zinc-500" />
-                  Estado de Casilleros
-                </h2>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        {
-                          name: "Ocupados",
-                          value: lockers.filter((l) => l.isOccupied).length,
-                        },
-                        {
-                          name: "Disponibles",
-                          value: lockers.filter((l) => !l.isOccupied).length,
-                        },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      <Cell fill="#4e4e4e" /> {/* Ocupado color */}
-                      <Cell fill="#00c5ff" /> {/* Disponible color */}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#242424",
-                        borderColor: "#4e4e4e",
-                        color: "#fff",
-                        borderRadius: "8px",
-                      }}
-                      itemStyle={{ color: "#fff" }}
-                    />
-                    <Legend verticalAlign="bottom" height={36} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+            {isOccupationExpanded && (
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-6 shadow-sm flex flex-col justify-center items-center h-[300px] text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <h2 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-4 w-full flex items-center gap-2 uppercase tracking-wide">
+                    <Box className="h-4 w-4 text-zinc-500" />
+                    Estado de Casilleros
+                  </h2>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: "Ocupados",
+                            value: lockers.filter((l) => l.isOccupied).length,
+                          },
+                          {
+                            name: "Disponibles",
+                            value: lockers.filter((l) => !l.isOccupied).length,
+                          },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        <Cell fill="#4e4e4e" /> {/* Ocupado color */}
+                        <Cell fill="#00c5ff" /> {/* Disponible color */}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#242424",
+                          borderColor: "#4e4e4e",
+                          color: "#fff",
+                          borderRadius: "8px",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                      />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
-              <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5" /> Total Casilleros
-                  </h3>
-                  <p className="text-3xl font-black text-[#242424] dark:text-[#00c5ff]">
-                    {lockers.length}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Box className="h-3.5 w-3.5 text-[#00c5ff]" /> Disponibles
-                  </h3>
-                  <p className="text-3xl font-black text-[#00c5ff]">
-                    {lockers.filter((l) => !l.isOccupied).length}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-[#4e4e4e]" /> Ocupados
-                  </h3>
-                  <p className="text-3xl font-black text-[#4e4e4e] dark:text-zinc-350">
-                    {lockers.filter((l) => l.isOccupied).length}
-                  </p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Luggage className="h-3.5 w-3.5 text-amber-500" /> Total Equipajes
-                  </h3>
-                  <p className="text-3xl font-black text-amber-500">
-                    {records.filter((r) => r.status === "Activo").length}
-                  </p>
-                  <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-semibold mt-0.5">En custodia activa</p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                  <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-red-655" /> Vencidos (+24 Hrs)
-                  </h3>
-                  <p className="text-3xl font-black text-red-600">
-                    {
-                      records.filter(
-                        (r) =>
-                          r.status === "Activo" &&
-                          (Date.now() - new Date(r.entryTime).getTime()) /
-                            (1000 * 60 * 60) >=
-                            24,
-                      ).length
-                    }
-                  </p>
+                <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                    <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5" /> Total Casilleros
+                    </h3>
+                    <p className="text-3xl font-black text-[#242424] dark:text-[#00c5ff]">
+                      {lockers.length}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                    <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Box className="h-3.5 w-3.5 text-[#00c5ff]" /> Disponibles
+                    </h3>
+                    <p className="text-3xl font-black text-[#00c5ff]">
+                      {lockers.filter((l) => !l.isOccupied).length}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                    <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-[#4e4e4e]" /> Ocupados
+                    </h3>
+                    <p className="text-3xl font-black text-[#4e4e4e] dark:text-zinc-350">
+                      {lockers.filter((l) => l.isOccupied).length}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                    <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Luggage className="h-3.5 w-3.5 text-amber-500" /> Total Equipajes
+                    </h3>
+                    <p className="text-3xl font-black text-amber-500">
+                      {records.filter((r) => r.status === "Activo").length}
+                    </p>
+                    <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-semibold mt-0.5">En custodia activa</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm flex flex-col justify-center text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                    <h3 className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-red-655" /> Vencidos (+24 Hrs)
+                    </h3>
+                    <p className="text-3xl font-black text-red-600">
+                      {
+                        records.filter(
+                          (r) =>
+                            r.status === "Activo" &&
+                            (Date.now() - new Date(r.entryTime).getTime()) /
+                              (1000 * 60 * 60) >=
+                              24,
+                        ).length
+                      }
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ── Income Metrics ── */}
           <div>
-            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2 transition-colors duration-300">
-              <DollarSign className="h-4 w-4 text-[#00c5ff]" />
-              <span>Resumen de Recaudación</span>
+            <div
+              onClick={() => setIsIncomeExpanded((prev) => !prev)}
+              className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-zinc-800"
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-[#00c5ff]" />
+                <span>Resumen de Recaudación</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsIncomeExpanded((prev) => !prev)}
+                className="h-7 text-[10px] font-bold text-white hover:bg-zinc-700 flex items-center gap-1.5 px-2 uppercase"
+              >
+                <span>{isIncomeExpanded ? "Ocultar" : "Mostrar"}</span>
+                {isIncomeExpanded ? <ChevronUp className="h-3.5 w-3.5 text-[#00c5ff]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#00c5ff]" />}
+              </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                <div className="absolute -right-6 -top-6 text-[#00c5ff]/10 group-hover:scale-110 transition-transform duration-300">
-                  <DollarSign className="w-32 h-32" />
+            {isIncomeExpanded && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="absolute -right-6 -top-6 text-[#00c5ff]/10 group-hover:scale-110 transition-transform duration-300">
+                    <DollarSign className="w-32 h-32" />
+                  </div>
+                  <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-[#00c5ff]" /> Ingresos Hoy
+                  </h3>
+                  <p className="text-2xl font-black text-zinc-800 dark:text-zinc-100 relative z-10">
+                    {formatCurrency(ingresosHoy)}
+                  </p>
                 </div>
-                <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-[#00c5ff]" /> Ingresos Hoy
-                </h3>
-                <p className="text-2xl font-black text-zinc-800 dark:text-zinc-100 relative z-10">
-                  {formatCurrency(ingresosHoy)}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                <div className="absolute -right-6 -top-6 text-[#0a354c]/10 group-hover:scale-110 transition-transform duration-300">
-                  <Calendar className="w-32 h-32" />
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="absolute -right-6 -top-6 text-[#0a354c]/10 group-hover:scale-110 transition-transform duration-300">
+                    <Calendar className="w-32 h-32" />
+                  </div>
+                  <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-[#0a354c] dark:text-[#00c5ff]" /> Últimos 7 Días
+                  </h3>
+                  <p className="text-2xl font-black text-[#0a354c] dark:text-[#00c5ff] relative z-10">
+                    {formatCurrency(ingresosSemana)}
+                  </p>
                 </div>
-                <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-[#0a354c] dark:text-[#00c5ff]" /> Últimos 7 Días
-                </h3>
-                <p className="text-2xl font-black text-[#0a354c] dark:text-[#00c5ff] relative z-10">
-                  {formatCurrency(ingresosSemana)}
-                </p>
-              </div>
-              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-                <div className="absolute -right-6 -top-6 text-[#1588b3]/10 group-hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="w-32 h-32" />
+                <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm flex flex-col justify-center relative overflow-hidden group text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+                  <div className="absolute -right-6 -top-6 text-[#1588b3]/10 group-hover:scale-110 transition-transform duration-300">
+                    <TrendingUp className="w-32 h-32" />
+                  </div>
+                  <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-[#1588b3] dark:text-[#00c5ff]" /> Últimos 30 Días
+                  </h3>
+                  <p className="text-2xl font-black text-[#1588b3] dark:text-[#00c5ff] relative z-10">
+                    {formatCurrency(ingresosMes)}
+                  </p>
                 </div>
-                <h3 className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-[#1588b3] dark:text-[#00c5ff]" /> Últimos 30 Días
-                </h3>
-                <p className="text-2xl font-black text-[#1588b3] dark:text-[#00c5ff] relative z-10">
-                  {formatCurrency(ingresosMes)}
-                </p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ── System Users Section ── */}
           <div>
-            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between">
+            <div
+              onClick={() => setIsUsersExpanded((prev) => !prev)}
+              className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-zinc-800"
+            >
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
+                <Users className="h-4 w-4 text-[#00c5ff]" />
                 <span>Usuarios del Sistema ({users.length})</span>
               </div>
-              <Button
-                onClick={() => {
-                  setCreateError("");
-                  setShowCreateDialog(true);
-                }}
-                className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border border-zinc-300 hover:bg-zinc-100"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Nuevo Usuario
-              </Button>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                {isUsersExpanded && (
+                  <Button
+                    onClick={() => {
+                      setCreateError("");
+                      setShowCreateDialog(true);
+                    }}
+                    className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border border-zinc-300 hover:bg-zinc-100 mr-2"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Nuevo Usuario
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsUsersExpanded((prev) => !prev)}
+                  className="h-7 text-[10px] font-bold text-white hover:bg-zinc-700 flex items-center gap-1.5 px-2 uppercase"
+                >
+                  <span>{isUsersExpanded ? "Ocultar" : "Mostrar"}</span>
+                  {isUsersExpanded ? <ChevronUp className="h-3.5 w-3.5 text-[#00c5ff]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#00c5ff]" />}
+                </Button>
+              </div>
             </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12 bg-white border border-zinc-300 rounded-xl shadow-sm">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-8 h-8 rounded-full border-4 border-[#00c5ff] border-t-transparent animate-spin" />
-                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">
-                    Cargando usuarios...
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
-                <Table>
-                  <TableHeader className="bg-[#242424] hover:bg-[#242424]">
-                    <TableRow className="hover:bg-transparent border-none">
-                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
-                        ID
-                      </TableHead>
-                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
-                        USUARIO
-                      </TableHead>
-                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
-                        ROL
-                      </TableHead>
-                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-right">
-                        ACCIONES
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          className="text-center py-8 text-zinc-500 font-semibold"
-                        >
-                          No hay usuarios registrados
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      users.map((user) => (
-                        <TableRow
-                          key={user.id}
-                          className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50"
-                        >
-                          <TableCell className="text-zinc-800 font-mono text-xs py-3">
-                            {user.id}
-                          </TableCell>
-                          <TableCell className="text-zinc-800 font-bold text-xs py-3">
-                            {user.username}
-                          </TableCell>
-                          <TableCell className="py-3">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                                user.role === "supervisor"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-zinc-100 text-zinc-500"
-                              }`}
-                            >
-                              {user.role === "supervisor"
-                                ? "Supervisor"
-                                : "Cajero"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right py-3">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditDialog(user)}
-                                className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100"
-                              >
-                                <Pencil className="h-3 w-3 mr-1" />
-                                Editar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openDeleteDialog(user)}
-                                className="h-7 text-[10px] uppercase font-bold bg-white text-red-600 border-red-200 hover:bg-red-50 hover:text-red-600"
-                                disabled={user.id === currentUser.id}
-                                title={
-                                  user.id === currentUser.id
-                                    ? "No puedes eliminar tu propia cuenta"
-                                    : ""
-                                }
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Eliminar
-                              </Button>
-                            </div>
-                          </TableCell>
+            {isUsersExpanded && (
+              <div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12 bg-white border border-zinc-300 rounded-xl shadow-sm">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-8 h-8 rounded-full border-4 border-[#00c5ff] border-t-transparent animate-spin" />
+                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">
+                        Cargando usuarios...
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden border border-zinc-300 rounded-xl shadow-sm bg-white">
+                    <Table>
+                      <TableHeader className="bg-[#242424] hover:bg-[#242424]">
+                        <TableRow className="hover:bg-transparent border-none">
+                          <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                            ID
+                          </TableHead>
+                          <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                            USUARIO
+                          </TableHead>
+                          <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10">
+                            ROL
+                          </TableHead>
+                          <TableHead className="text-white font-extrabold uppercase tracking-wider text-xs h-10 text-right">
+                            ACCIONES
+                          </TableHead>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {users.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              className="text-center py-8 text-zinc-500 font-semibold"
+                            >
+                              No hay usuarios registrados
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          users.map((user) => (
+                            <TableRow
+                              key={user.id}
+                              className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/50"
+                            >
+                              <TableCell className="text-zinc-800 font-mono text-xs py-3">
+                                {user.id}
+                              </TableCell>
+                              <TableCell className="text-zinc-800 font-bold text-xs py-3">
+                                {user.username}
+                              </TableCell>
+                              <TableCell className="py-3">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                    user.role === "supervisor"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-zinc-100 text-zinc-500"
+                                  }`}
+                                >
+                                  {user.role === "supervisor"
+                                    ? "Supervisor"
+                                    : "Cajero"}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right py-3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openEditDialog(user)}
+                                    className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100"
+                                  >
+                                    <Pencil className="h-3 w-3 mr-1" />
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openDeleteDialog(user)}
+                                    className="h-7 text-[10px] uppercase font-bold bg-white text-red-600 border-red-200 hover:bg-red-50 hover:text-red-600"
+                                    disabled={user.id === currentUser.id}
+                                    title={
+                                      user.id === currentUser.id
+                                        ? "No puedes eliminar tu propia cuenta"
+                                        : ""
+                                    }
+                                  >
+                                    <Trash2 className="h-3 w-3 mr-1" />
+                                    Eliminar
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* ── Currency Selector Section ── */}
-          <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-4 shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-300">
-            <div className="flex flex-col gap-1">
-              <span className="font-extrabold text-sm text-[#0a354c] dark:text-[#00c5ff]">
-                Moneda del Sistema
-              </span>
-              <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
-                Define el símbolo y formato de los cobros
-              </span>
+          <div className="flex flex-col gap-3">
+            <div
+              onClick={() => setIsCurrencyExpanded((prev) => !prev)}
+              className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider rounded-md flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-zinc-800"
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-[#00c5ff]" />
+                <span>Moneda del Sistema ({activeCurrencyObj.name} - {activeCurrencyObj.symbol})</span>
+              </div>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                {isCurrencyExpanded && (
+                  <Button
+                    onClick={() => {
+                      setCurrencyError("");
+                      setShowAddCurrencyDialog(true);
+                    }}
+                    className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border border-zinc-300 hover:bg-zinc-100 mr-2"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Agregar Moneda
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsCurrencyExpanded((prev) => !prev)}
+                  className="h-7 text-[10px] font-bold text-white hover:bg-zinc-700 flex items-center gap-1.5 px-2 uppercase"
+                >
+                  <span>{isCurrencyExpanded ? "Ocultar" : "Mostrar"}</span>
+                  {isCurrencyExpanded ? <ChevronUp className="h-3.5 w-3.5 text-[#00c5ff]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#00c5ff]" />}
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => handleUpdateCurrency("CLP")}
-                variant={currentCurrency === "CLP" ? "default" : "outline"}
-                className="h-8 text-xs font-bold px-4 rounded-full"
-              >
-                Pesos (CLP / $)
-              </Button>
-              <Button
-                onClick={() => handleUpdateCurrency("PYG")}
-                variant={currentCurrency === "PYG" ? "default" : "outline"}
-                className="h-8 text-xs font-bold px-4 rounded-full"
-              >
-                Guaraníes (PYG / Gs.)
-              </Button>
-            </div>
+
+            {isCurrencyExpanded && (
+              <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-5 shadow-sm mb-2 flex flex-col gap-4 transition-colors duration-300">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-700 pb-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-extrabold text-sm text-[#0a354c] dark:text-[#00c5ff]">
+                      Monedas Habilitadas en el Sistema
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+                      Moneda activa actual: <strong className="text-zinc-800 dark:text-white">{activeCurrencyObj.name} ({activeCurrencyObj.symbol})</strong>
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setCurrencyError("");
+                      setShowAddCurrencyDialog(true);
+                    }}
+                    size="sm"
+                    className="h-8 text-xs font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white self-start sm:self-auto"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Nueva Moneda Custom
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  {availableCurrencies.map((c) => {
+                    const isActive = currentCurrencyCode === c.code;
+                    const isBase = c.code === "CLP" || c.code === "PYG";
+                    return (
+                      <div
+                        key={c.code}
+                        className={`group relative flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer select-none ${
+                          isActive
+                            ? "bg-[#00c5ff] text-white border-[#00c5ff] shadow-md scale-105"
+                            : "bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
+                        onClick={() => handleUpdateCurrency(c.code)}
+                      >
+                        <span>{c.symbol} {c.code}</span>
+                        <span className="text-[10px] opacity-80 font-medium">({c.name})</span>
+
+                        {!isBase && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCustomCurrency(c.code);
+                            }}
+                            className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 p-0.5 rounded-full"
+                            title={`Eliminar moneda ${c.code}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Layout Configuration Section ── */}
           <LayoutConfigurator />
 
-
           {/* ── Cash Register Supervision / Session History Section ── */}
           <div>
-            <div className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center gap-2 transition-colors duration-300">
-              <History className="h-4 w-4 text-[#00c5ff]" />
-              <span>Historial de Turnos y Cajas</span>
+            <div
+              onClick={() => setIsHistoryExpanded((prev) => !prev)}
+              className="bg-[#242424] dark:bg-zinc-800 text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between cursor-pointer select-none transition-colors hover:bg-zinc-800"
+            >
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-[#00c5ff]" />
+                <span>Historial de Turnos y Cajas</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsHistoryExpanded((prev) => !prev)}
+                className="h-7 text-[10px] font-bold text-white hover:bg-zinc-700 flex items-center gap-1.5 px-2 uppercase"
+              >
+                <span>{isHistoryExpanded ? "Ocultar" : "Mostrar"}</span>
+                {isHistoryExpanded ? <ChevronUp className="h-3.5 w-3.5 text-[#00c5ff]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#00c5ff]" />}
+              </Button>
             </div>
 
-            <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
-              <Table>
-                <TableHeader className="bg-[#242424] dark:bg-zinc-855 hover:bg-[#242424] dark:hover:bg-zinc-855">
-                  <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
-                      CAJERO
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
-                      APERTURA
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
-                      CIERRE
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      INICIAL
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      EFECTIVO
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      TARJETA
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      TOTAL VENTAS
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      RETIROS
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      ENTREGADO
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
-                      DIFERENCIA
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-center">
-                      ESTADO
-                    </TableHead>
-                    <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
-                      NOTAS
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {cashRegisters.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={12}
-                        className="text-center py-8 text-zinc-500 font-semibold"
-                      >
-                        No hay turnos registrados
-                      </TableCell>
+            {isHistoryExpanded && (
+              <div className="overflow-hidden border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-sm bg-white dark:bg-zinc-800 transition-colors duration-300">
+                <Table>
+                  <TableHeader className="bg-[#242424] dark:bg-zinc-855 hover:bg-[#242424] dark:hover:bg-zinc-855">
+                    <TableRow className="hover:bg-transparent border-none">
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
+                        CAJERO
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
+                        APERTURA
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
+                        CIERRE
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        INICIAL
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        EFECTIVO
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        TARJETA
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        TOTAL VENTAS
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        RETIROS
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        ENTREGADO
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-right">
+                        DIFERENCIA
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10 text-center">
+                        ESTADO
+                      </TableHead>
+                      <TableHead className="text-white font-extrabold uppercase tracking-wider text-[10px] h-10">
+                        NOTAS
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    paginatedRegisters.map((register) => {
-                      const regTxs = cashTransactions.filter(
-                        (t) => t.registerId === register.id,
-                      );
-                      const ingresosTarjeta =
-                        Math.round(
-                          regTxs
-                            .filter(
-                              (t) =>
-                                t.type === "income" &&
-                                t.description.includes("Tarjeta"),
-                            )
-                            .reduce((s, t) => s + t.amount, 0) / 10,
-                        ) * 10;
-                      const ingresosEfectivo =
-                        Math.round(
-                          regTxs
-                            .filter(
-                              (t) =>
-                                t.type === "income" &&
-                                !t.description.includes("Tarjeta"),
-                            )
-                            .reduce((s, t) => s + t.amount, 0) / 10,
-                        ) * 10;
-                      const gastosEfectivo =
-                        Math.round(
-                          regTxs
-                            .filter((t) => t.type === "expense")
-                            .reduce((s, t) => s + t.amount, 0) / 10,
-                        ) * 10;
-
-                      const saldoEsperadoEfectivo =
-                        register.openingAmount +
-                        ingresosEfectivo -
-                        gastosEfectivo;
-                      const diferenciaCaja =
-                        register.closingAmount !== null
-                          ? register.closingAmount - saldoEsperadoEfectivo
-                          : null;
-
-                      return (
-                        <TableRow
-                          key={register.id}
-                          className="border-b border-zinc-205 dark:border-zinc-700 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/50"
+                  </TableHeader>
+                  <TableBody>
+                    {cashRegisters.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={12}
+                          className="text-center py-8 text-zinc-500 font-semibold"
                         >
-                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-bold text-xs py-3">
-                            {register.openedBy || "desconocido"}
-                          </TableCell>
-                          <TableCell className="text-zinc-800 dark:text-zinc-350 font-semibold text-[10px] py-3">
-                            {formatDateTime(register.openedAt)}
-                          </TableCell>
-                          <TableCell className="text-zinc-800 dark:text-zinc-350 font-semibold text-[10px] py-3">
-                            {register.closedAt ? (
-                              formatDateTime(register.closedAt)
-                            ) : (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[9px]">
-                                Activo ahora
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-medium text-xs text-right py-3">
-                            {formatCurrency(register.openingAmount)}
-                          </TableCell>
-                          <TableCell className="text-amber-600 dark:text-amber-400 font-semibold text-xs text-right py-3">
-                            {formatCurrency(ingresosEfectivo)}
-                          </TableCell>
-                          <TableCell className="text-blue-600 dark:text-blue-400 font-semibold text-xs text-right py-3">
-                            {formatCurrency(ingresosTarjeta)}
-                          </TableCell>
-                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-extrabold text-xs text-right py-3">
-                            {formatCurrency(ingresosEfectivo + ingresosTarjeta)}
-                          </TableCell>
-                          <TableCell className="text-red-650 dark:text-red-400 font-medium text-xs text-right py-3">
-                            {formatCurrency(gastosEfectivo)}
-                          </TableCell>
-                          <TableCell className="text-zinc-800 dark:text-zinc-200 font-black text-xs text-right py-3">
-                            {register.closingAmount !== null
-                              ? formatCurrency(register.closingAmount)
-                              : "-"}
-                          </TableCell>
-                          <TableCell className="text-right py-3">
-                            {diferenciaCaja !== null ? (
-                              <span
-                                className={`text-[10px] font-black ${diferenciaCaja === 0 ? "text-emerald-600 dark:text-emerald-400" : diferenciaCaja > 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}
-                              >
-                                {diferenciaCaja === 0
-                                  ? "Cuadrada"
-                                  : diferenciaCaja > 0
-                                    ? `Sobrante: +${formatCurrency(diferenciaCaja)}`
-                                    : `Faltante: -${formatCurrency(Math.abs(diferenciaCaja))}`}
-                              </span>
-                            ) : (
-                              <span className="text-zinc-500 dark:text-zinc-400 font-semibold">
-                                -
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center py-3">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                                register.status === "open"
-                                  ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
-                              }`}
-                            >
-                              {register.status === "open"
-                                ? "Abierta"
-                                : "Cerrada"}
-                            </span>
-                          </TableCell>
-                          <TableCell
-                            className="text-zinc-500 dark:text-zinc-400 font-medium text-xs max-w-[150px] truncate py-3"
-                            title={register.notes}
+                          No hay turnos registrados
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedRegisters.map((register) => {
+                        const regTxs = cashTransactions.filter(
+                          (t) => t.registerId === register.id,
+                        );
+                        const ingresosTarjeta =
+                          Math.round(
+                            regTxs
+                              .filter(
+                                (t) =>
+                                  t.type === "income" &&
+                                  t.description.includes("Tarjeta"),
+                              )
+                              .reduce((s, t) => s + t.amount, 0) / 10,
+                          ) * 10;
+                        const ingresosEfectivo =
+                          Math.round(
+                            regTxs
+                              .filter(
+                                (t) =>
+                                  t.type === "income" &&
+                                  !t.description.includes("Tarjeta"),
+                              )
+                              .reduce((s, t) => s + t.amount, 0) / 10,
+                          ) * 10;
+                        const gastosEfectivo =
+                          Math.round(
+                            regTxs
+                              .filter((t) => t.type === "expense")
+                              .reduce((s, t) => s + t.amount, 0) / 10,
+                          ) * 10;
+
+                        const saldoEsperadoEfectivo =
+                          register.openingAmount +
+                          ingresosEfectivo -
+                          gastosEfectivo;
+                        const diferenciaCaja =
+                          register.closingAmount !== null
+                            ? register.closingAmount - saldoEsperadoEfectivo
+                            : null;
+
+                        return (
+                          <TableRow
+                            key={register.id}
+                            className="border-b border-zinc-205 dark:border-zinc-700 last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-700/50"
                           >
-                            {register.notes || "-"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-              <div className="flex items-center justify-between p-4 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 font-semibold transition-colors duration-300">
-                <div>
-                  Mostrando{" "}
-                  {Math.min(
-                    sortedRegisters.length,
-                    (currentPageRegisters - 1) * REGISTERS_PER_PAGE + 1,
-                  )}{" "}
-                  a{" "}
-                  {Math.min(
-                    sortedRegisters.length,
-                    currentPageRegisters * REGISTERS_PER_PAGE,
-                  )}{" "}
-                  de {sortedRegisters.length} registros
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPageRegisters((p) => Math.max(1, p - 1))
-                    }
-                    disabled={currentPageRegisters === 1}
-                    className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPageRegisters((p) =>
-                        Math.min(totalRegisterPages, p + 1),
-                      )
-                    }
-                    disabled={
-                      currentPageRegisters >= totalRegisterPages ||
-                      totalRegisterPages === 0
-                    }
-                    className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
-                  >
-                    Siguiente
-                  </Button>
+                            <TableCell className="text-zinc-800 dark:text-zinc-200 font-bold text-xs py-3">
+                              {register.openedBy || "desconocido"}
+                            </TableCell>
+                            <TableCell className="text-zinc-800 dark:text-zinc-350 font-semibold text-[10px] py-3">
+                              {formatDateTime(register.openedAt)}
+                            </TableCell>
+                            <TableCell className="text-zinc-800 dark:text-zinc-350 font-semibold text-[10px] py-3">
+                              {register.closedAt ? (
+                                formatDateTime(register.closedAt)
+                              ) : (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[9px]">
+                                  Activo ahora
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-zinc-800 dark:text-zinc-200 font-medium text-xs text-right py-3">
+                              {formatCurrency(register.openingAmount)}
+                            </TableCell>
+                            <TableCell className="text-amber-600 dark:text-amber-400 font-semibold text-xs text-right py-3">
+                              {formatCurrency(ingresosEfectivo)}
+                            </TableCell>
+                            <TableCell className="text-blue-600 dark:text-blue-400 font-semibold text-xs text-right py-3">
+                              {formatCurrency(ingresosTarjeta)}
+                            </TableCell>
+                            <TableCell className="text-zinc-800 dark:text-zinc-200 font-extrabold text-xs text-right py-3">
+                              {formatCurrency(ingresosEfectivo + ingresosTarjeta)}
+                            </TableCell>
+                            <TableCell className="text-red-650 dark:text-red-400 font-medium text-xs text-right py-3">
+                              {formatCurrency(gastosEfectivo)}
+                            </TableCell>
+                            <TableCell className="text-zinc-800 dark:text-zinc-200 font-black text-xs text-right py-3">
+                              {register.closingAmount !== null
+                                ? formatCurrency(register.closingAmount)
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="text-right py-3">
+                              {diferenciaCaja !== null ? (
+                                <span
+                                  className={`text-[10px] font-black ${diferenciaCaja === 0 ? "text-emerald-600 dark:text-emerald-400" : diferenciaCaja > 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400"}`}
+                                >
+                                  {diferenciaCaja === 0
+                                    ? "Cuadrada"
+                                    : diferenciaCaja > 0
+                                      ? `Sobrante: +${formatCurrency(diferenciaCaja)}`
+                                      : `Faltante: -${formatCurrency(Math.abs(diferenciaCaja))}`}
+                                </span>
+                              ) : (
+                                <span className="text-zinc-500 dark:text-zinc-400 font-semibold">
+                                  -
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center py-3">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                  register.status === "open"
+                                    ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
+                                    : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
+                                }`}
+                              >
+                                {register.status === "open"
+                                  ? "Abierta"
+                                  : "Cerrada"}
+                              </span>
+                            </TableCell>
+                            <TableCell
+                              className="text-zinc-500 dark:text-zinc-400 font-medium text-xs max-w-[150px] truncate py-3"
+                              title={register.notes}
+                            >
+                              {register.notes || "-"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between p-4 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 font-semibold transition-colors duration-300">
+                  <div>
+                    Mostrando{" "}
+                    {Math.min(
+                      sortedRegisters.length,
+                      (currentPageRegisters - 1) * REGISTERS_PER_PAGE + 1,
+                    )}{" "}
+                    a{" "}
+                    {Math.min(
+                      sortedRegisters.length,
+                      currentPageRegisters * REGISTERS_PER_PAGE,
+                    )}{" "}
+                    de {sortedRegisters.length} registros
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPageRegisters((p) => Math.max(1, p - 1))
+                      }
+                      disabled={currentPageRegisters === 1}
+                      className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPageRegisters((p) =>
+                          Math.min(totalRegisterPages, p + 1),
+                        )
+                      }
+                      disabled={
+                        currentPageRegisters >= totalRegisterPages ||
+                        totalRegisterPages === 0
+                      }
+                      className="h-7 text-[10px] bg-white dark:bg-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 font-bold transition-colors"
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </main>
       </div>
@@ -1087,6 +1322,67 @@ export default function AdminPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ── Create Currency Dialog ── */}
+      <Dialog open={showAddCurrencyDialog} onOpenChange={setShowAddCurrencyDialog}>
+        <DialogContent className="bg-[#e6e6e7] dark:bg-zinc-900 border border-zinc-350 dark:border-zinc-800 p-0 overflow-hidden rounded-xl shadow-2xl max-w-md text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+          <DialogHeader className="bg-[#242424] dark:bg-zinc-850 text-white p-4">
+            <DialogTitle className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider">
+              <DollarSign className="h-4 w-4 text-[#00c5ff]" />
+              <span>Agregar Nueva Moneda</span>
+            </DialogTitle>
+            <DialogDescription className="text-zinc-300 text-xs mt-1">
+              Registre una nueva moneda para operar e imprimir comprobantes en el sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
+                Código de Moneda (ej. USD, ARS, EUR)
+              </Label>
+              <Input
+                type="text"
+                value={newCurrencyCode}
+                onChange={(e) => setNewCurrencyCode(e.target.value.toUpperCase())}
+                placeholder="BOB"
+                className="bg-white dark:bg-zinc-800 border-zinc-300 uppercase font-mono font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
+                Nombre de la Moneda
+              </Label>
+              <Input
+                type="text"
+                value={newCurrencyName}
+                onChange={(e) => setNewCurrencyName(e.target.value)}
+                placeholder="Bolivianos"
+                className="bg-white dark:bg-zinc-800 border-zinc-300"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-zinc-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wide">
+                Símbolo (ej. $, Gs., US$, Bs.)
+              </Label>
+              <Input
+                type="text"
+                value={newCurrencySymbol}
+                onChange={(e) => setNewCurrencySymbol(e.target.value)}
+                placeholder="Bs."
+                className="bg-white dark:bg-zinc-800 border-zinc-300 font-bold"
+              />
+            </div>
+            {currencyError && <p className="text-xs text-red-600 font-bold">{currencyError}</p>}
+          </div>
+          <DialogFooter className="bg-zinc-200/50 p-4 border-t border-zinc-300 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowAddCurrencyDialog(false)} className="h-9 text-xs font-bold">
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateCurrency} className="h-9 text-xs font-bold bg-[#00c5ff] hover:bg-[#00a3d4] text-white">
+              Guardar y Activar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

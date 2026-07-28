@@ -27,6 +27,16 @@ import {
   dbUpdateSetting,
 } from "@/app/actions/db-actions";
 
+export const notifyStateChange = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const channel = new BroadcastChannel("custody_sync_channel");
+      channel.postMessage("refresh_state");
+      channel.close();
+    } catch (e) {}
+  }
+};
+
 export interface User {
   id: number;
   username: string;
@@ -420,17 +430,20 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
 
   getActiveRecordsByInput: (input) => {
     const { records } = get();
+    const cleanInput = input.trim().toLowerCase();
+    if (!cleanInput) return [];
+
     // Si es un código exacto de barras o la primera parte del código (ej: 225386)
     const byCode = records.filter(
       (r) =>
-        (r.code === input || r.code.startsWith(`${input}/`)) &&
+        (r.code.toLowerCase() === cleanInput || r.code.toLowerCase().startsWith(`${cleanInput}/`)) &&
         r.status === "Activo",
     );
     if (byCode.length > 0) return byCode;
 
-    // Si es por RUT, devolver todos los activos, ordenados por antigüedad
+    // Si es por Documento / RUT, devolver todos los activos, ordenados por antigüedad
     const byDocument = records.filter(
-      (r) => r.clientDocument === input && r.status === "Activo",
+      (r) => r.clientDocument.trim().toLowerCase() === cleanInput && r.status === "Activo",
     );
     return byDocument.sort(
       (a, b) =>
@@ -503,6 +516,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     }));
 
     await get().releaseLocker(record.lockerId);
+    notifyStateChange();
     return true;
   },
 
@@ -584,6 +598,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
       ),
     }));
 
+    notifyStateChange();
     return true;
   },
 

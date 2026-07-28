@@ -168,7 +168,7 @@ export class SettingModel extends Model {
 SettingModel.init(
   {
     key: { type: DataTypes.STRING, primaryKey: true },
-    value: { type: DataTypes.STRING, allowNull: false },
+    value: { type: DataTypes.TEXT('long'), allowNull: false },
   },
   { sequelize, modelName: 'Setting', tableName: 'settings', timestamps: false }
 );

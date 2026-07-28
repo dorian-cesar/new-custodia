@@ -26,14 +26,49 @@ export function DbInitProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    getInitialState().then((res) => {
-      if (res.success && res.data) {
-        hydrateState(res.data);
-      } else {
-        console.error("Failed to load DB state:", res.error);
-      }
+    let channel: BroadcastChannel | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        channel = new BroadcastChannel("custody_sync_channel");
+        channel.onmessage = async (event) => {
+          if (event.data === "refresh_state") {
+            const res = await getInitialState();
+            if (res.success && res.data) {
+              hydrateState(res.data);
+            }
+          }
+        };
+      } catch (e) {}
+
+      const syncState = async () => {
+        const res = await getInitialState();
+        if (res.success && res.data) {
+          hydrateState(res.data);
+        }
+      };
+
+      const handleFocus = async () => {
+        syncState();
+      };
+
+      window.addEventListener("focus", handleFocus);
+
+      getInitialState().then((res) => {
+        if (res.success && res.data) {
+          hydrateState(res.data);
+        } else {
+          console.error("Failed to load DB state:", res.error);
+        }
+        setIsLoaded(true);
+      });
+
+      return () => {
+        if (channel) channel.close();
+        window.removeEventListener("focus", handleFocus);
+      };
+    } else {
       setIsLoaded(true);
-    });
+    }
   }, [hydrateState]);
 
   if (!isLoaded) {
