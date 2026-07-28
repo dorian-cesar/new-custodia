@@ -7,7 +7,7 @@ import { useCustodyStore } from "@/lib/custody-store";
 
 interface LockerSelectionProps {
   lockers: Locker[];
-  selectedLockerId: number | null;
+  selectedLockers: { id: number; size: LockerSize }[];
   onSelectLocker: (lockerId: number) => void;
   selectedSize: LockerSize | null;
   onSelectSize: (size: LockerSize) => void;
@@ -18,7 +18,7 @@ interface LockerSelectionProps {
 
 export function LockerSelection({
   lockers,
-  selectedLockerId,
+  selectedLockers,
   onSelectLocker,
   selectedSize,
   onSelectSize,
@@ -175,7 +175,7 @@ export function LockerSelection({
           </div>
           <LockerGrid
             lockers={lockers}
-            selectedLockerId={selectedLockerId}
+            selectedLockers={selectedLockers}
             onSelectLocker={onSelectLocker}
             selectedSize={selectedSize}
           />

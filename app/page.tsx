@@ -24,12 +24,10 @@ export default function CustodyPage() {
     getCurrentRegisterStats,
   } = useCustodyStore();
 
-  const [selectedLockerId, setSelectedLockerId] = useState<number | null>(null);
+  const [selectedLockers, setSelectedLockers] = useState<{ id: number; size: LockerSize }[]>([]);
   const [selectedSize, setSelectedSize] = useState<LockerSize | null>(null);
   const [clientDocument, setClientDocument] = useState("");
-  const [currentRecord, setCurrentRecord] = useState<CustodyRecord | null>(
-    null,
-  );
+  const [currentRecords, setCurrentRecords] = useState<CustodyRecord[] | null>(null);
   const [lastPrintedId, setLastPrintedId] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   const [serviceMode, setServiceMode] = useState<"entrega" | "retiro">(
@@ -83,34 +81,39 @@ export default function CustodyPage() {
     cardNumber?: string | null,
     cardBrand?: string | null,
     cardType?: string | null,
-  ): Promise<CustodyRecord | null> => {
-    if (!selectedLockerId || !selectedSize || !clientDocument.trim()) {
+  ): Promise<CustodyRecord[] | null> => {
+    if (selectedLockers.length === 0 || !clientDocument.trim()) {
       return null;
     }
 
-    const record = await createRecord(
-      selectedLockerId,
-      clientDocument.trim(),
-      selectedSize,
-      paymentMethod,
-      authCode,
-      opNumber,
-      cardNumber,
-      cardBrand,
-      cardType,
-    );
-    if (record) {
-      setCurrentRecord(record);
-      // Retrasar la limpieza de los campos de entrada de la UI por 4 segundos.
-      // Esto evita que el DOM del ticket se destruya o cambie antes de que
-      // react-to-print termine de enviar las 2 copias (y el voucher) a la cola de Windows.
+    const createdRecords: CustodyRecord[] = [];
+    for (const locker of selectedLockers) {
+      const record = await createRecord(
+        locker.id,
+        clientDocument.trim(),
+        locker.size,
+        paymentMethod,
+        authCode,
+        opNumber,
+        cardNumber,
+        cardBrand,
+        cardType,
+      );
+      if (record) createdRecords.push(record);
+    }
+
+    if (createdRecords.length > 0) {
+      setCurrentRecords(createdRecords);
+      // Retrasar la limpieza de los campos de entrada de la UI por 8 segundos.
+      // Aumentado el tiempo para permitir la impresión de todos los tickets en la cola.
       setTimeout(() => {
-        setSelectedLockerId(null);
+        setSelectedLockers([]);
         setSelectedSize(null);
         setClientDocument("");
-      }, 4000);
+      }, 8000);
+      return createdRecords;
     }
-    return record;
+    return null;
   };
 
   const handleDeliver = async (
@@ -230,25 +233,38 @@ export default function CustodyPage() {
           {serviceMode === "entrega" ? (
             <LockerSelection
               lockers={lockers}
-              selectedLockerId={selectedLockerId}
-              onSelectLocker={(id) =>
-                setSelectedLockerId(selectedLockerId === id ? null : id)
-              }
-              selectedSize={selectedSize}
-              onSelectSize={(size) => {
-                setSelectedSize(size);
-                setSelectedLockerId(null);
+              selectedLockers={selectedLockers}
+              onSelectLocker={(id) => {
+                if (!selectedSize) return;
+                setSelectedLockers((prev) => {
+                  const isSelected = prev.some((l) => l.id === id);
+                  if (isSelected) return prev.filter((l) => l.id !== id);
+                  if (prev.length >= 5) {
+                    Swal.fire({
+                      toast: true,
+                      position: "top-end",
+                      showConfirmButton: false,
+                      timer: 3000,
+                      icon: "warning",
+                      title: "Límite alcanzado",
+                      text: "Puedes seleccionar un máximo de 5 casilleros por cliente.",
+                    });
+                    return prev;
+                  }
+                  return [...prev, { id, size: selectedSize }];
+                });
               }}
+              selectedSize={selectedSize}
+              onSelectSize={(size) => setSelectedSize(size)}
               clientDocument={clientDocument}
               onChangeDocument={setClientDocument}
             >
               <ClientRegistration
-                selectedLockerId={selectedLockerId}
-                selectedSize={selectedSize}
+                selectedLockers={selectedLockers}
                 clientDocument={clientDocument}
                 onGenerateBarcode={handleGenerateBarcode}
                 onDeliver={handleDeliver}
-                currentRecord={currentRecord}
+                currentRecords={currentRecords}
                 isCashOpen={isCashOpen}
                 mode={serviceMode}
                 lastPrintedId={lastPrintedId}
@@ -257,12 +273,11 @@ export default function CustodyPage() {
             </LockerSelection>
           ) : (
             <ClientRegistration
-              selectedLockerId={selectedLockerId}
-              selectedSize={selectedSize}
+              selectedLockers={selectedLockers}
               clientDocument={clientDocument}
               onGenerateBarcode={handleGenerateBarcode}
               onDeliver={handleDeliver}
-              currentRecord={currentRecord}
+              currentRecords={currentRecords}
               isCashOpen={isCashOpen}
               mode={serviceMode}
               lastPrintedId={lastPrintedId}

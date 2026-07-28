@@ -5,14 +5,14 @@ import { type Locker, type LockerSize } from "@/lib/types";
 
 interface LockerGridProps {
   lockers: Locker[];
-  selectedLockerId: number | null;
+  selectedLockers: { id: number; size: LockerSize }[];
   onSelectLocker: (lockerId: number) => void;
   selectedSize: LockerSize | null;
 }
 
 export function LockerGrid({
   lockers,
-  selectedLockerId,
+  selectedLockers,
   onSelectLocker,
   selectedSize,
 }: LockerGridProps) {
@@ -81,7 +81,7 @@ export function LockerGrid({
               >
                 {sectorLockers.map((locker) => {
                   const isOccupied = locker.isOccupied;
-                  const isSelected = selectedLockerId === locker.id;
+                  const isSelected = selectedLockers.some((l) => l.id === locker.id);
                   const label = `${locker.col}${locker.row}`;
 
                   return (
