@@ -33,13 +33,14 @@ export function LockerSelection({
 
   // Mapeamos todas las medidas registradas en el Admin para que se muestren en TAMAÑO DEL EQUIPAJE
   const sizesToShow = lockerSizes.map((dbSize) => {
-    const sizeLockers = lockers.filter((l) => l.col.endsWith(dbSize.value));
+    const cleanSizeValue = dbSize.value.trim().toUpperCase();
+    const sizeLockers = lockers.filter((l) => l.col.trim().toUpperCase().endsWith(cleanSizeValue));
     const availableCount = sizeLockers.filter((l) => !l.isOccupied).length;
     return {
       value: dbSize.value,
       label: dbSize.label,
       price: dbSize.price,
-      isXXL: dbSize.value.toUpperCase() === "XXL",
+      isXXL: cleanSizeValue === "XXL",
       total: sizeLockers.length,
       available: availableCount,
     };

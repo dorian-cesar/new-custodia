@@ -808,8 +808,8 @@ export function ClientRegistration({
         timestamp: new Date().toISOString(),
         items: pendingDeliverRecords.map((r) => {
           const sizeLabel = lockerSizes.find((s) => s.value === r.size)?.label || r.size;
-          const locker = lockers.find((l) => l.id === r.lockerId);
-          const position = locker ? `${locker.col}${locker.row}` : r.lockerId.toString();
+          const locker = lockers.find((l) => l.id === Number(r.lockerId) || String(l.id) === String(r.lockerId));
+          const position = locker ? `${locker.col}${locker.row}` : (r.lockerId !== undefined && r.lockerId !== null ? String(r.lockerId) : "N/A");
           
           const diffMs = Date.now() - new Date(r.entryTime).getTime();
           const diffHours = diffMs / (1000 * 60 * 60);
@@ -839,8 +839,8 @@ export function ClientRegistration({
         timestamp: new Date().toISOString(),
         items: pendingDeliverRecords.map((r) => {
           const sizeLabel = lockerSizes.find((s) => s.value === r.size)?.label || r.size;
-          const locker = lockers.find((l) => l.id === r.lockerId);
-          const position = locker ? `${locker.col}${locker.row}` : r.lockerId.toString();
+          const locker = lockers.find((l) => l.id === Number(r.lockerId) || String(l.id) === String(r.lockerId));
+          const position = locker ? `${locker.col}${locker.row}` : (r.lockerId !== undefined && r.lockerId !== null ? String(r.lockerId) : "N/A");
           
           const diffMs = Date.now() - new Date(r.entryTime).getTime();
           const diffHours = diffMs / (1000 * 60 * 60);

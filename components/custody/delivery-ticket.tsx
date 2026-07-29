@@ -35,10 +35,12 @@ export const DeliveryTicket = forwardRef<HTMLDivElement, DeliveryTicketProps>(
  
     const sizeLabel =
       lockerSizes.find((s) => s.value === record.size)?.label || record.size;
-    const locker = lockers.find((l) => l.id === record.lockerId);
+    const locker = lockers.find(
+      (l) => l.id === Number(record.lockerId) || String(l.id) === String(record.lockerId)
+    );
     const lockerDisplay = locker
       ? `${locker.col}${locker.row}`
-      : record.lockerId;
+      : (record.lockerId !== undefined && record.lockerId !== null ? String(record.lockerId) : "N/A");
  
     const sep = { borderBottom: "1px dashed black", margin: "6px 0" } as const;
     const row = { display: "flex", justifyContent: "space-between", margin: "2px 0" } as const;

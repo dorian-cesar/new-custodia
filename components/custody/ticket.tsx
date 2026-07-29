@@ -40,10 +40,12 @@ export const Ticket = forwardRef<HTMLDivElement, TicketProps>(
 
     const sizeLabel =
       lockerSizes.find((s) => s.value === record.size)?.label || record.size;
-    const locker = lockers.find((l) => l.id === record.lockerId);
+    const locker = lockers.find(
+      (l) => l.id === Number(record.lockerId) || String(l.id) === String(record.lockerId)
+    );
     const lockerDisplay = locker
       ? `${locker.col}${locker.row}`
-      : record.lockerId;
+      : (record.lockerId !== undefined && record.lockerId !== null ? String(record.lockerId) : "N/A");
 
     return (
       <div style={{ display: "none" }}>

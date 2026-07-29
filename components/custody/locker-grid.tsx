@@ -35,9 +35,11 @@ export function LockerGrid({
     );
   }
 
+  const cleanSelectedSize = selectedSize?.trim().toUpperCase() || "";
+
   // Filtrar estantes que tienen casilleros configurados para la medida seleccionada
   const sectors = layoutConfig?.shelves
-    .filter(shelf => shelf.sizes.some(s => s.size === selectedSize && s.count > 0))
+    .filter(shelf => shelf.sizes.some(s => s.size.trim().toUpperCase() === cleanSelectedSize && s.count > 0))
     .map(shelf => ({ label: `Sector ${shelf.id}`, key: shelf.id })) || [];
 
   return (
@@ -49,7 +51,7 @@ export function LockerGrid({
             No hay casilleros configurados para la medida "{selectedSize}"
           </p>
           <p className="text-[10px] text-zinc-500 font-semibold mt-1">
-            Asigne la cantidad de casilleros para esta medida en el Layout del Administrador.
+            Asigne la cantidad de casilleros para esta medida en el Layout del Administrador y recuerde presionar "Guardar Layout".
           </p>
         </div>
       ) : (
@@ -58,9 +60,9 @@ export function LockerGrid({
           sectors.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
         )}>
         {sectors.map((sector) => {
-          const colCode = `${sector.key}${selectedSize}`;
+          const colCode = `${sector.key}${cleanSelectedSize}`;
           const sectorLockers = lockers
-            .filter((l) => l.col === colCode)
+            .filter((l) => l.col.trim().toUpperCase() === colCode)
             .sort((a, b) => a.row - b.row);
 
           if (sectorLockers.length === 0) return null;
