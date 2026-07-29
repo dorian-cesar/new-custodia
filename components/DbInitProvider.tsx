@@ -76,19 +76,12 @@ export function DbInitProvider({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4 font-sans select-none transition-colors duration-300">
         <div className="bg-[#e6e6e7] dark:bg-zinc-900 w-full max-w-md rounded-lg border border-zinc-300 dark:border-zinc-800 shadow-xl overflow-hidden flex flex-col pb-6 transition-colors duration-300">
           {/* Header (Logo & Subtitle) */}
-          <div className="bg-white dark:bg-zinc-900 py-6 border-b border-zinc-200 dark:border-zinc-800 text-center flex flex-col items-center gap-2">
-            <div className="relative flex items-center justify-center">
-              <img
-                src="/logo-boletos.svg"
-                alt="boletos.la"
-                className="h-8 w-auto block dark:hidden"
-              />
-              <img
-                src="/logo-boletos-white.svg"
-                alt="boletos.la"
-                className="h-8 w-auto hidden dark:block"
-              />
-            </div>
+          <div className="bg-white dark:bg-zinc-900 py-6 border-b border-zinc-200 dark:border-zinc-800 text-center flex flex-col items-center justify-center gap-3">
+            <img
+              src="/logo-boletos.svg"
+              alt="boletos.la"
+              className="h-10 w-auto mx-auto"
+            />
             <h1 className="text-xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] leading-none uppercase">
               CUSTODIA
             </h1>

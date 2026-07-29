@@ -1,3 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 110" width="460" height="110">
-  <text x="0" y="86" font-family="'Outfit', 'Montserrat', 'Inter', -apple-system, sans-serif" font-weight="800" font-size="86" letter-spacing="-2.5" fill="#000000">boletos.la</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 120" width="540" height="120">
+  <text x="0" y="90" font-family="'Outfit', 'Montserrat', 'Inter', -apple-system, sans-serif" font-weight="800" font-size="94" letter-spacing="-3">
+    <tspan fill="#F55300">b</tspan>
+    <tspan fill="#F55300">o</tspan>
+    <tspan fill="#FFB200">l</tspan>
+    <tspan fill="#FFB200">e</tspan>
+    <tspan fill="#00C2CC">t</tspan>
+    <tspan fill="#00C2CC">o</tspan>
+    <tspan fill="#00B4B4">s</tspan>
+    <tspan fill="#008E8A">.</tspan>
+    <tspan fill="#008E8A">l</tspan>
+    <tspan fill="#008E8A">a</tspan>
+  </text>
 </svg>
