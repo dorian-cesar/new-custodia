@@ -289,26 +289,107 @@ export function LayoutConfigurator() {
 
   const handleDeletePrice = async () => {
     if (!deletingSize) return;
+    const targetSize = deletingSize.size;
+    const targetLabel = deletingSize.label;
+
+    // Verificar si hay casilleros ocupados en cualquier sector para esta medida
+    const occupiedInSize = lockers.filter(
+      (l) => l.col.endsWith(targetSize) && (l.isOccupied || l.currentRecordId !== null),
+    );
+
+    if (occupiedInSize.length > 0) {
+      const labels = occupiedInSize.map((l) => `${l.col}${l.row}`).join(", ");
+      setShowDeletePriceDialog(false);
+      setDeletingSize(null);
+      Swal.fire({
+        icon: "warning",
+        title: `No se puede eliminar la medida ${targetLabel}`,
+        text: `Acción Bloqueada: La medida "${targetLabel}" tiene casilleros ocupados actualmente: [ ${labels} ]. Debe retirar o entregar el equipaje de estos casilleros en la pantalla de Cajero antes de poder eliminar esta medida del sistema.`,
+        confirmButtonColor: "#00c5ff",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
+
     setIsSavingPrice(true);
     try {
-      const result = await deletePrice(deletingSize.size);
+      const result = await deletePrice(targetSize);
       if (result.success) {
         setEditingConfig((prev) => ({
           ...prev,
           shelves: prev.shelves.map((shelf) => ({
             ...shelf,
-            sizes: shelf.sizes.filter((s) => s.size !== deletingSize.size),
+            sizes: shelf.sizes.filter((s) => s.size !== targetSize),
           })),
         }));
         setShowDeletePriceDialog(false);
         setDeletingSize(null);
         await refreshState();
-        Swal.fire("Eliminada", `La medida ${deletingSize.label} ha sido eliminada de todos los sectores.`, "success");
+        notifyStateChange();
+        Swal.fire("Eliminada", `La medida ${targetLabel} ha sido eliminada de todos los sectores.`, "success");
       } else {
         setPriceError(result.error || "Error al eliminar medida");
       }
     } catch (err) {
       setPriceError("Error inesperado");
+    } finally {
+      setIsSavingPrice(false);
+    }
+  };
+
+  const handleDeleteGlobalSize = async (sizeObj: { value: string; label: string }) => {
+    const targetSize = sizeObj.value;
+    const targetLabel = sizeObj.label;
+
+    // Verificar si hay casilleros ocupados en cualquier sector para esta medida
+    const occupiedInSize = lockers.filter(
+      (l) => l.col.endsWith(targetSize) && (l.isOccupied || l.currentRecordId !== null),
+    );
+
+    if (occupiedInSize.length > 0) {
+      const labels = occupiedInSize.map((l) => `${l.col}${l.row}`).join(", ");
+      Swal.fire({
+        icon: "warning",
+        title: `No se puede eliminar la medida ${targetLabel}`,
+        text: `Acción Bloqueada: La medida "${targetLabel}" tiene casilleros ocupados actualmente: [ ${labels} ]. Debe retirar o entregar el equipaje de estos casilleros en la pantalla de Cajero antes de poder eliminar esta medida del sistema.`,
+        confirmButtonColor: "#00c5ff",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
+
+    const confirmResult = await Swal.fire({
+      title: `¿Eliminar la medida "${targetLabel}"?`,
+      text: `La medida (${targetSize}) se borrará permanentemente del sistema y de todos los sectores.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, eliminar medida",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    setIsSavingPrice(true);
+    try {
+      const result = await deletePrice(targetSize);
+      if (result.success) {
+        setEditingConfig((prev) => ({
+          ...prev,
+          shelves: prev.shelves.map((shelf) => ({
+            ...shelf,
+            sizes: shelf.sizes.filter((s) => s.size !== targetSize),
+          })),
+        }));
+        await refreshState();
+        notifyStateChange();
+        Swal.fire("Eliminada", `La medida ${targetLabel} ha sido eliminada del sistema.`, "success");
+      } else {
+        Swal.fire("Error", result.error || "Error al eliminar la medida", "error");
+      }
+    } catch (err: any) {
+      Swal.fire("Error", err.message || "Error inesperado", "error");
     } finally {
       setIsSavingPrice(false);
     }
@@ -395,21 +476,33 @@ export function LayoutConfigurator() {
                     </span>
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingSize({ size: ls.value, label: ls.label });
-                      setEditPrice(ls.price.toString());
-                      setEditLabel(ls.label);
-                      setPriceError("");
-                      setShowEditPriceDialog(true);
-                    }}
-                    className="mt-3 h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 flex items-center justify-center gap-1 w-full"
-                  >
-                    <Pencil className="h-3 w-3" /> Editar Precio
-                  </Button>
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingSize({ size: ls.value, label: ls.label });
+                        setEditPrice(ls.price.toString());
+                        setEditLabel(ls.label);
+                        setPriceError("");
+                        setShowEditPriceDialog(true);
+                      }}
+                      className="flex-1 h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 flex items-center justify-center gap-1"
+                    >
+                      <Pencil className="h-3 w-3" /> Editar Precio
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteGlobalSize({ value: ls.value, label: ls.label })}
+                      className="h-7 w-7 p-0 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-400 dark:bg-zinc-800 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30 flex items-center justify-center shrink-0"
+                      title="Eliminar medida"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -440,18 +533,7 @@ export function LayoutConfigurator() {
                         >
                           <Plus className="h-3 w-3 mr-1" /> Asignar Medida
                         </Button>
-                        <Button
-                          onClick={() => {
-                            setPriceError("");
-                            setShowCreatePriceDialog(true);
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="h-6 text-[10px] font-bold px-2 py-0 border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-600"
-                        >
-                          <Plus className="h-3 w-3 mr-1" /> Crear Medida
-                        </Button>
-                        <Button onClick={() => handleRemoveShelf(shelf.id)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <Button onClick={() => handleRemoveShelf(shelf.id)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50" title="Eliminar sector">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>

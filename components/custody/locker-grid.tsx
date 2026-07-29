@@ -43,10 +43,20 @@ export function LockerGrid({
   return (
     <div onClick={() => setActiveTooltipLockerId(null)} className="bg-[#e6e6e7] dark:bg-zinc-900 p-2 flex flex-col items-center w-full lg:flex-1 lg:h-full lg:min-h-0 gap-2 transition-colors duration-300">
       {/* Grid de Sectores */}
-      <div className={cn(
-        "w-full grid gap-3 max-w-none lg:flex-1 lg:h-full lg:min-h-0",
-        sectors.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
-      )}>
+      {sectors.length === 0 ? (
+        <div className="bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm p-8 rounded-xl border border-dashed border-zinc-400 dark:border-zinc-700 text-center select-none my-2 flex-1 flex flex-col justify-center items-center w-full">
+          <p className="text-zinc-600 dark:text-zinc-400 font-extrabold text-sm uppercase tracking-wider">
+            No hay casilleros configurados para la medida "{selectedSize}"
+          </p>
+          <p className="text-[10px] text-zinc-500 font-semibold mt-1">
+            Asigne la cantidad de casilleros para esta medida en el Layout del Administrador.
+          </p>
+        </div>
+      ) : (
+        <div className={cn(
+          "w-full grid gap-3 max-w-none lg:flex-1 lg:h-full lg:min-h-0",
+          sectors.length === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
+        )}>
         {sectors.map((sector) => {
           const colCode = `${sector.key}${selectedSize}`;
           const sectorLockers = lockers
@@ -137,6 +147,7 @@ export function LockerGrid({
           );
         })}
       </div>
+      )}
 
       {/* Legend */}
       <div className="w-full flex justify-center gap-4 text-[10px] font-extrabold text-zinc-800 dark:text-zinc-200 mt-1 select-none">

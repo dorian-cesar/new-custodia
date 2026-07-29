@@ -273,12 +273,26 @@ export function ClientRegistration({
     documentTitle: "Ticket_Retiro",
     suppressErrors: true,
     onAfterPrint: () => {
-      setActiveDeliveryPrintRecord(null);
-      setIsDeliveryPrinting(false);
+      if (nextPrintActionRef.current) {
+        const nextAction = nextPrintActionRef.current;
+        nextPrintActionRef.current = null;
+        setTimeout(nextAction, 500);
+      } else {
+        processingDeliveryRecordIdRef.current = null;
+        setActiveDeliveryPrintRecord(null);
+        setIsDeliveryPrinting(false);
+      }
     },
     onPrintError: () => {
-      setActiveDeliveryPrintRecord(null);
-      setIsDeliveryPrinting(false);
+      if (nextPrintActionRef.current) {
+        const nextAction = nextPrintActionRef.current;
+        nextPrintActionRef.current = null;
+        setTimeout(nextAction, 500);
+      } else {
+        processingDeliveryRecordIdRef.current = null;
+        setActiveDeliveryPrintRecord(null);
+        setIsDeliveryPrinting(false);
+      }
     }
   });
 
@@ -292,67 +306,114 @@ export function ClientRegistration({
       processingDeliveryRecordIdRef.current = activeDeliveryPrintRecord.id;
 
       const runPrint = async () => {
-        const sizeLabel = lockerSizes.find((s) => s.value === activeDeliveryPrintRecord.size)?.label || activeDeliveryPrintRecord.size;
-        const locker = lockers.find((l) => l.id === activeDeliveryPrintRecord.lockerId);
-        const lockerDisplay = locker ? `${locker.col}${locker.row}` : activeDeliveryPrintRecord.lockerId.toString();
+        const hasRecargo = Boolean(voucherDataRef.current && voucherDataRef.current.amount > 0);
 
         if (printerService.isNative()) {
-          // Imprimir únicamente el voucher de pago (si hubo pago de recargo)
-          if (voucherDataRef.current) {
-            const { isConfirmed: okVoucher } = await Swal.fire({
-              icon: "info",
-              title: "Comprobante de Pago",
-              text: "Confirme para imprimir el comprobante de pago de recargo.",
+          if (hasRecargo) {
+            // 1. Preguntar permiso para imprimir comprobante de retiro
+            const { isConfirmed: okDelivery } = await Swal.fire({
+              icon: "question",
+              title: "Comprobante de Retiro",
+              text: "¿Desea imprimir el comprobante de retiro?",
               confirmButtonText: "Imprimir Comprobante",
               showCancelButton: true,
               cancelButtonText: "No Imprimir",
               allowOutsideClick: false,
             });
 
-            if (okVoucher) {
+            if (okDelivery) {
+              await (printerService as any).printDeliveryTicket?.(activeDeliveryPrintRecord);
+            }
+
+            // 2. Preguntar permiso para imprimir voucher de recargo
+            const { isConfirmed: okVoucher } = await Swal.fire({
+              icon: "question",
+              title: "Voucher de Recargo",
+              text: "¿Desea imprimir el voucher de pago de recargo?",
+              confirmButtonText: "Imprimir Voucher",
+              showCancelButton: true,
+              cancelButtonText: "No Imprimir",
+              allowOutsideClick: false,
+            });
+
+            if (okVoucher && voucherDataRef.current) {
               await (printerService as any).printTransbankVoucher(voucherDataRef.current);
             }
             setVoucherData(null);
+          } else {
+            // Sin recargo: mandar a imprimir el comprobante de retiro directamente
+            await (printerService as any).printDeliveryTicket?.(activeDeliveryPrintRecord);
           }
 
           processingDeliveryRecordIdRef.current = null;
           setActiveDeliveryPrintRecord(null);
           setIsDeliveryPrinting(false);
         } else {
+          // BROWSER / WEB PRINTING
           printTimersRef.current.forEach(clearTimeout);
           printTimersRef.current = [];
 
-          const timer = setTimeout(() => {
-            if (voucherDataRef.current) {
-              nextPrintActionRef.current = () => {
-                setVoucherData(null);
-                processingDeliveryRecordIdRef.current = null;
-                setActiveDeliveryPrintRecord(null);
-                setIsDeliveryPrinting(false);
-              };
-              Swal.fire({
-                icon: "info",
-                title: "Comprobante de Pago",
-                text: "Confirme para imprimir el comprobante de pago de recargo.",
-                confirmButtonText: "Imprimir Comprobante",
-                showCancelButton: true,
-                cancelButtonText: "No Imprimir",
-                allowOutsideClick: false,
-              }).then(({ isConfirmed }) => {
-                if (isConfirmed) handlePrintVoucher();
-                else {
+          const timer = setTimeout(async () => {
+            const askVoucherPermission = () => {
+              if (voucherDataRef.current && voucherDataRef.current.amount > 0) {
+                nextPrintActionRef.current = () => {
                   setVoucherData(null);
                   processingDeliveryRecordIdRef.current = null;
                   setActiveDeliveryPrintRecord(null);
                   setIsDeliveryPrinting(false);
-                }
+                };
+                Swal.fire({
+                  icon: "question",
+                  title: "Voucher de Recargo",
+                  text: "¿Desea imprimir el voucher de pago de recargo?",
+                  confirmButtonText: "Imprimir Voucher",
+                  showCancelButton: true,
+                  cancelButtonText: "No Imprimir",
+                  allowOutsideClick: false,
+                }).then(({ isConfirmed: okVoucher }) => {
+                  if (okVoucher) {
+                    handlePrintVoucher();
+                  } else {
+                    setVoucherData(null);
+                    processingDeliveryRecordIdRef.current = null;
+                    setActiveDeliveryPrintRecord(null);
+                    setIsDeliveryPrinting(false);
+                  }
+                });
+              } else {
+                setVoucherData(null);
+                processingDeliveryRecordIdRef.current = null;
+                setActiveDeliveryPrintRecord(null);
+                setIsDeliveryPrinting(false);
+              }
+            };
+
+            if (hasRecargo) {
+              // 1. Si hay recargo: pedir permiso para imprimir el comprobante de retiro
+              const { isConfirmed: okDelivery } = await Swal.fire({
+                icon: "question",
+                title: "Comprobante de Retiro",
+                text: "¿Desea imprimir el comprobante de retiro?",
+                confirmButtonText: "Imprimir Comprobante",
+                showCancelButton: true,
+                cancelButtonText: "No Imprimir",
+                allowOutsideClick: false,
               });
+
+              if (okDelivery) {
+                // Si le da OK: Imprime comprobante de retiro y luego pasa a pedir permiso para imprimir voucher
+                nextPrintActionRef.current = askVoucherPermission;
+                handlePrintDelivery();
+              } else {
+                // Si le da NO: Pasa directamente a pedir permiso para imprimir el voucher
+                askVoucherPermission();
+              }
             } else {
-              processingDeliveryRecordIdRef.current = null;
-              setActiveDeliveryPrintRecord(null);
-              setIsDeliveryPrinting(false);
+              // Sin recargo: mandar a imprimir directamente el comprobante de retiro
+              nextPrintActionRef.current = null;
+              handlePrintDelivery();
             }
-          }, 500);
+          }, 400);
           printTimersRef.current.push(timer);
         }
       };

@@ -31,33 +31,19 @@ export function LockerSelection({
   const lockerSizes = useCustodyStore((state) => state.lockerSizes);
   const layoutConfig = useCustodyStore((state) => state.layoutConfig);
 
-  // Medidas verdaderamente configuradas con casilleros activos en el Layout del Admin
-  const configuredSizeCodes = useMemo(() => {
-    if (!layoutConfig?.shelves) return [];
-    const set = new Set<string>();
-    layoutConfig.shelves.forEach((shelf) => {
-      shelf.sizes.forEach((s) => {
-        if (s.count > 0) set.add(s.size);
-      });
-    });
-    return Array.from(set);
-  }, [layoutConfig]);
-
-  // Mapeamos solo las medidas activas según el diseño del Admin
-  const sizesToShow = lockerSizes
-    .filter((dbSize) => configuredSizeCodes.length === 0 || configuredSizeCodes.includes(dbSize.value))
-    .map((dbSize) => {
-      const sizeLockers = lockers.filter((l) => l.col.endsWith(dbSize.value));
-      const availableCount = sizeLockers.filter((l) => !l.isOccupied).length;
-      return {
-        value: dbSize.value,
-        label: dbSize.label,
-        price: dbSize.price,
-        isXXL: dbSize.value.toUpperCase() === "XXL",
-        total: sizeLockers.length,
-        available: availableCount,
-      };
-    });
+  // Mapeamos todas las medidas registradas en el Admin para que se muestren en TAMAÑO DEL EQUIPAJE
+  const sizesToShow = lockerSizes.map((dbSize) => {
+    const sizeLockers = lockers.filter((l) => l.col.endsWith(dbSize.value));
+    const availableCount = sizeLockers.filter((l) => !l.isOccupied).length;
+    return {
+      value: dbSize.value,
+      label: dbSize.label,
+      price: dbSize.price,
+      isXXL: dbSize.value.toUpperCase() === "XXL",
+      total: sizeLockers.length,
+      available: availableCount,
+    };
+  });
 
   // Íconos por tamaño (fallback a un ícono genérico si es un tamaño nuevo)
   const getIconForSize = (size: string) => {
