@@ -196,13 +196,27 @@ export function Header({
       <header className="flex flex-col lg:flex-row lg:items-center justify-between px-4 sm:px-6 py-3 lg:py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300 gap-2.5 lg:gap-0">
         {/* Row 1: Logo & Slogan */}
         <div className="w-full lg:w-auto flex items-center justify-between">
-          <div className="flex flex-col items-start gap-0.5">
-            <span className="text-xl sm:text-2xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none leading-none">
-              CUSTODIA
-            </span>
-            <span className="text-[8px] sm:text-[9px] text-zinc-500 font-semibold uppercase tracking-wider leading-none">
-              Sistema de Control de Casilleros
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center">
+              <img
+                src="/logo-boletos.svg"
+                alt="boletos.la"
+                className="h-6 sm:h-7 w-auto block dark:hidden"
+              />
+              <img
+                src="/logo-boletos-white.svg"
+                alt="boletos.la"
+                className="h-6 sm:h-7 w-auto hidden dark:block"
+              />
+            </div>
+            <div className="flex flex-col items-start gap-0.5 border-l border-zinc-300 dark:border-zinc-700 pl-3">
+              <span className="text-sm sm:text-base font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none leading-none">
+                CUSTODIA
+              </span>
+              <span className="text-[8px] sm:text-[9px] text-zinc-500 font-semibold uppercase tracking-wider leading-none">
+                Sistema de Control de Casilleros
+              </span>
+            </div>
           </div>
         </div>
 
