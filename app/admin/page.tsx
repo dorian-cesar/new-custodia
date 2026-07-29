@@ -875,7 +875,7 @@ export default function AdminPage() {
                               e.stopPropagation();
                               handleDeleteCustomCurrency(c.code);
                             }}
-                            className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 p-0.5 rounded-full"
+                            className="ml-1 text-zinc-500 hover:text-red-500 p-0.5 rounded-full z-10"
                             title={`Eliminar moneda ${c.code}`}
                           >
                             <Trash2 className="h-3 w-3" />

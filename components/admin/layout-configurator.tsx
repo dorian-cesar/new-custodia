@@ -150,15 +150,31 @@ export function LayoutConfigurator() {
       return;
     }
 
+    const newCode = newSizeCode.trim().toUpperCase();
     setIsSavingPrice(true);
     try {
-      const result = await createPrice(newSizeCode.trim().toUpperCase(), newSizeLabel.trim(), price);
+      const result = await createPrice(newCode, newSizeLabel.trim(), price);
       if (result.success) {
         setShowCreatePriceDialog(false);
         setNewSizeCode("");
         setNewSizeLabel("");
         setNewSizePrice("");
         await refreshState();
+        notifyStateChange();
+
+        // Automatically ensure the new size is present in editingConfig for all sectors
+        setEditingConfig((prev) => ({
+          ...prev,
+          shelves: prev.shelves.map((shelf) => {
+            if (!shelf.sizes.some((s) => s.size === newCode)) {
+              return {
+                ...shelf,
+                sizes: [...shelf.sizes, { size: newCode, count: 0 }],
+              };
+            }
+            return shelf;
+          }),
+        }));
       } else {
         setPriceError(result.error || "Error al crear medida");
       }
@@ -184,6 +200,7 @@ export function LayoutConfigurator() {
         setShowEditPriceDialog(false);
         setEditingSize(null);
         await refreshState();
+        notifyStateChange();
       } else {
         setPriceError(result.error || "Error al actualizar medida");
       }
@@ -339,9 +356,64 @@ export function LayoutConfigurator() {
       {/* ── Collapsible Body ── */}
       {isExpanded && (
         <div className="bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl p-6 shadow-sm text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6 font-semibold">
-            Cree medidas globales y configure su cantidad en cada sector.
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4 font-semibold">
+            Cree medidas globales, configure sus tarifas de precio y asigne la cantidad de casilleros en cada sector.
           </p>
+
+          {/* ── Global Price & Size Management ── */}
+          <div className="mb-6 border border-zinc-300 dark:border-zinc-700 rounded-lg p-4 bg-white dark:bg-zinc-900 shadow-sm">
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-zinc-200 dark:border-zinc-800">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#0a354c] dark:text-[#00c5ff] flex items-center gap-2">
+                <span>Tarifas y Precios de Medidas</span>
+              </h3>
+              <Button
+                type="button"
+                onClick={() => {
+                  setPriceError("");
+                  setShowCreatePriceDialog(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Crear Nueva Medida
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {lockerSizes.map((ls) => (
+                <div
+                  key={ls.value}
+                  className="p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-850 flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-100 block">
+                      {ls.label}
+                    </span>
+                    <span className="text-sm font-black text-[#00c5ff] mt-1 block">
+                      Gs. {ls.price.toLocaleString("es-PY")}
+                    </span>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingSize({ size: ls.value, label: ls.label });
+                      setEditPrice(ls.price.toString());
+                      setEditLabel(ls.label);
+                      setPriceError("");
+                      setShowEditPriceDialog(true);
+                    }}
+                    className="mt-3 h-7 text-[10px] uppercase font-bold bg-white text-zinc-800 border-zinc-300 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 flex items-center justify-center gap-1 w-full"
+                  >
+                    <Pencil className="h-3 w-3" /> Editar Precio
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="space-y-6">
             {editingConfig.shelves.length === 0 ? (
@@ -408,7 +480,7 @@ export function LayoutConfigurator() {
                                 <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase leading-tight truncate pr-14">
                                   {ls.label} <span className="text-zinc-400 font-medium lowercase ml-1">(Gs. {ls.price})</span>
                                 </label>
-                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-2 right-2 flex gap-1 z-10">
                                   <button
                                     onClick={() => {
                                       setEditingSize({ size: ls.value, label: ls.label });
