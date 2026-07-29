@@ -78,9 +78,9 @@ export function DbInitProvider({ children }: { children: React.ReactNode }) {
           {/* Header (Logo & Subtitle) */}
           <div className="bg-white dark:bg-zinc-900 py-6 border-b border-zinc-200 dark:border-zinc-800 text-center flex flex-col items-center justify-center gap-3">
             <img
-              src="/logo-boletos.svg"
+              src="/logo-boletos.png"
               alt="boletos.la"
-              className="h-10 w-auto mx-auto"
+              className="h-10 w-auto mx-auto object-contain"
             />
             <h1 className="text-xl font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] leading-none uppercase">
               CUSTODIA

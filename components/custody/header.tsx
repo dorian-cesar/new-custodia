@@ -198,9 +198,9 @@ export function Header({
         <div className="w-full lg:w-auto flex items-center justify-center lg:justify-start">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
             <img
-              src="/logo-boletos.svg"
+              src="/logo-boletos.png"
               alt="boletos.la"
-              className="h-8 sm:h-9 w-auto"
+              className="h-8 sm:h-9 w-auto object-contain"
             />
             <div className="flex flex-col items-center sm:items-start gap-0.5 sm:border-l border-zinc-300 dark:border-zinc-700 sm:pl-3">
               <span className="text-xs sm:text-sm font-extrabold tracking-wider text-[#0a354c] dark:text-[#00c5ff] uppercase select-none leading-none">
