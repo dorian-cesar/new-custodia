@@ -30,7 +30,6 @@ export const LOCKER_SIZES: LockerSizeOption[] = [
   { value: "M", label: "M Maleta Mediana", price: 3500 },
   { value: "L", label: "L Maleta Grande", price: 5000 },
   { value: "XL", label: "XL Equipaje Extra Grande", price: 6000 },
-  { value: "XXL", label: "XXL Sacos / Fardos", price: 8000 },
 ];
 
 export interface CustodyRecord {
@@ -108,7 +107,7 @@ export interface LayoutConfig {
 export const DEFAULT_LAYOUT: LayoutConfig = {
   shelves: [
     { id: "A", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
-    { id: "B", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }, { size: "XXL", count: 12 }] },
+    { id: "B", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
     { id: "C", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
     { id: "D", sizes: [{ size: "S", count: 12 }, { size: "M", count: 12 }, { size: "L", count: 12 }, { size: "XL", count: 12 }] },
   ]

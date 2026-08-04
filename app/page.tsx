@@ -21,6 +21,7 @@ export default function CustodyPage() {
     currentUser,
     deliverRecord,
     getCurrentRegisterStats,
+    lockerSizes,
   } = useCustodyStore();
 
   const [selectedItems, setSelectedItems] = useState<{ lockerId: number; size: LockerSize }[]>([]);
@@ -220,9 +221,12 @@ export default function CustodyPage() {
           {/* Occupied by Size Grid */}
           <div className="flex items-center gap-1.5 flex-wrap justify-center w-full lg:w-auto">
             <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mr-1">Ocupación por Medida:</span>
-            {(["S", "M", "L", "XL", "XXL"] as const).map((size) => {
+            {lockerSizes.map((sizeObj) => {
+              const size = sizeObj.value;
               const occupied = lockers.filter((l) => l.isOccupied && l.col.slice(1) === size).length;
               const total = lockers.filter((l) => l.col.slice(1) === size).length;
+              
+              if (total === 0) return null;
               
               return (
                 <div 

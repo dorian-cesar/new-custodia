@@ -214,16 +214,6 @@ export const syncDatabase = async () => {
     await PriceModel.bulkCreate(
       LOCKER_SIZES.map(s => ({ size: s.value, label: s.label, price: s.price }))
     );
-  } else {
-    // Tabla con datos: agregar solo los tamaños que falten (XL, XXL)
-    const { LOCKER_SIZES } = await import('../types');
-    for (const s of LOCKER_SIZES) {
-      const existing = await PriceModel.findOne({ where: { size: s.value } });
-      if (!existing) {
-        await PriceModel.create({ size: s.value, label: s.label, price: s.price } as any);
-        console.log(`Precio agregado automáticamente: ${s.value} - ${s.label} - $${s.price}`);
-      }
-    }
   }
 
   // Add new columns to custody_records if they don't exist

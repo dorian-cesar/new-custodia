@@ -44,7 +44,7 @@ export function LockerSelection({
       total: sizeLockers.length,
       available: availableCount,
     };
-  });
+  }).filter(size => size.total > 0);
 
   // Íconos por tamaño (fallback a un ícono genérico si es un tamaño nuevo)
   const getIconForSize = (size: string) => {
