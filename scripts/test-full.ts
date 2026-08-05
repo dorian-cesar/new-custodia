@@ -169,7 +169,7 @@ async function testCasilleros() {
   section("CASILLEROS");
 
   const total = await LockerModel.count();
-  total === 204 ? ok(`Total: ${total} casilleros`) : fail(`Total esperado 204, hay ${total}`);
+  total === 192 ? ok(`Total: ${total} casilleros`) : fail(`Total esperado 192, hay ${total}`);
 
   const sectores = ["A", "B", "C", "D"];
   const sizes = ["S", "M", "L", "XL"];
@@ -184,15 +184,7 @@ async function testCasilleros() {
     }
   }
 
-  const bxxl = await LockerModel.count({ where: { col: "BXXL" } });
-  bxxl === 12 ? ok(`BXXL: ${bxxl} casilleros`) : fail(`BXXL: esperado 12, hay ${bxxl}`);
 
-  for (const sector of ["A", "C", "D"]) {
-    const xxl = await LockerModel.count({ where: { col: `${sector}XXL` } });
-    xxl === 0
-      ? ok(`${sector}XXL: correctamente sin casilleros`)
-      : fail(`${sector}XXL: debería ser 0, hay ${xxl}`);
-  }
 
   const occupied = await LockerModel.count({ where: { isOccupied: true } });
   occupied === 0 ? ok("Todos los casilleros disponibles") : fail(`${occupied} casillero(s) ocupado(s) inesperadamente`);
@@ -202,11 +194,11 @@ async function testPrecios() {
   section("PRECIOS");
 
   const prices = await PriceModel.findAll({ order: [["price", "ASC"]] });
-  const expectedSizes = ["S", "M", "L", "XL", "XXL"];
+  const expectedSizes = ["S", "M", "L", "XL"];
 
-  prices.length === 5
-    ? ok(`5 tamaños de precio registrados`)
-    : fail(`Esperado 5 precios, hay ${prices.length}`);
+  prices.length === 4
+    ? ok(`4 tamaños de precio registrados`)
+    : fail(`Esperado 4 precios, hay ${prices.length}`);
 
   for (const expected of expectedSizes) {
     const found = prices.find((p: any) => p.get("size") === expected);
@@ -338,11 +330,7 @@ async function testLogicaGrid() {
   const sectorAS = allLockers.filter((l: any) => l.get("col") === "AS");
   sectorAS.length === 12 ? ok("Sector A, tamaño S: 12 casilleros") : fail(`AS: esperado 12, hay ${sectorAS.length}`);
 
-  const xxlAll = allLockers.filter((l: any) => (l.get("col") as string).endsWith("XXL"));
-  xxlAll.length === 12 ? ok("Total XXL en BD: 12 (solo en sector B)") : fail(`Total XXL: esperado 12, hay ${xxlAll.length}`);
 
-  const xxlSoloB = xxlAll.every((l: any) => (l.get("col") as string).startsWith("B"));
-  xxlSoloB ? ok("Lógica grid XXL: solo sector B ✓") : fail("Hay casilleros XXL fuera de sector B");
 
   const sizeSLockers = allLockers.filter((l: any) => {
     const col = l.get("col") as string;

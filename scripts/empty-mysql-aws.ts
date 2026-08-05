@@ -24,7 +24,6 @@ const DEFAULT_LAYOUT_JSON = JSON.stringify({
         { size: "M", count: 12 },
         { size: "L", count: 12 },
         { size: "XL", count: 12 },
-        { size: "XXL", count: 12 },
       ],
     },
     {

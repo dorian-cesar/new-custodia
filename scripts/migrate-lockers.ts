@@ -81,12 +81,7 @@ function generateLockers() {
     }
   }
 
-  // Sector B también tiene 12 casilleros XXL (sacos / fardos)
-  for (let i = 1; i <= 12; i++) {
-    lockers.push({ row: i, col: "BXXL", isOccupied: false, currentRecordId: null });
-  }
-
-  return lockers; // 204 casilleros en total
+  return lockers; // 192 casilleros en total
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -126,7 +121,7 @@ async function main() {
   console.log("  → Borrando casilleros existentes...");
   await LockerModel.destroy({ where: {} });
 
-  console.log("  → Creando 204 casilleros nuevos...");
+  console.log("  → Creando 192 casilleros nuevos...");
   const lockers = generateLockers();
   await LockerModel.bulkCreate(lockers as any[]);
 
@@ -137,7 +132,6 @@ async function main() {
   console.log(`✓ Migración completada.`);
   console.log(`  Casilleros creados: ${lockersDespues}`);
   console.log(`    - Sectores A/B/C/D: 12×S + 12×M + 12×L + 12×XL = 192`);
-  console.log(`    - Sector B extra:   12×XXL = 12`);
   console.log(`    - Total: ${lockersDespues}`);
   console.log();
   console.log("  Usuarios y precios: SIN CAMBIOS.");

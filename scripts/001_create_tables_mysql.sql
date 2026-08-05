@@ -110,8 +110,7 @@ INSERT IGNORE INTO tamanos_equipaje (codigo, nombre, descripcion, precio) VALUES
     ('S', 'Bolso Pequeno', 'Bolsos de mano, mochilas pequenas', 1500.00),
     ('M', 'Maleta Mediana', 'Maletas de cabina, mochilas grandes', 2500.00),
     ('L', 'Maleta Grande', 'Maletas de bodega estandar', 3500.00),
-    ('XL', 'Equipaje Extra Grande', 'Maletas grandes, equipos deportivos', 4500.00),
-    ('XXL', 'Sacos / Fardos', 'Bultos grandes, cajas', 5500.00);
+    ('XL', 'Equipaje Extra Grande', 'Maletas grandes, equipos deportivos', 4500.00);
 
 -- =============================================
 -- Insertar casilleros (grid 6x8)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Briefcase, Backpack, Luggage, Package, Package2 } from "lucide-react";
+import { Briefcase, Backpack, Luggage, Package } from "lucide-react";
 import { LockerGrid } from "./locker-grid";
 import { type Locker, type LockerSize } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
@@ -32,26 +32,27 @@ export function LockerSelection({
   const layoutConfig = useCustodyStore((state) => state.layoutConfig);
 
   // Mapeamos todas las medidas registradas en el Admin para que se muestren en TAMAÑO DEL EQUIPAJE
-  const sizesToShow = lockerSizes.map((dbSize) => {
-    const cleanSizeValue = dbSize.value.trim().toUpperCase();
-    const sizeLockers = lockers.filter((l) => l.col.trim().toUpperCase().endsWith(cleanSizeValue));
-    const availableCount = sizeLockers.filter((l) => !l.isOccupied).length;
-    return {
-      value: dbSize.value,
-      label: dbSize.label,
-      price: dbSize.price,
-      isXXL: cleanSizeValue === "XXL",
-      total: sizeLockers.length,
-      available: availableCount,
-    };
-  }).filter(size => size.total > 0);
+  const sizesToShow = lockerSizes
+    .filter((dbSize) => dbSize.value.trim().toUpperCase() !== "XXL") // Filtrar XXL explícitamente para que no salga en caja
+    .map((dbSize) => {
+      const cleanSizeValue = dbSize.value.trim().toUpperCase();
+      const sizeLockers = lockers.filter((l) => l.col.trim().toUpperCase().endsWith(cleanSizeValue));
+      const availableCount = sizeLockers.filter((l) => !l.isOccupied).length;
+      return {
+        value: dbSize.value,
+        label: dbSize.label,
+        price: dbSize.price,
+        total: sizeLockers.length,
+        available: availableCount,
+      };
+    })
+    .filter((size) => size.total > 0);
 
   // Íconos por tamaño (fallback a un ícono genérico si es un tamaño nuevo)
   const getIconForSize = (size: string) => {
     const s = size.toUpperCase();
     if (s.includes("S")) return Briefcase;
     if (s.includes("M")) return Backpack;
-    if (s.includes("XXL")) return Package2;
     if (s.includes("L")) return Luggage;
     if (s.includes("XL")) return Package;
     return Package; // Default
