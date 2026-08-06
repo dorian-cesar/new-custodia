@@ -19,7 +19,12 @@ import {
   DollarSign,
   Calendar,
   TrendingUp,
+  Unlock,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,7 +127,87 @@ export default function AdminPage() {
     lockers,
     records,
     cashTransactions,
+    releaseLocker,
   } = useCustodyStore();
+
+  // Locker release state
+  const [releaseCoordInput, setReleaseCoordInput] = useState("");
+  const [releaseFeedback, setReleaseFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const handleReleaseByCoordinate = async (coordToRelease?: string) => {
+    const rawInput = (coordToRelease || releaseCoordInput).trim();
+    const input = rawInput.toUpperCase().replace(/[\s-]/g, "");
+    setReleaseFeedback(null);
+
+    if (!input) {
+      setReleaseFeedback({
+        type: "error",
+        message: "Ingrese una coordenada de casillero (ej. DS12).",
+      });
+      return;
+    }
+
+    const targetLocker = lockers.find((l) => {
+      const c1 = `${l.col}${l.row}`.toUpperCase();
+      const c2 = `${l.col}-${l.row}`.toUpperCase();
+      return c1 === input || c2 === input;
+    });
+
+    if (!targetLocker) {
+      setReleaseFeedback({
+        type: "error",
+        message: `No se encontró ningún casillero con la coordenada '${rawInput}'.`,
+      });
+      return;
+    }
+
+    const lockerLabel = `${targetLocker.col}${targetLocker.row}`;
+
+    if (!targetLocker.isOccupied) {
+      setReleaseFeedback({
+        type: "error",
+        message: `El casillero ${lockerLabel} ya se encuentra libre / desocupado.`,
+      });
+      return;
+    }
+
+    const confirmResult = await Swal.fire({
+      title: `¿Liberar casillero ${lockerLabel}?`,
+      text: `Esta acción limpiará el registro de ocupación del casillero ${lockerLabel} en la base de datos y lo dejará disponible inmediatamente.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, liberar casillero",
+      confirmButtonColor: "#d33",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        await releaseLocker(targetLocker.id);
+        setReleaseCoordInput("");
+        setReleaseFeedback({
+          type: "success",
+          message: `¡El casillero ${lockerLabel} ha sido liberado exitosamente en la base de datos!`,
+        });
+        Swal.fire({
+          title: "Casillero Liberado",
+          text: `El casillero ${lockerLabel} ya está libre y disponible.`,
+          icon: "success",
+          timer: 3000,
+          showConfirmButton: false,
+        });
+      } catch (err: any) {
+        console.error("Error al liberar casillero:", err);
+        setReleaseFeedback({
+          type: "error",
+          message: `Error al liberar casillero: ${err.message || "Error desconocido"}`,
+        });
+      }
+    }
+  };
   const [showEditPriceDialog, setShowEditPriceDialog] = useState(false);
   const [editingSize, setEditingSize] = useState<{
     size: string;
@@ -575,6 +660,142 @@ export default function AdminPage() {
                       ).length
                     }
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Manual Locker Release Section ── */}
+          <div>
+            <div className="bg-[#242424] text-white py-2.5 px-4 text-xs font-bold uppercase tracking-wider mb-4 rounded-md flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Unlock className="h-4 w-4 text-amber-400" />
+                <span>Liberación Manual de Casilleros</span>
+              </div>
+              <span className="text-[10px] text-zinc-400 font-normal">
+                Ocupados: {lockers.filter((l) => l.isOccupied).length} de {lockers.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Formulario de búsqueda rápida por Coordenada */}
+              <div className="bg-white border border-zinc-300 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-xs font-extrabold text-zinc-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <KeyRound className="h-4 w-4 text-amber-500" /> Liberar por Coordenada
+                  </h3>
+                  <p className="text-[11px] text-zinc-500 mb-4">
+                    Ingrese la coordenada del casillero (ej: <span className="font-bold text-zinc-700">DS12</span>, <span className="font-bold text-zinc-700">AS5</span>, <span className="font-bold text-zinc-700">BXXL3</span>) para limpiar su registro de ocupación.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-[10px] font-extrabold uppercase text-zinc-500">
+                        Coordenada del Casillero
+                      </Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          value={releaseCoordInput}
+                          onChange={(e) => {
+                            setReleaseCoordInput(e.target.value);
+                            setReleaseFeedback(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleReleaseByCoordinate();
+                          }}
+                          placeholder="Ej: DS12"
+                          className="font-mono uppercase font-bold text-sm bg-zinc-50 h-10 border-zinc-300"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => handleReleaseByCoordinate()}
+                          className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-10 px-4 text-xs uppercase"
+                        >
+                          <Unlock className="h-4 w-4 mr-1" />
+                          Liberar
+                        </Button>
+                      </div>
+                    </div>
+
+                    {releaseFeedback && (
+                      <div
+                        className={`p-3 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+                          releaseFeedback.type === "error"
+                            ? "bg-red-50 text-red-700 border border-red-200"
+                            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        }`}
+                      >
+                        {releaseFeedback.type === "error" ? (
+                          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                        )}
+                        <span>{releaseFeedback.message}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabla de Casilleros Ocupados Actualmente */}
+              <div className="lg:col-span-2 bg-white border border-zinc-300 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-zinc-100 px-4 py-2.5 border-b border-zinc-300 flex justify-between items-center">
+                  <h4 className="text-xs font-extrabold text-zinc-700 uppercase tracking-wider flex items-center gap-2">
+                    <Box className="h-4 w-4 text-zinc-500" /> Casilleros Actualmente Ocupados ({lockers.filter((l) => l.isOccupied).length})
+                  </h4>
+                </div>
+
+                <div className="max-h-[220px] overflow-y-auto">
+                  <Table>
+                    <TableHeader className="bg-zinc-50">
+                      <TableRow>
+                        <TableHead className="text-[10px] font-extrabold uppercase text-zinc-600 h-8">COORDENADA</TableHead>
+                        <TableHead className="text-[10px] font-extrabold uppercase text-zinc-600 h-8">TAMAÑO</TableHead>
+                        <TableHead className="text-[10px] font-extrabold uppercase text-zinc-600 h-8">CLIENTE (RUT/DOC)</TableHead>
+                        <TableHead className="text-[10px] font-extrabold uppercase text-zinc-600 h-8 text-right">ACCIONES</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lockers.filter((l) => l.isOccupied).length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-6 text-xs text-zinc-500 font-semibold">
+                            No hay casilleros ocupados en este momento
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        lockers
+                          .filter((l) => l.isOccupied)
+                          .map((locker) => {
+                            const coord = `${locker.col}${locker.row}`;
+                            const activeRec = records.find((r) => r.id === locker.currentRecordId);
+                            return (
+                              <TableRow key={locker.id} className="hover:bg-amber-50/40">
+                                <TableCell className="font-mono font-black text-xs text-zinc-800 py-2">
+                                  {coord}
+                                </TableCell>
+                                <TableCell className="text-xs font-bold text-zinc-600 py-2">
+                                  {locker.col}
+                                </TableCell>
+                                <TableCell className="text-xs font-semibold text-zinc-700 py-2">
+                                  {activeRec?.clientDocument || "N/A"}
+                                </TableCell>
+                                <TableCell className="text-right py-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleReleaseByCoordinate(coord)}
+                                    className="h-7 text-[10px] font-bold text-amber-700 border-amber-300 hover:bg-amber-500 hover:text-white uppercase"
+                                  >
+                                    <Unlock className="h-3 w-3 mr-1" />
+                                    Liberar {coord}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </div>

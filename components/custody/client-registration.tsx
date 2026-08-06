@@ -413,23 +413,76 @@ export function ClientRegistration({
           const errMsg =
             result.error ||
             "La transacción fue rechazada o cancelada en el POS.";
-          Swal.fire({
+          const res = await Swal.fire({
             title: "Pago Fallido",
             text: errMsg,
             icon: "error",
-            confirmButtonText: "Entendido",
+            showCancelButton: true,
+            confirmButtonText: "TBK Backup",
+            confirmButtonColor: "#f59e0b",
+            cancelButtonText: "Entendido",
           });
+          if (res.isConfirmed) {
+            const backupAuthCode = "BACKUP_TBK";
+            const backupOpNumber = "BACKUP";
+            setVoucherData({
+              amount: entryPrice,
+              ticketNumber: clientDocument || "0",
+              authorizationCode: backupAuthCode,
+              operationNumber: backupOpNumber,
+              cardNumber: "0000",
+              cardBrand: "TBK Backup",
+              cardType: "Manual",
+              timestamp: new Date().toISOString(),
+            });
+            setIsEntryModalOpen(false);
+            await onGenerateBarcode(
+              "Tarjeta",
+              backupAuthCode,
+              backupOpNumber,
+              "0000",
+              "TBK Backup",
+              "Manual",
+            );
+          }
         }
       } catch (error) {
         Swal.close();
         setIsProcessingCard(false);
         console.error("Error al comunicarse con el POS:", error);
-        Swal.fire({
+        const res = await Swal.fire({
           title: "Error de Conexión",
           text: "No se pudo conectar con el backend local del POS. Asegúrese de que esté corriendo en el puerto 3000.",
           icon: "error",
-          confirmButtonText: "Entendido",
+          showCancelButton: true,
+          confirmButtonText: "TBK Backup",
+          confirmButtonColor: "#f59e0b",
+          cancelButtonText: "Entendido",
         });
+
+        if (res.isConfirmed) {
+          const backupAuthCode = "BACKUP_TBK";
+          const backupOpNumber = "BACKUP";
+          setVoucherData({
+            amount: entryPrice,
+            ticketNumber: clientDocument || "0",
+            authorizationCode: backupAuthCode,
+            operationNumber: backupOpNumber,
+            cardNumber: "0000",
+            cardBrand: "TBK Backup",
+            cardType: "Manual",
+            timestamp: new Date().toISOString(),
+          });
+          setIsEntryModalOpen(false);
+          await onGenerateBarcode(
+            "Tarjeta",
+            backupAuthCode,
+            backupOpNumber,
+            "0000",
+            "TBK Backup",
+            "Manual",
+          );
+        }
       }
     }
   };
@@ -568,25 +621,72 @@ export function ClientRegistration({
           const errMsg =
             result.error ||
             "La transacción fue rechazada o cancelada en el POS.";
-          Swal.fire({
+          const res = await Swal.fire({
             title: "Pago Fallido",
             text: errMsg,
             icon: "error",
-            confirmButtonText: "Entendido",
+            showCancelButton: true,
+            confirmButtonText: "TBK Backup",
+            confirmButtonColor: "#f59e0b",
+            cancelButtonText: "Entendido",
           });
-          return;
+          if (res.isConfirmed) {
+            authCodeVal = "BACKUP_TBK";
+            opNumberVal = "BACKUP";
+            cardNumberVal = "0000";
+            cardBrandVal = "TBK Backup";
+            cardTypeVal = "Manual";
+            setExitAuthCode(authCodeVal);
+            setExitOpNumber(opNumberVal);
+            setVoucherData({
+              amount: extraCharge,
+              ticketNumber: pendingRecords?.[0]?.code || "0",
+              authorizationCode: authCodeVal,
+              operationNumber: opNumberVal,
+              cardNumber: cardNumberVal,
+              cardBrand: cardBrandVal,
+              cardType: cardTypeVal,
+              timestamp: new Date().toISOString(),
+            });
+          } else {
+            return;
+          }
         }
       } catch (error) {
         Swal.close();
         setIsProcessingCard(false);
         console.error("Error al comunicarse con el POS:", error);
-        Swal.fire({
+        const res = await Swal.fire({
           title: "Error de Conexión",
           text: "No se pudo conectar con el backend local del POS. Asegúrese de que esté corriendo en el puerto 3000.",
           icon: "error",
-          confirmButtonText: "Entendido",
+          showCancelButton: true,
+          confirmButtonText: "TBK Backup",
+          confirmButtonColor: "#f59e0b",
+          cancelButtonText: "Entendido",
         });
-        return;
+
+        if (res.isConfirmed) {
+          authCodeVal = "BACKUP_TBK";
+          opNumberVal = "BACKUP";
+          cardNumberVal = "0000";
+          cardBrandVal = "TBK Backup";
+          cardTypeVal = "Manual";
+          setExitAuthCode(authCodeVal);
+          setExitOpNumber(opNumberVal);
+          setVoucherData({
+            amount: extraCharge,
+            ticketNumber: pendingRecords?.[0]?.code || "0",
+            authorizationCode: authCodeVal,
+            operationNumber: opNumberVal,
+            cardNumber: cardNumberVal,
+            cardBrand: cardBrandVal,
+            cardType: cardTypeVal,
+            timestamp: new Date().toISOString(),
+          });
+        } else {
+          return;
+        }
       }
     }
 

@@ -159,14 +159,39 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
   },
 
   releaseLocker: async (lockerId) => {
-    // Sync to DB
-    await dbReleaseLocker(lockerId);
+    const locker = get().lockers.find((l) => l.id === lockerId);
+    let recordIdToUpdate: number | null = locker?.currentRecordId || null;
+
+    if (!recordIdToUpdate && locker) {
+      const activeRecord = get().records.find(
+        (r) => r.lockerId === lockerId && r.status === "Activo",
+      );
+      if (activeRecord) recordIdToUpdate = activeRecord.id;
+    }
+
+    if (recordIdToUpdate) {
+      await dbDeliverRecord(
+        recordIdToUpdate,
+        lockerId,
+        null,
+        "Liberacion Admin",
+        "ADMIN",
+        "MANUAL",
+      );
+    } else {
+      await dbReleaseLocker(lockerId);
+    }
 
     set((state) => ({
       lockers: state.lockers.map((l) =>
         l.id === lockerId
           ? { ...l, isOccupied: false, currentRecordId: null }
           : l,
+      ),
+      records: state.records.map((r) =>
+        r.lockerId === lockerId && r.status === "Activo"
+          ? { ...r, status: "Entregado", exitTime: new Date().toISOString() }
+          : r,
       ),
     }));
   },
