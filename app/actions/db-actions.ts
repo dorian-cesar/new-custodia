@@ -619,3 +619,51 @@ export async function dbSyncLayout(newLayout: LayoutConfig, newSizes: LockerSize
     return { success: false, error: "Error de base de datos: " + err.message };
   }
 }
+
+export async function verifyBenefitTicket(ticket_number: string) {
+  try {
+    await syncDatabase();
+    
+    // 1. Verificar si ya fue usado localmente
+    const existing = await CustodyRecordModel.findOne({ where: { benefitTicket: ticket_number } });
+    if (existing) {
+      return { success: false, error: "Este boleto ya ha sido utilizado para obtener el beneficio en custodia." };
+    }
+
+    // 2. Autenticarse con la API de Analítica
+    const authRes = await fetch("https://boletos-la-analitica.dev-wit.com/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "admin@wit.la", password: "witla951" })
+    });
+    
+    if (!authRes.ok) {
+      return { success: false, error: "Error de autenticación con el servidor de Analítica." };
+    }
+    
+    const authData = await authRes.json();
+    const token = authData.token;
+    
+    // 3. Consultar el boleto
+    const ticketRes = await fetch(`https://boletos-la-analitica.dev-wit.com/api/tickets/number/${ticket_number}`, {
+      method: "GET",
+      headers: { 
+        "Authorization": `Bearer ${token}` 
+      }
+    });
+    
+    if (ticketRes.status === 404) {
+      return { success: false, error: "El boleto ingresado no es válido o no fue encontrado." };
+    }
+    
+    if (!ticketRes.ok) {
+      return { success: false, error: "Error al validar el boleto en Analítica." };
+    }
+    
+    const ticketData = await ticketRes.json();
+    
+    return { success: true, data: ticketData };
+  } catch (error: any) {
+    return { success: false, error: "No se pudo contactar al servidor de beneficios: " + error.message };
+  }
+}

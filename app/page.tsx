@@ -83,6 +83,7 @@ export default function CustodyPage() {
     cardNumber?: string | null,
     cardBrand?: string | null,
     cardType?: string | null,
+    benefitTicket?: string | null,
   ): Promise<CustodyRecord[] | null> => {
     if (selectedItems.length === 0 || !clientDocument.trim()) {
       return null;
@@ -98,6 +99,7 @@ export default function CustodyPage() {
       cardNumber,
       cardBrand,
       cardType,
+      benefitTicket,
     );
 
     if (created && created.length > 0) {

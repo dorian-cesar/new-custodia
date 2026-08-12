@@ -45,6 +45,7 @@ export interface CustodyRecord {
   folio?: number;
   extraFolio?: number;
   entryPaymentMethod?: string;
+  benefitTicket?: string | null;
   authCode?: string | null;
   opNumber?: string | null;
   cardNumber?: string | null;

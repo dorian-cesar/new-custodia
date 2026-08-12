@@ -323,6 +323,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
     cardNumber = null,
     cardBrand = null,
     cardType = null,
+    benefitTicket = null,
   ) => {
     const { currentCashRegister, lockers, lockerSizes } = get();
 
@@ -382,6 +383,7 @@ export const useCustodyStore = create<CustodyState>()((set, get) => ({
         cardNumber,
         cardBrand,
         cardType,
+        benefitTicket,
       };
 
       // Sync record creation to DB

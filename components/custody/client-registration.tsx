@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { type CustodyRecord, type LockerSize } from "@/lib/types";
 import { useCustodyStore } from "@/lib/custody-store";
-import { sendBoleta } from "@/app/actions/db-actions";
+import { sendBoleta, verifyBenefitTicket } from "@/app/actions/db-actions";
 import { formatCurrency } from "@/lib/utils";
 
 interface ClientRegistrationProps {
@@ -41,7 +41,9 @@ interface ClientRegistrationProps {
     opNumber?: string | null,
     cardNumber?: string | null,
     cardBrand?: string | null,
+    cardBrand?: string | null,
     cardType?: string | null,
+    benefitTicket?: string | null,
   ) => Promise<CustodyRecord[] | null>;
   onDeliver: (
     code: string,
@@ -121,8 +123,9 @@ export function ClientRegistration({
   // State for Entry Payment Modal
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [entryPaymentMethod, setEntryPaymentMethod] = useState<
-    "Efectivo" | "Tarjeta"
+    "Efectivo" | "Tarjeta" | "Beneficio"
   >("Efectivo");
+  const [entryBenefitTicket, setEntryBenefitTicket] = useState<string>("");
   const [entryCashReceived, setEntryCashReceived] = useState<number>(0);
 
   // State for Extracharge Modal
@@ -708,6 +711,43 @@ export function ClientRegistration({
         "Tarjeta",
         "Manual",
       );
+    } else if (entryPaymentMethod === "Beneficio") {
+      if (!entryBenefitTicket.trim()) {
+        showToast("Por favor ingrese el número de boleto para el beneficio.", "warning");
+        return;
+      }
+      
+      const verifyRes = await verifyBenefitTicket(entryBenefitTicket.trim());
+      if (!verifyRes.success) {
+        showToast(verifyRes.error || "Boleto inválido o ya usado", "error");
+        return;
+      }
+
+      setVoucherData({
+        amount: 0,
+        ticketNumber: clientDocument || "0",
+        authorizationCode: "BENEFICIO",
+        operationNumber: entryBenefitTicket,
+        cardNumber: "N/A",
+        cardBrand: "Beneficio",
+        cardType: "Beneficio",
+        timestamp: new Date().toISOString(),
+        items: itemsWithPrice.map((i) => ({
+          position: i.position,
+          size: i.label,
+          price: 0,
+        })),
+      });
+      setIsEntryModalOpen(false);
+      await onGenerateBarcode(
+        "Beneficio",
+        null,
+        null,
+        null,
+        null,
+        null,
+        entryBenefitTicket.trim()
+      );
     }
   };
 
@@ -1100,7 +1140,7 @@ export function ClientRegistration({
               <Label className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
                 Medio de Pago
               </Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
@@ -1125,7 +1165,38 @@ export function ClientRegistration({
                   <CreditCard className="h-5 w-5" />
                   Tarjeta
                 </button>
+                <button
+                  type="button"
+                  className={`flex items-center justify-center gap-2 h-12 text-sm font-bold rounded-xl border border-zinc-400 dark:border-zinc-700 transition-all cursor-pointer ${
+                    entryPaymentMethod === "Beneficio"
+                      ? "bg-amber-600 dark:bg-amber-500 text-white shadow-md font-black"
+                      : "bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                  onClick={() => setEntryPaymentMethod("Beneficio")}
+                >
+                  <BarcodeIcon className="h-5 w-5" />
+                  Beneficio
+                </button>
               </div>
+
+              {entryPaymentMethod === "Beneficio" && (
+                <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">
+                  <Label
+                    htmlFor="entryBenefitTicket"
+                    className="text-[10px] font-bold uppercase tracking-wider text-zinc-600"
+                  >
+                    Número de Boleto
+                  </Label>
+                  <Input
+                    id="entryBenefitTicket"
+                    type="text"
+                    placeholder="Ej. 123456"
+                    value={entryBenefitTicket}
+                    onChange={(e) => setEntryBenefitTicket(e.target.value)}
+                    className="h-10 text-base font-black bg-zinc-100 border-zinc-300"
+                  />
+                </div>
+              )}
 
               {entryPaymentMethod === "Efectivo" && totalPrice > 0 && (
                 <div className="space-y-2 mt-3 p-3 bg-white border border-zinc-300 rounded-lg animate-in fade-in slide-in-from-top-1">

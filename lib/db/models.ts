@@ -49,6 +49,7 @@ export class CustodyRecordModel extends Model {
   declare folio: number | null;
   declare extraFolio: number | null;
   declare entryPaymentMethod: string | null;
+  declare benefitTicket: string | null;
   declare authCode: string | null;
   declare opNumber: string | null;
   declare cardNumber: string | null;
@@ -76,6 +77,7 @@ CustodyRecordModel.init(
     folio: { type: DataTypes.INTEGER, allowNull: true },
     extraFolio: { type: DataTypes.INTEGER, allowNull: true },
     entryPaymentMethod: { type: DataTypes.STRING, allowNull: true, defaultValue: 'Efectivo' },
+    benefitTicket: { type: DataTypes.STRING, allowNull: true },
     authCode: { type: DataTypes.STRING, allowNull: true },
     opNumber: { type: DataTypes.STRING, allowNull: true },
     cardNumber: { type: DataTypes.STRING, allowNull: true },
@@ -177,7 +179,7 @@ let isSynced = false;
 
 export const syncDatabase = async () => {
   if (isSynced) return;
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
   await SettingModel.sync();
 
   const defaultCurrency = await SettingModel.findOne({ where: { key: 'currency' } });
