@@ -179,7 +179,7 @@ let isSynced = false;
 
 export const syncDatabase = async () => {
   if (isSynced) return;
-  await sequelize.sync({ alter: true });
+  await sequelize.sync();
   await SettingModel.sync();
 
   const defaultCurrency = await SettingModel.findOne({ where: { key: 'currency' } });
